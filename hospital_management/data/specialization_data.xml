@@ -1,0 +1,28 @@
+<odoo>
+
+    <record id="spec_general" model="hospital.specialization">
+        <field name="name">General Physician</field>
+        <field name="code">GENERAL</field>
+    </record>
+
+    <record id="spec_cardio" model="hospital.specialization">
+        <field name="name">Cardiologist</field>
+        <field name="code">CARDIO</field>
+    </record>
+
+    <record id="spec_neuro" model="hospital.specialization">
+        <field name="name">Neurologist</field>
+        <field name="code">NEURO</field>
+    </record>
+
+    <record id="spec_ortho" model="hospital.specialization">
+        <field name="name">Orthopedic</field>
+        <field name="code">ORTHO</field>
+    </record>
+
+    <record id="spec_pediatric" model="hospital.specialization">
+        <field name="name">Pediatrician</field>
+        <field name="code">PEDIATRIC</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,302 @@
+<odoo>
+    <template id="portal_add_appointment" name="Add Appointment">
+        <t t-call="portal.portal_layout">
+
+            <div class="container mt-4 mb-5">
+
+                <!-- Error Message -->
+                <div t-if="error_msg"
+                     id="error_alert"
+                     class="alert alert-danger alert-dismissible fade show shadow-sm"
+                     role="alert">
+
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <strong>Error:</strong>
+                    <t t-esc="error_msg"/>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert"
+                            aria-label="Close"/>
+
+                </div>
+
+                <div class="card shadow border-0">
+
+                    <div class="card-header bg-primary text-white py-3">
+                        <h4 class="mb-0">
+                            <i class="fa fa-calendar-plus-o me-2"/>
+                            Book New Appointment
+                        </h4>
+                    </div>
+
+                    <div class="card-body p-4 bg-white">
+
+                        <form action="/my/appointment/add/submit" method="post">
+
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   t-att-value="request.csrf_token()"/>
+
+                            <!-- hidden appointment id for edit -->
+                            <input type="hidden"
+                                   name="appointment_id"
+                                   t-att-value="appointment.id if appointment else ''"/>
+
+                            <div class="row g-4">
+
+                                <!-- Appointment ID- Edit  -->
+
+                                <t t-if="appointment">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">
+                                            Appointment ID
+                                        </label>
+
+                                        <input type="text"
+                                               class="form-control bg-light"
+                                               t-att-value="appointment.name"
+                                               readonly="readonly"/>
+                                    </div>
+                                </t>
+
+                                <!-- Specialization -->
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        Specialization
+                                    </label>
+
+                                    <select name="specialization_id"
+                                            class="form-select border-2"
+                                            required="required"
+                                            onchange="window.location.href='/my/appointment/add?specialization_id=' + this.value;">
+
+                                        <option value="">Select Specialization</option>
+
+                                        <t t-foreach="specializations" t-as="spec">
+
+                                            <option t-att-value="spec.id"
+                                                    t-att-selected="spec.id == selected_spec_id">
+
+                                                <t t-esc="spec.name"/>
+
+                                            </option>
+
+                                        </t>
+
+                                    </select>
+
+                                </div>
+
+                                <!-- Doctor -->
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        Doctor
+                                    </label>
+
+                                    <select name="doctor_id"
+                                            id="doctor_id"
+                                            class="form-select border-2"
+                                            required="required"
+                                            t-att-disabled="not doctors"
+                                            onchange="window.location.href='/my/appointment/add?specialization_id=' + document.getElementsByName('specialization_id')[0].value + '&amp;doctor_id=' + this.value;">
+
+                                        <option value="">Select Doctor</option>
+
+                                        <t t-foreach="doctors" t-as="doc">
+
+                                            <option t-att-value="doc.id"
+                                                    t-att-data-slot="doc.slot_duration or 30"
+                                                    t-att-selected="selected_doc and doc.id == selected_doc.id">
+
+                                                <t t-esc="doc.name"/>
+
+                                            </option>
+
+                                        </t>
+
+                                    </select>
+
+                                </div>
+
+                                <!-- Patient -->
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold">
+                                        Patient
+                                    </label>
+
+                                    <select name="patient_id"
+                                            class="form-select border-2"
+                                            required="required">
+
+                                        <option value="">Select Patient</option>
+
+                                        <t t-foreach="patients" t-as="pat">
+
+                                        
+                                        <!-- <option t-att-value="pat.id"
+                                            t-att-selected="appointment and pat.id == appointment.patient_id.id">
+
+                                                <t t-esc="pat.name"/>
+
+                                            </option> -->
+
+                                        <option t-att-value="pat.id"
+                                                t-att-selected="
+                                                    (appointment and pat.id == appointment.patient_id.id)
+                                                    or
+                                                    (post_data and pat.id == int(post_data.get('patient_id', 0)))
+                                                ">
+                                            <t t-esc="pat.name"/>
+                                        </option>
+
+                                        </t>
+
+                                    </select>
+
+                                </div>
+
+                                <!-- Start Datetime -->
+
+<div class="col-md-6">
+
+    <label class="form-label fw-bold">
+        Start Datetime
+    </label>
+
+    <input type="datetime-local"
+           name="start_datetime"
+           id="start_dt"
+           class="form-control border-2"
+           required="required"
+           t-att-value="
+                appointment and 
+                context_timestamp(appointment.start_datetime).strftime('%Y-%m-%dT%H:%M')
+                or post_data.get('start_datetime')
+           "
+           onchange="calculateEndDate(this.value);"/>
+
+</div>
+
+
+<!-- End Datetime -->
+
+<div class="col-md-6">
+
+    <label class="form-label fw-bold">
+        End Datetime
+    </label>
+
+    <input type="datetime-local"
+           name="end_datetime"
+           id="end_dt"
+           class="form-control border-2"
+           required="required"
+           t-att-value="
+                appointment and 
+                context_timestamp(appointment.end_datetime).strftime('%Y-%m-%dT%H:%M')
+                or post_data.get('end_datetime')
+           "/>
+
+</div>
+
+                                <!-- Consultation Fee -->
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label fw-bold text-success">
+                                        Consultation Fee
+                                    </label>
+
+                                    <div class="input-group">
+    <span class="input-group-text bg-light" 
+          t-esc="selected_doc.currency_id.symbol if selected_doc else res_company.currency_id.symbol"/>
+
+    <input type="text"
+           class="form-control bg-light border-2 fw-bold"
+           t-att-value="selected_doc.consultation_fee if selected_doc else '0.00'"
+           readonly="readonly"/>
+</div>
+
+                                </div>
+
+                                <!-- Description -->
+
+                                <div class="col-12">
+
+                                    <label class="form-label fw-bold">
+                                        Description
+                                    </label>
+
+                                    <textarea name="description"
+                                              rows="3"
+                                              class="form-control border-2"
+                                              placeholder="Describe the health issue...">
+
+                                              <t t-esc="appointment.description if appointment else post_data.get('description', '')"/>
+                                    </textarea>
+
+
+
+                                </div>
+
+
+                                
+
+                            </div>
+
+                            <div class="mt-5 border-top pt-4">
+
+                                <button type="submit"
+                                        class="btn btn-success px-5 rounded-0 fw-bold">
+                                    SUBMIT
+                                </button>
+
+                                <a href="/my/appointments"
+                                   class="btn btn-outline-danger px-4 ms-2 rounded-0 fw-bold">
+                                    CANCEL
+                                </a>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        <script>
+
+            
+function calculateEndDate(startVal) {
+    if (startVal) {
+        var startDate = new Date(startVal);
+        var docSelect = document.getElementById('doctor_id');
+        var slot = parseInt(docSelect.options[docSelect.selectedIndex].getAttribute('data-slot')) || 30;
+
+        startDate.setMinutes(startDate.getMinutes() + slot);
+
+        var year = startDate.getFullYear();
+        var month = ("0" + (startDate.getMonth() + 1)).slice(-2);
+        var day = ("0" + startDate.getDate()).slice(-2);
+        var hours = ("0" + startDate.getHours()).slice(-2);
+        var minutes = ("0" + startDate.getMinutes()).slice(-2);
+
+        var localTimeStr = year + "-" + month + "-" + day + "T" + hours + ":" + minutes;
+        
+        document.getElementById('end_dt').value = localTimeStr;
+    }
+}
+</script>
+
+        </t>
+    </template>
+</odoo>

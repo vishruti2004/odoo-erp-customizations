@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="report_appointment_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+
+                    <div class="page appointment-report">
+
+                        <!-- <div class="appointment-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <img t-if="res_company.logo"
+                                         t-att-src="'/web/image/res.company/%s/logo' % res_company.id"
+                                         class="company-logo"/>
+                                </div>
+                                <div class="col-6 text-end company-info">
+                                    <h3 t-esc="res_company.name"/>
+                                    <div t-esc="res_company.email"/>
+                                    <div t-esc="res_company.phone"/>
+                                </div>
+                            </div>
+                        </div> -->
+
+                        <h2 class="appointment-title">
+                            Appointment ID :
+                            <span t-field="doc.name"/>
+                        </h2>
+
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <div class="info-box">
+                                    <h4 class="section-title">Patient Information</h4>
+
+                                    <p t-if="doc.patient_id.name">
+                                        <strong>Name:</strong>
+                                        <span t-field="doc.patient_id.name"/>
+                                    </p>
+
+                                    <p t-if="doc.patient_id.email">
+                                        <strong>Email:</strong>
+                                        <span t-field="doc.patient_id.email"/>
+                                    </p>
+
+                                    <p t-if="doc.patient_id.phone">
+                                        <strong>Phone:</strong>
+                                        <span t-field="doc.patient_id.phone"/>
+                                    </p>
+
+                                </div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="info-box">
+                                    <h4 class="section-title doctor-title">Doctor Information</h4>
+
+                                    <p t-if="doc.doctor_id.name">
+                                        <strong>Name:</strong>
+                                        <span t-field="doc.doctor_id.name"/>
+                                    </p>
+
+                                    <p t-if="doc.specialization_id.name">
+                                        <strong>Specialization:</strong>
+                                        <span t-field="doc.specialization_id.name"/>
+                                    </p>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- <div class="mt-4 date-section" t-if="doc.start_datetime">
+                            <strong>Start Time:</strong>
+                            <span t-field="doc.start_datetime"/>
+                        </div>
+
+                        <div class="mt-4 date-section" t-if="doc.end_datetime">
+                            <strong>End Time:</strong>
+                            <span t-field="doc.end_datetime"/>
+                        </div> -->
+
+                        <div class="mt-4">
+                            <h4 class="section-title">Appointment Duration</h4>
+
+                            <div class="content-box">
+
+                                <strong>Date :</strong>
+
+                                <span t-field="doc.start_datetime"
+                                    t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}'/>
+
+                                -
+
+                                <span t-field="doc.end_datetime"
+                                    t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}'/>
+
+                            </div>
+                        </div>
+
+                        <div class="mt-4" t-if="doc.description">
+                            <h4 class="section-title">Patient Disease</h4>
+                            <div class="content-box">
+                                <p t-field="doc.description"/>
+                            </div>
+                        </div>
+
+                        <div class="mt-4" t-if="doc.doc_description">
+                            <h4 class="section-title doctor-title">Doctor Consultation</h4>
+                            <div class="content-box">
+                                <p t-field="doc.doc_description"/>
+                            </div>
+                        </div>
+
+                        <div class="mt-4" t-if="doc.cancel_reason">
+                            <h4 class="section-title doctor-title">Cancel reason</h4>
+                            <div class="content-box">
+                                <p t-field="doc.cancel_reason"/>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-5 fee-section" t-if="doc.consultation_fee">
+                            <h3>
+                                Consultation Fee :
+                                <!-- <span t-field="doc.consultation_fee"/> -->
+                                <span t-field="doc.consultation_fee"
+                                    t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/>
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

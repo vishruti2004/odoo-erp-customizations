@@ -1,0 +1,89 @@
+/* Main Container */
+.appointment_report_container {
+    width: 100%;
+    font-family: "Helvetica", "Arial", sans-serif;
+    color: #333;
+}
+
+/* ===== HEADER STYLING (BORDER & COLOR REMOVED) ===== */
+.appointment_report_container .report-header {
+    width: 100%;
+    margin-bottom: 25px;
+    display: block;
+    /* Jo div ma border hoy to e kadhva mate */
+    border: none !important;
+    outline: none !important;
+}
+
+/* Header table mathi badhi j border kadhva mate */
+.appointment_report_container .report-header table,
+.appointment_report_container .report-header tr,
+.appointment_report_container .report-header td {
+    border: none !important;
+    border-top: none !important;
+    background-color: transparent !important;
+    padding: 5px 0px !important;
+}
+
+.appointment_report_container .report-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #000;
+}
+
+.appointment_report_container .report-date {
+    font-size: 14px;
+    color: #333;
+}
+
+/* ===== MAIN TABLE STYLING ===== */
+.appointment_report_container .main-report-table {
+    width: 100%;
+    border-collapse: collapse !important;
+    table-layout: fixed;
+    font-size: 13px;
+    border: 1px solid #000 !important;
+}
+
+/* Header mathi color kadhva mate */
+.appointment_report_container .main-report-table th {
+    border: 1px solid #000 !important;
+    padding: 8px;
+    font-weight: bold;
+    text-align: center;
+    background-color: #ffffff !important; /* Pure White */
+    color: #000 !important;
+}
+
+.appointment_report_container .main-report-table td {
+    border: 1px solid #000 !important;
+    padding: 6px 8px;
+    vertical-align: middle;
+}
+
+/* Column Widths */
+.appointment_report_container .main-report-table th:nth-child(1) { width: 12%; }
+.appointment_report_container .main-report-table th:nth-child(2) { width: 25%; }
+.appointment_report_container .main-report-table th:nth-child(3) { width: 23%; }
+.appointment_report_container .main-report-table th:nth-child(4) { width: 23%; }
+.appointment_report_container .main-report-table th:nth-child(5) { width: 17%; }
+
+/* Utility Classes */
+.center-cell {
+    text-align: center;
+}
+
+.date-cell {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.appointment_report_container .code {
+    font-weight: bold;
+    display: block;
+}
+
+.appointment_report_container .name {
+    margin-top: 2px;
+    display: block;
+}

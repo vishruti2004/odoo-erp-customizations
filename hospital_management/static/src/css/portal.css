@@ -1,0 +1,6 @@
+.o_portal_docs img {
+    width: 65px !important;
+    height: 65px !important;
+    object-fit: contain;
+}
+

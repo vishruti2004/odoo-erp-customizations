@@ -1,0 +1,90 @@
+<odoo>
+    <template id="portal_my_home_appointment"
+              inherit_id="portal.portal_my_home"
+              priority="30">
+
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/hospital_management/static/src/img/appoitments.png'"/>
+                <t t-set="title"> Appointments</t>
+                <t t-set="url" t-value="'/my/appointments'"/>
+                <t t-set="text">View your hospital appointments</t>
+                <t t-set="config_card" t-value="True"/>
+            </t>
+
+        </xpath>
+
+    </template>
+
+
+    <!-- <template id="portal_my_home_menu_appointments" name="Portal layout : Appointments menu entries" inherit_id="portal.portal_breadcrumbs" priority="20">
+    <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+        <li t-if="page_name == 'appointment'" class="breadcrumb-item active">
+            Your Appointments
+        </li>
+    </xpath>
+</template> -->
+
+<!-- <template id="portal_my_home_menu_appointments" inherit_id="portal.portal_breadcrumbs">
+    <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+        <li t-if="page_name == 'appointment'" 
+            t-attf-class="breadcrumb-item #{'active ' if not appointment else ''}">
+            <a t-if="appointment" href="/my/appointments">Your Appointments</a>
+            <t t-else="">Your Appointments</t>
+        </li>
+        <li t-if="appointment" class="breadcrumb-item active">
+            <t t-esc="appointment.name"/>
+        </li>
+    </xpath>
+</template> -->
+
+<!-- <template id="portal_my_home_menu_appointments" inherit_id="portal.portal_breadcrumbs" priority="20">
+    <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+        <li t-if="page_name == 'appointment' or appointment" 
+            t-attf-class="breadcrumb-item #{'active ' if not appointment else ''}">
+            
+            <a t-if="appointment" href="/my/appointments"> Appointments</a>
+            
+            <t t-else=""> Appointments</t>
+        </li>
+
+        <li t-if="appointment" class="breadcrumb-item active">
+            <t t-esc="appointment.name"/>
+        </li>
+    </xpath>
+</template>
+</odoo> -->
+
+
+<template id="portal_my_home_menu_appointments"
+          inherit_id="portal.portal_breadcrumbs"
+          priority="20">
+
+    <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+
+        <!-- Appointments List -->
+        <li t-if="page_name in ['appointment','appointment_new'] or appointment"
+            t-attf-class="breadcrumb-item #{'active ' if page_name == 'appointment' else ''}">
+            
+            <a t-if="page_name != 'appointment'" href="/my/appointments">
+                Appointments
+            </a>
+            <t t-else="">Appointments</t>
+        </li>
+
+        <!-- New Appointment -->
+        <li t-if="page_name == 'appointment_new'" class="breadcrumb-item active">
+            New
+        </li>
+
+        <!-- Existing Appointment -->
+        <li t-if="appointment" class="breadcrumb-item active">
+            <t t-esc="appointment.name"/>
+        </li>
+
+    </xpath>
+
+</template>
+
+</odoo>

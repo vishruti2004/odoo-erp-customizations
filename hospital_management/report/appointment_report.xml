@@ -1,0 +1,22 @@
+<odoo>
+
+    <record id="action_report_appointment"
+            model="ir.actions.report">
+
+        <field name="name">Appointment Report</field>
+        <field name="model">hospital.appointment</field>
+        <field name="report_type">qweb-pdf</field>
+
+        <!-- match with template id  -->
+        <field name="report_name">hospital_management.report_appointment_document</field>
+        <field name="report_file">hospital_management.report_appointment_document</field>
+
+        <!-- binding is used for attach specific model with action -->
+        <field name="binding_model_id" ref="model_hospital_appointment"/>
+        <field name="binding_type">report</field>
+
+        <!-- binding type = report and action -->
+
+    </record>
+
+</odoo>

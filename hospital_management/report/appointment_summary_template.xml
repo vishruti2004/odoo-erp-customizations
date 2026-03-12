@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="appointment_summary_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page appointment_report_container">
+
+                    <div class="report-header">
+                        <table style="width: 100%; border: none !important;">
+                            <tr>
+                                <td style="text-align: left; vertical-align: middle;">
+                                    <span class="report-title">Appointment Summary Report</span>
+                                </td>
+                                <td style="text-align: right; vertical-align: middle;">
+                                    <span class="report-date">
+                                        <strong>Generate Date:</strong> 
+                                        <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %I:%M %p')"/>
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <table class="main-report-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Doctor</th>
+                                <th>Patient</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="docs" t-as="o">
+                                <td class="center-cell">
+                                    <span t-field="o.name"/>
+                                </td>
+                                <td class="date-cell">
+                                    <span t-field="o.start_datetime" t-options='{"widget": "datetime"}'/>
+                                </td> 
+                                <td class="center-cell">
+                                    <t t-set="doc_name" t-value="o.doctor_id.display_name"/>
+                                    <div class="code">
+                                        <span t-esc="doc_name.split(']')[0] + ']' if ']' in doc_name else ''"/>
+                                    </div>
+                                    <div class="name">
+                                        <span t-esc="doc_name.split(']')[1].strip() if ']' in doc_name else doc_name"/>
+                                    </div>
+                                </td>
+                                <td class="center-cell">
+                                    <t t-set="pat_name" t-value="o.patient_id.display_name"/>
+                                    <div class="code">
+                                        <span t-esc="pat_name.split(']')[0] + ']' if ']' in pat_name else ''"/>
+                                    </div>
+                                    <div class="name">
+                                        <span t-esc="pat_name.split(']')[1].strip() if ']' in pat_name else pat_name"/>
+                                    </div>
+                                </td>
+                                <td class="center-cell">
+                                    <span t-field="o.state"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!--  APPOINTMENT REQUEST MAIL TO DOCTOR -->
+
+        <record id="email_template_appointment_request" model="mail.template">
+            <field name="name">Appointment Request To Doctor</field>
+            <field name="model_id" ref="model_hospital_appointment"/>
+            <field name="subject">New Appointment Request</field>
+            <field name="email_from">{{ object.company_id.email_formatted }}</field>
+            <field name="email_to">{{ object.doctor_id.email or '' }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+
+            <field name="body_html" type="html">
+                <div>
+                <t t-set="base_url" t-value="object.get_base_url()"/>
+
+                <div style="font-family: Arial, sans-serif;">
+
+                    <h2 style="color:#875A7B;">New Appointment Request</h2>
+                    
+                    <p>Hello <t t-out="object.doctor_id.partner_id.name"/>,</p>
+                    
+                    <p>You have received a new appointment request with the following details:</p>
+                    
+                    <h3>Appointment Details</h3>
+                    
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li><strong>Patient:</strong> <t t-out="object.patient_id.name"/></li>
+                        <li><strong>Date &amp; Time:</strong> 
+                            <!-- <t t-out="format_datetime(object.appointment_datetime)"/> -->
+                            <t t-out="format_datetime(object.start_datetime)"/>
+
+                        </li>
+                        <li><strong>Duration:</strong> 30 Minutes</li>
+                    </ul>
+
+                    <h3>Patient Information</h3>
+                    
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li><strong>Email:</strong> <t t-out="object.patient_id.email or ''"/></li>
+                        <li><strong>Phone:</strong> <t t-out="object.patient_id.phone or ''"/></li>
+                    </ul>
+
+                    <p>Please review this appointment request.</p>
+
+                    <!-- VIEW APPOINTMENT BUTTON -->
+                    <p style="margin-top:25px;">
+                    <a t-att-href="base_url + '/web#id=%s&amp;model=hospital.appointment&amp;view_type=form' % object.id"
+                        style="background-color:#875A7B;
+                                padding:12px 25px;
+                                text-decoration:none;
+                                color:white;
+                                border-radius:6px;
+                                font-weight:bold;
+                                display:inline-block;">
+                            View Appointment
+                    </a>
+
+                    </p>
+
+                    <br/>
+
+                    <p>
+                        Thank you,<br/>
+                        <strong>Hospital Management System</strong>
+                    </p>
+
+                </div>
+                </div>
+            </field>
+        </record>
+
+
+        <!--  APPOINTMENT CONFIRMATION MAIL TO PATIENT-->
+
+    <record id="email_template_appointment_status" model="mail.template">
+    <field name="name">Appointment Status Update</field>
+    <field name="model_id" ref="model_hospital_appointment"/>
+    <field name="subject">Appointment Update</field>
+    <field name="email_from">{{ object.company_id.email_formatted }}</field>
+    <field name="email_to">{{ object.patient_id.email or object.patient_id.partner_id.email or '' }}</field>
+    <field name="email_layout_xmlid">mail.mail_notification_light</field>
+
+    <field name="body_html" type="html">
+    <div>
+    <div>
+
+        <t t-if="object.state == 'confirm'">
+            <h3>Appointment Confirmed</h3>
+            <p>Your appointment is confirmed.</p>
+        </t>
+
+        <t t-if="object.state == 'cancel'">
+            <h3>Appointment Cancelled</h3>
+            <p>Your appointment has been cancelled.</p>
+
+            <p><strong>Reason:</strong></p>
+            <p><t t-out="object.cancel_reason"/></p>
+        </t>
+
+
+
+        <!-- <p>
+            <strong>Date &amp; Time</strong>
+            <t t-out="format_datetime(object.appointment_datetime)"/>
+        </p> -->
+
+         <p>
+            <strong>Date &amp; Time</strong>
+            <t t-out="format_datetime(object.start_datetime)"/>
+        </p>
+
+       <t t-if="object.state == 'confirm' and object.invoice_id">
+    <p>
+        <a t-att-href="object.invoice_id.get_portal_url()"
+           style="background-color:#875A7B;
+                  padding:12px 25px;
+                  color:white;
+                  text-decoration:none;
+                  border-radius:6px;
+                  font-weight:bold;">
+            Pay Consultation Fee
+        </a>
+    </p>
+</t>
+
+    </div>
+    </div>
+    </field>
+</record>
+
+
+
+
+    </data>
+</odoo>

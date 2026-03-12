@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<data>
+<record id="email_template_appointment_reminder" model="mail.template">
+    <field name="name">Appointment Reminder To Patient</field>
+    <field name="model_id" ref="model_hospital_appointment"/>
+    <field name="subject">Reminder: Your Appointment</field>
+    <field name="email_from"> {{ object.company_id.email_formatted }}</field>
+    <field name="email_to">{{ object.patient_id.email }}</field>  
+    <field name="email_layout_xmlid">mail.mail_notification_light</field>
+    <field name="use_default_to" eval="False" />
+
+
+<field name="report_template_ids" eval="[(4, ref('hospital_management.action_report_appointment'))]"/>
+
+    <field name="body_html" type="html">
+        <div>
+        <t t-set="base_url" t-value="object.get_base_url()"/>
+
+        <div style="font-family: Arial, sans-serif;">
+
+            <h2 style="color:#875A7B;">Appointment Reminder</h2>
+            
+            <p>Hello <strong><t t-out="object.patient_id.name"/></strong>,</p>
+            
+            <p>
+                This is a friendly reminder that you have an appointment scheduled.
+            </p>
+            
+            <h3>Appointment Details</h3>
+            
+            <ul style="list-style: none; padding-left: 0;">
+                <!-- <li>
+                    <strong>Date &amp; Time:</strong> 
+                    <t t-out="format_datetime(object.appointment_datetime)"/>
+                </li> -->
+                  <li>
+                    <strong>Date &amp; Time:</strong> 
+                    <t t-out="format_datetime(object.start_datetime)"/>
+                </li>
+                <li>
+                    <strong>Doctor:</strong> 
+                        <t t-out="object.doctor_id.partner_id.name"/>
+                </li>
+                <li>
+                    <strong>Specialization:</strong> 
+                    <t t-out="object.specialization_id.name"/>
+                </li>
+            </ul>
+
+            <p style="margin-top:15px;">
+                Please arrive 10 minutes before your scheduled time.
+            </p>
+            <br/>
+
+            <p>
+                Thank you,<br/>
+                <strong>Hospital Management System</strong>
+            </p>
+
+        </div>
+        </div>
+    </field>
+</record>
+</data>
+</odoo>

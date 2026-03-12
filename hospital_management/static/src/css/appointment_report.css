@@ -1,0 +1,107 @@
+/* ---------- Report Base ---------- */
+
+.appointment-report{
+    font-family: "Helvetica", Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+}
+
+
+/* ---------- Header ---------- */
+
+.appointment-report .appointment-title{
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f3c88;
+    margin-bottom: 25px;
+}
+
+
+/* ---------- Info Row ---------- */
+
+.appointment-report .row.mt-4{
+    width: 100%;
+    clear: both;
+    display: block; 
+}
+
+
+/* ---------- Column ---------- */
+
+.appointment-report .row.mt-4 .col-6{
+    width: 48%; 
+    float: left;
+    margin-right: 2%;
+}
+
+
+/* ---------- Info Boxes ---------- */
+
+.appointment-report .info-box{
+    border: 1px solid #e0e0e0;
+    padding: 18px;
+    border-radius: 8px;
+    background: #fafafa;
+    
+    min-height: 160px; 
+    height: 160px; 
+}
+
+
+/* ---------- Appointment Duration & Other Sections ---------- */
+
+/* આ નવો સુધારો છે જે mt-4 ને બરાબર કામ કરવા દેશે */
+.appointment-report div.mt-4 {
+    clear: both;           /* ઉપરના float ને સાફ કરવા માટે */
+    padding-top: 20px;     /* વધારાની જગ્યા માટે */
+    display: block;
+}
+
+
+/* ---------- Section Titles ---------- */
+
+.appointment-report .section-title{
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:12px;
+    color:#1f3c88;
+    border-bottom:1px solid #ddd;
+    padding-bottom:6px;
+}
+
+
+/* ---------- Content Box ---------- */
+
+.appointment-report .content-box{
+    border:1px solid #e3e3e3;
+    background:#fbfbfb;
+    padding:10px 12px;
+    border-radius:6px;
+}
+
+
+/* ---------- Text Spacing ---------- */
+
+.appointment-report p{
+    margin-bottom:6px;
+}
+
+.appointment-report strong{
+    color:#444;
+}
+
+
+/* ---------- Consultation Fee ---------- */
+
+.appointment-report .fee-section{
+    margin-top:35px;
+    border-top:2px solid #1f3c88;
+    padding-top:12px;
+    clear: both;
+}
+
+.appointment-report .fee-section h3{
+    font-size:20px;
+    font-weight:bold;
+    color:#1f3c88;
+}

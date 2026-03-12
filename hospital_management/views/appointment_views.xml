@@ -1,0 +1,350 @@
+<odoo>
+
+    <!-- list view -->
+    <record id="view_hospital_appointment_list" model="ir.ui.view">
+        <field name="name">hospital.appointment.list</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="specialization_id"/>
+                <field name="doctor_id"/>
+                <field name="patient_id"/>
+                <!-- <field name="appointment_datetime"/>  -->
+                <field name="start_datetime"/> 
+                <field name="end_datetime"/> 
+
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'request'"
+                       decoration-success="state == 'confirm'"
+                       decoration-danger="state == 'cancel'"
+                       decoration-warning="state == 'consult'"
+                       decoration-muted="state == 'done'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- calendar view -->
+
+    <record id="view_hospital_appointment_calendar" model="ir.ui.view">
+    <field name="name">hospital.appointment.calendar</field>
+    <field name="model">hospital.appointment</field>
+    <field name="arch" type="xml">
+        
+        <calendar string="Appointments"
+                  date_start="start_datetime"
+                  mode="week"
+                  event_open_popup="true"  
+                  quick_create="0">
+
+            <field name="name"/>
+            <!-- <field name="appointment_datetime"/> -->
+            <field name="start_datetime"/>
+            <field name="state"/>
+            
+        </calendar>
+
+    </field>
+</record>
+
+    <!-- graph view -->
+    <record id="view_appointment_graph" model="ir.ui.view">
+        <field name="name">hospital.appointment.graph</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <graph string="Appointments" sample="1">
+                <field name="doctor_id"/>
+                <field name="consultation_fee" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- <!form view--> 
+
+    <record id="view_hospital_appointment_form" model="ir.ui.view">
+        <field name="name">hospital.appointment.form</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+
+      
+
+            <form string="Appointment">
+<header>
+    <field name="is_doc_admin" invisible="1"/>
+    <field name="is_pnt" invisible="1"/>
+
+    <button name="action_requested" type="object" string="Request" class="btn-success"
+            invisible="state != 'draft' or (not is_pnt and not is_doc_admin)"/>
+
+    <button name="action_confirm" type="object" string="Confirm" class="btn-success"
+            invisible="state != 'request' or not is_doc_admin"/>
+
+    <button name="action_consult" type="object" string="Start Consultation" class="btn-primary"
+            invisible="state != 'confirm' or not is_doc_admin"/>
+
+    <button name="action_done" type="object" string="Done" class="btn-success"
+            invisible="state != 'consult' or not is_doc_admin"/>
+
+    <button name="action_cancel" type="object" string="Cancel" class="btn-danger"
+            invisible="state not in ('draft', 'request', 'confirm') or not is_doc_admin"/>
+
+    <button name="action_patient_cancel" type="object" string="Cancel" class="btn-danger"
+            invisible="state != 'request' or not is_pnt or is_doc_admin"/>
+
+    <button name="action_reset_to_draft" type="object" string="Reset to Draft" class="btn-secondary"
+            invisible="state != 'cancel'"/>
+
+    <field name="state" widget="statusbar" statusbar_visible="draft,request,confirm,consult,done"/>
+</header>
+                <sheet>
+                    <group>
+                        <field name="name" readonly="1"/>
+
+                      <field name="specialization_id"
+                        options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
+                        readonly="state != 'draft'"
+                        />
+
+                        <field name="doctor_id" 
+                         context="{'from_appointment': True}"
+                         options="{'no_create': True, 'no_create_edit': True}"
+                         readonly="state != 'draft'"/> 
+                         
+
+                        <field name="patient_id" readonly="state != 'draft'"/>
+                        <!-- <field name="appointment_datetime" readonly="state == 'done'"/>  -->
+                        <field name="start_datetime" readonly="state != 'draft'"/> 
+                        <!-- <field name="start_datetime" />  -->
+
+                        <field name="end_datetime" readonly="state != 'draft'"/> 
+                        <!-- <field name="end_datetime" />  -->
+
+
+                        <!-- <field name="consultation_fee" readonly ="state != 'draft'"/>
+                        <field name="description" readonly="state != 'draft'"/>
+                        <field name="cancel_reason"
+                                invisible="state != 'cancel'"
+                                readonly="state not in ['done','cancel']"
+                                /> -->
+                         <field name="currency_id" invisible="1"/>
+                         <field name="consultation_fee" readonly ="state != 'draft'"/>
+                        <field name="description" readonly="state != 'draft'"/>
+                        <field name="cancel_reason"
+                                invisible="state != 'cancel'"
+                                readonly="state != 'draft'"
+                                />
+
+                        <!-- <field name="doc_description"
+                                invisible="state != 'consult'"/>-->
+                                <field name="doc_description"
+                                        invisible="state not in ['consult', 'done']"
+                                        readonly="state == 'done'"/>
+
+                        <field name="payment_done"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+
+        </field>
+    </record>
+
+    <!-- kanban view -->
+  <record id="view_hospital_appointment_kanban" model="ir.ui.view">
+    <field name="name">hospital.appointment.kanban</field>
+    <field name="model">hospital.appointment</field>
+    <field name="arch" type="xml">
+
+        <kanban class="o_kanban_mobile o_kanban_dashboard"
+                highlight_color="color"
+>
+
+            <!-- Fields -->
+            <field name="name"/>
+            <field name="doctor_id"/> 
+            <field name="specialization_id"/>
+            <!-- <field name="appointment_datetime"/> -->
+            <field name="start_datetime"/>
+            <field name="end_datetime"/>
+            <field name="consultation_fee"/>
+            <field name="state"/>
+            <field name="color"/>
+
+            <templates>
+
+                <t t-name="menu">
+                    <field name="color" widget="kanban_color_picker"/>
+                </t>
+
+                <t t-name="card">
+                    <div class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 ">
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            
+                            <strong class="fs-5 fw-bold text-dark">
+                                <field name="name"/>
+                            </strong>
+
+                            <span class="fs-5 fw-bold text-dark">
+                                ₹ <field name="consultation_fee"/>
+                            </span>
+
+                        </div>
+
+                        <div class="border-top mb-2"></div>
+
+                        <div class="text-muted small mb-1">
+                            <i class="fa fa-user-md me-1" title="user icon"/>
+                            <field name="specialization_id"/> -
+                            <field name="doctor_id"/>
+                        </div>
+
+                        <div class="text-muted small">
+                              <i class="fa fa-calendar me-1" title="calandar icon"/>
+                             <field name="start_datetime"/>
+                    <span class="mx-1"> - </span>
+                    <field name="end_datetime"/>
+                </div>
+
+
+                        <!-- <div class="text-muted small">
+                            <i class="fa fa-calendar me-1" title="calander icon"/>
+                            <field name="end_datetime"/>
+                        </div> -->
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <field name="state"
+                                   widget="badge"
+                                   decoration-info="state == 'request'"
+                                   decoration-success="state == 'confirm'"
+                                   decoration-danger="state == 'cancel'"
+                                   decoration-warning="state == 'consult'"
+                                   decoration-primary="state == 'done'"
+                                   decoration-secondary="state == 'draft'"/>
+                        </div>
+
+                    </div>
+                </t>
+
+            </templates>
+
+        </kanban>
+
+    </field>
+</record>
+
+<!-- pivot view -->
+<record id="view_hospital_appointment_pivot" model="ir.ui.view">
+    <field name="name">hospital.appointment.pivot</field>
+    <field name="model">hospital.appointment</field>
+    <field name="arch" type="xml">
+        <pivot string="Appointment Analysis">
+            <field name="doctor_id" type="row"/>
+            <field name="state" type="col"/>
+            <field name="consultation_fee" type="measure"/>
+        </pivot>
+    </field>
+</record>
+
+
+<!-- search view -->
+<record id="view_hospital_appointment_search" model="ir.ui.view">
+    <field name="name">hospital.appointment.search</field>
+    <field name="model">hospital.appointment</field>
+    <field name="arch" type="xml">
+        <search>
+
+        
+           <field name="name"
+       string="Search"
+       filter_domain="['|','|','|','|',
+           ('name','ilike',self),
+           ('patient_id.partner_id','ilike',self),
+           ('patient_id.patient_code','ilike',self),
+           ('doctor_id.partner_id','ilike',self),
+           ('doctor_id.doctor_code','ilike',self)
+       ]"/>
+            <field name="specialization_id"/>
+            <field name="state"/>
+            <!-- <field name="appointment_datetime"/> -->
+
+            <separator/>
+
+            <filter name="draft"
+                    string="Draft"
+                    domain="[('state','=','draft')]"/>
+
+            <filter name="request"
+                    string="Requested"
+                    domain="[('state','=','request')]"/>
+
+            <filter name="confirm"
+                    string="Confirmed"
+                    domain="[('state','=','confirm')]"/>
+
+            <filter name="consult"
+                    string="In Consultation"
+                    domain="[('state','=','consult')]"/>
+
+            <filter name="done"
+                    string="Done"
+                    domain="[('state','=','done')]"/>
+
+            <filter name="cancel"
+                    string="Cancelled"
+                    domain="[('state','=','cancel')]"/>
+
+            <separator/>
+
+            
+
+            <filter name="group_doctor"
+                    string="Doctor"
+                    context="{'group_by':'doctor_id'}"/>
+
+            <filter name="group_patient"
+                    string="Patient"
+                    context="{'group_by':'patient_id'}"/>
+
+            <filter name="group_specialization"
+                    string="Specialization"
+                    context="{'group_by':'specialization_id'}"/>
+
+            <filter name="group_state"
+                    string="Status"
+                    context="{'group_by':'state'}"/>
+<!-- 
+            <filter name="group_date"
+                    string="Appointment Date"
+                    context="{'group_by':'appointment_datetime'}"/> -->
+
+              <filter name="group_date"
+                    string="Appointment Date"
+                    context="{'group_by':'start_datetime'}"/>
+
+        </search>
+    </field>
+</record>
+
+
+    <!-- action -->
+    <record id="action_hospital_appointment" model="ir.actions.act_window">
+        <field name="name">Appointments</field>
+        <field name="res_model">hospital.appointment</field>
+        <field name="view_mode">kanban,list,form,calendar,pivot,graph</field>
+         <field name="limit">10</field>
+    </record>
+
+
+     <!-- menu -->
+    <menuitem id="menu_hospital_appointment"
+              name="Appointments"
+              parent="menu_hospital_root"
+              action="action_hospital_appointment"
+              sequence="30"
+              groups="hospital_management.group_admin,hospital_management.group_doctor,hospital_management.group_patient"/>
+
+</odoo> 
+
+
