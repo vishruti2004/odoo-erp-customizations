@@ -6,9 +6,9 @@ class AccountMove(models.Model):
     def write(self, vals):
         res = super().write(vals)
 
-        if 'payment_state' in vals:
+        if 'status_in_payment' in vals:
             for invoice in self:
-                if invoice.payment_state == 'paid':
+                if invoice.status_in_payment == 'paid':
 
                     appointments = self.env['hospital.appointment'].search([
                         ('invoice_id', '=', invoice.id)

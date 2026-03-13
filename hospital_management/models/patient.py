@@ -184,7 +184,7 @@ class HospitalPatient(models.Model):
 
             group_user = self.env.ref('base.group_user')
             group_patient = self.env.ref('hospital_management.group_patient')
-
+            group_invoice = self.env.ref('account.group_account_invoice')
             # check user exit
             existing_user = self.env['res.users'].sudo().search([
                 ('partner_id', '=', rec.partner_id.id)
@@ -198,7 +198,7 @@ class HospitalPatient(models.Model):
                     'name': rec.name,
                     'login': rec.email,
                     'partner_id': rec.partner_id.id,
-                    'group_ids': [(6, 0, [group_user.id, group_patient.id])],
+                    'group_ids': [(6, 0, [group_user.id, group_patient.id,group_invoice.id])],
                 })
 
                 rec.user_id = user.id

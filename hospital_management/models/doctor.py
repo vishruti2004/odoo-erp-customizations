@@ -184,6 +184,7 @@ class HospitalDoctor(models.Model):
 
             group_user = self.env.ref('base.group_user')
             group_doctor = self.env.ref('hospital_management.group_doctor')
+            group_invoice = self.env.ref('account.group_account_invoice')
 
             # CHECK USER EXIST OR NOT
             existing_user = self.env['res.users'].sudo().search([
@@ -198,7 +199,7 @@ class HospitalDoctor(models.Model):
                     'name': rec.name,
                     'login': rec.email,
                     'partner_id': rec.partner_id.id,
-                    'group_ids': [(6, 0, [group_user.id, group_doctor.id])],
+                    'group_ids': [(6, 0, [group_user.id, group_doctor.id,group_invoice])],
                 })
 
                 rec.user_id = user.id

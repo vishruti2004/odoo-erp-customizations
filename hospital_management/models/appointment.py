@@ -122,6 +122,43 @@ class HospitalAppointment(models.Model):
     #     for rec in self:
     #         rec.website_url = "/my/appointment/%s" % rec.id
 
+    invoice_ids = fields.One2many(
+    'account.move',
+    'invoice_origin',
+    string="Invoices",
+)
+
+    invoice_total = fields.Monetary(
+    string="Invoiced",
+    compute="_compute_invoice_total",
+    currency_field="currency_id"
+)
+
+    def _compute_invoice_total(self):
+        for rec in self:
+            invoices = self.env['account.move'].search([
+                ('invoice_origin', '=', rec.name),
+                ('move_type', '=', 'out_invoice'),
+                ('state', '=', 'posted')
+            ])
+            rec.invoice_total = sum(invoices.mapped('amount_total'))
+
+
+    def action_open_invoices(self):
+        self.ensure_one()
+
+        invoices = self.env['account.move'].search([
+            ('invoice_origin', '=', self.name),
+            ('move_type', '=', 'out_invoice')
+        ])
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Invoices',
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', invoices.ids)],
+        }
     is_doc_admin = fields.Boolean(compute='_compute_visibility')
     is_pnt = fields.Boolean(compute='_compute_visibility')
 
