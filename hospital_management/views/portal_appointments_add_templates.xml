@@ -68,10 +68,10 @@
                                         Specialization
                                     </label>
 
+                                    <!-- MAIN CHANGE 1: onchange hata diya -->
                                     <select name="specialization_id"
                                             class="form-select border-2"
-                                            required="required"
-                                            onchange="window.location.href='/my/appointment/add?specialization_id=' + this.value;">
+                                            required="required">
 
                                         <option value="">Select Specialization</option>
 
@@ -98,113 +98,108 @@
                                         Doctor
                                     </label>
 
-                                    <select name="doctor_id"
-                                            id="doctor_id"
-                                            class="form-select border-2"
-                                            required="required"
-                                            t-att-disabled="not doctors"
-                                            onchange="window.location.href='/my/appointment/add?specialization_id=' + document.getElementsByName('specialization_id')[0].value + '&amp;doctor_id=' + this.value;">
+                                    <!-- MAIN CHANGE 2: onchange hata diya -->
+                                   <select name="doctor_id"
+        id="doctor_id"
+        class="form-select border-2"
+        required="required"
+        t-att-disabled="not doctors">
 
-                                        <option value="">Select Doctor</option>
+    <option value="">Select Doctor</option>
 
-                                        <t t-foreach="doctors" t-as="doc">
+    <t t-foreach="doctors" t-as="doc">
 
-                                            <option t-att-value="doc.id"
-                                                    t-att-data-slot="doc.slot_duration or 30"
-                                                    t-att-selected="selected_doc and doc.id == selected_doc.id">
+        <option t-att-value="doc.id"
+                t-att-data-spec="doc.specialization_id.id"
+                t-att-data-slot="doc.slot_duration or 30"
+                t-att-selected="selected_doc and doc.id == selected_doc.id">
 
-                                                <t t-esc="doc.name"/>
+            <t t-esc="doc.name"/>
 
-                                            </option>
+        </option>
 
-                                        </t>
+    </t>
 
-                                    </select>
+</select>
 
                                 </div>
 
                                 <!-- Patient -->
 
-                                <div class="col-md-6">
+                               <div class="col-md-6">
 
-                                    <label class="form-label fw-bold">
-                                        Patient
-                                    </label>
+    <label class="form-label fw-bold">
+        Patient
+    </label>
 
-                                    <select name="patient_id"
-                                            class="form-select border-2"
-                                            required="required">
+    <select name="patient_id"
+            class="form-select border-2"
+            required="required">
 
-                                        <option value="">Select Patient</option>
+        <option value="">Select Patient</option>
 
-                                        <t t-foreach="patients" t-as="pat">
+        <t t-foreach="patients" t-as="pat">
 
-                                        
-                                        <!-- <option t-att-value="pat.id"
-                                            t-att-selected="appointment and pat.id == appointment.patient_id.id">
+            <option t-att-value="pat.id"
+                    t-att-selected="
+                        (appointment and pat.id == appointment.patient_id.id)
+                        or
+                        (post_data and pat.id == int(post_data.get('patient_id', 0)))
+                        or
+                        (login_patient and pat.id == login_patient.id)
+                    ">
 
-                                                <t t-esc="pat.name"/>
+                <t t-esc="pat.name"/>
 
-                                            </option> -->
+            </option>
 
-                                        <option t-att-value="pat.id"
-                                                t-att-selected="
-                                                    (appointment and pat.id == appointment.patient_id.id)
-                                                    or
-                                                    (post_data and pat.id == int(post_data.get('patient_id', 0)))
-                                                ">
-                                            <t t-esc="pat.name"/>
-                                        </option>
+        </t>
 
-                                        </t>
+    </select>
 
-                                    </select>
-
-                                </div>
+</div>
 
                                 <!-- Start Datetime -->
 
-<div class="col-md-6">
+                                <div class="col-md-6">
 
-    <label class="form-label fw-bold">
-        Start Datetime
-    </label>
+                                    <label class="form-label fw-bold">
+                                        Start Datetime
+                                    </label>
 
-    <input type="datetime-local"
-           name="start_datetime"
-           id="start_dt"
-           class="form-control border-2"
-           required="required"
-           t-att-value="
-                appointment and 
-                context_timestamp(appointment.start_datetime).strftime('%Y-%m-%dT%H:%M')
-                or post_data.get('start_datetime')
-           "
-           onchange="calculateEndDate(this.value);"/>
+                                    <input type="datetime-local"
+                                           name="start_datetime"
+                                           id="start_dt"
+                                           class="form-control border-2"
+                                           required="required"
+                                           t-att-value="
+                                                appointment and 
+                                                context_timestamp(appointment.start_datetime).strftime('%Y-%m-%dT%H:%M')
+                                                or post_data.get('start_datetime')
+                                           "/>
 
-</div>
+                                </div>
 
+                                <!-- End Datetime -->
 
-<!-- End Datetime -->
+                                <div class="col-md-6">
 
-<div class="col-md-6">
+                                    <label class="form-label fw-bold">
+                                        End Datetime
+                                    </label>
 
-    <label class="form-label fw-bold">
-        End Datetime
-    </label>
+                                    <input type="datetime-local"
+                                           name="end_datetime"
+                                           id="end_dt"
+                                           class="form-control border-2"
+                                           required="required"
+                                           t-att-value="
+                                                appointment and 
+                                                context_timestamp(appointment.end_datetime).strftime('%Y-%m-%dT%H:%M')
+                                                or post_data.get('end_datetime')
+                                           "/>
 
-    <input type="datetime-local"
-           name="end_datetime"
-           id="end_dt"
-           class="form-control border-2"
-           required="required"
-           t-att-value="
-                appointment and 
-                context_timestamp(appointment.end_datetime).strftime('%Y-%m-%dT%H:%M')
-                or post_data.get('end_datetime')
-           "/>
-
-</div>
+                                </div>
 
                                 <!-- Consultation Fee -->
 
@@ -215,14 +210,14 @@
                                     </label>
 
                                     <div class="input-group">
-    <span class="input-group-text bg-light" 
-          t-esc="selected_doc.currency_id.symbol if selected_doc else res_company.currency_id.symbol"/>
+                                        <span class="input-group-text bg-light" 
+                                              t-esc="selected_doc.currency_id.symbol if selected_doc else res_company.currency_id.symbol"/>
 
-    <input type="text"
-           class="form-control bg-light border-2 fw-bold"
-           t-att-value="selected_doc.consultation_fee if selected_doc else '0.00'"
-           readonly="readonly"/>
-</div>
+                                        <input type="text"
+                                               class="form-control bg-light border-2 fw-bold"
+                                               t-att-value="selected_doc.consultation_fee if selected_doc else '0.00'"
+                                               readonly="readonly"/>
+                                    </div>
 
                                 </div>
 
@@ -239,15 +234,10 @@
                                               class="form-control border-2"
                                               placeholder="Describe the health issue...">
 
-                                              <t t-esc="appointment.description if appointment else post_data.get('description', '')"/>
+                                        <t t-esc="appointment.description if appointment else post_data.get('description', '')"/>
                                     </textarea>
 
-
-
                                 </div>
-
-
-                                
 
                             </div>
 
@@ -273,30 +263,78 @@
 
             </div>
 
-        <script>
+ <script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(){
 
-            
-function calculateEndDate(startVal) {
-    if (startVal) {
-        var startDate = new Date(startVal);
-        var docSelect = document.getElementById('doctor_id');
-        var slot = parseInt(docSelect.options[docSelect.selectedIndex].getAttribute('data-slot')) || 30;
+    const specSelect = document.querySelector('[name="specialization_id"]');
+    const doctorSelect = document.querySelector('[name="doctor_id"]');
+    const startInput = document.querySelector('[name="start_datetime"]');
+    const endInput = document.querySelector('[name="end_datetime"]');
 
-        startDate.setMinutes(startDate.getMinutes() + slot);
+    // store all doctor options
+    const allDoctors = Array.from(doctorSelect.options);
 
-        var year = startDate.getFullYear();
-        var month = ("0" + (startDate.getMonth() + 1)).slice(-2);
-        var day = ("0" + startDate.getDate()).slice(-2);
-        var hours = ("0" + startDate.getHours()).slice(-2);
-        var minutes = ("0" + startDate.getMinutes()).slice(-2);
+    // SPECIALIZATION → FILTER DOCTORS
+    specSelect.addEventListener("change", function(){
 
-        var localTimeStr = year + "-" + month + "-" + day + "T" + hours + ":" + minutes;
-        
-        document.getElementById('end_dt').value = localTimeStr;
+        const specId = this.value;
+
+        doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+
+        allDoctors.forEach(function(opt){
+
+            if(!opt.value) return;
+
+            const doctorSpec = opt.getAttribute("data-spec");
+
+            if(!specId || doctorSpec === specId){
+                doctorSelect.appendChild(opt.cloneNode(true));
+            }
+
+        });
+
+    });
+
+
+    // DOCTOR → AUTO SELECT SPECIALIZATION
+    doctorSelect.addEventListener("change", function(){
+
+        const selected = this.options[this.selectedIndex];
+
+        if(selected &amp;&amp; selected.value){
+            const specId = selected.getAttribute("data-spec");
+            if(specId){
+                specSelect.value = specId;
+            }
+        }
+
+    });
+
+
+    // START DATE → AUTO END DATE 
+    if(startInput){
+        startInput.addEventListener("change", function(){
+
+            if(this.value){
+
+                const start = new Date(this.value);
+                const end = new Date(start.getTime() + 30*60000);
+
+                const year = end.getFullYear();
+                const month = String(end.getMonth()+1).padStart(2,'0');
+                const day = String(end.getDate()).padStart(2,'0');
+                const hours = String(end.getHours()).padStart(2,'0');
+                const minutes = String(end.getMinutes()).padStart(2,'0');
+
+                endInput.value = year+'-'+month+'-'+day+'T'+hours+':'+minutes;
+
+            }
+
+        });
     }
-}
-</script>
 
+});
+</script>
         </t>
     </template>
 </odoo>

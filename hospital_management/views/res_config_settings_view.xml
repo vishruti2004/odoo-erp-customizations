@@ -9,19 +9,28 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app string="Hospital" name="hospital_management">
-                    <block title="Hospital Settings">
-                        <setting string="Reminder Days"
-                                 help="Set number of days before appointment reminder.">
-                            <field name="reminder_days"/>
-                        </setting>
+                   <block title="Hospital Settings">
 
+    <!-- LEFT -->
+    <setting string="Reminder Days"
+             help="Set number of days before appointment reminder.">
+        <field name="reminder_days"/>
+    </setting>
 
-                        <setting string="Patient Portal Access Only"
-                                help="Patient users can access only portal side">
-                            <field name="patient_portal_access_only"/>
-                        </setting>
+    <!-- RIGHT -->
+    <setting string="Patient Portal Access Only"
+             help="Patient users can access only portal side">
 
-                    </block>
+        <field name="patient_portal_access_only"/>
+
+        <div class="mt16" invisible="not patient_portal_access_only">
+            <label for="portal_patient_ids"/>
+            <field name="portal_patient_ids" widget="many2many_tags"/>
+        </div>
+
+    </setting>
+
+</block>
                 </app>
             </xpath>
         </field>
@@ -46,7 +55,7 @@
     <menuitem id="menu_hospital_root"
               name="Hospital"
               sequence="20"         
-              groups="hospital_management.group_doctor,hospital_management.group_admin"/>
+              groups="hospital_management.group_doctor,hospital_management.group_admin,hospital_management.group_patient"/>
 
     <!-- CONFIGURATION MENU -->
     <menuitem id="menu_hospital_configuration"
@@ -63,7 +72,7 @@
               sequence="1"
               groups="base.group_system"/>
 
-    <!-- SPECIALIZATION MENU (UNDER CONFIGURATION) -->
+    <!-- SPECIALIZATION MENU -->
     <menuitem id="menu_hospital_specialization"
               name="Specializations"
               parent="menu_hospital_configuration"
