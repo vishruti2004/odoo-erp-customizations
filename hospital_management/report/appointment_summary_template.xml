@@ -13,8 +13,9 @@
                                 </td>
                                 <td style="text-align: right; vertical-align: middle;">
                                     <span class="report-date">
-                                        <strong>Generate Date:</strong> 
-                                        <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %I:%M %p')"/>
+                                        <strong>Generate Date:</strong>
+                                        <span
+                                            t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %I:%M %p')" />
                                     </span>
                                 </td>
                             </tr>
@@ -24,41 +25,30 @@
                     <table class="main-report-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Date</th>
-                                <th>Doctor</th>
-                                <th>Patient</th>
-                                <th>Status</th>
+                                <th style="width: 15%;">ID</th>
+                                <th style="width: 25%;">Doctor</th>
+                                <th style="width: 25%;">Patient</th>
+                                <th style="width: 13%;">Status</th>
+                                <th style="width: 22%;">Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr t-foreach="docs" t-as="o">
                                 <td class="center-cell">
-                                    <span t-field="o.name"/>
+                                    <span t-field="o.name" />
+                                </td>
+                                <td class="center-cell">
+                                    <span t-field="o.doctor_id.display_name" />
+                                </td>
+                                <td class="center-cell">
+                                    <span t-field="o.patient_id.display_name" />
+                                </td>
+                                <td class="center-cell">
+                                    <span t-field="o.state" />
                                 </td>
                                 <td class="date-cell">
-                                    <span t-field="o.start_datetime" t-options='{"widget": "datetime"}'/>
-                                </td> 
-                                <td class="center-cell">
-                                    <t t-set="doc_name" t-value="o.doctor_id.display_name"/>
-                                    <div class="code">
-                                        <span t-esc="doc_name.split(']')[0] + ']' if ']' in doc_name else ''"/>
-                                    </div>
-                                    <div class="name">
-                                        <span t-esc="doc_name.split(']')[1].strip() if ']' in doc_name else doc_name"/>
-                                    </div>
-                                </td>
-                                <td class="center-cell">
-                                    <t t-set="pat_name" t-value="o.patient_id.display_name"/>
-                                    <div class="code">
-                                        <span t-esc="pat_name.split(']')[0] + ']' if ']' in pat_name else ''"/>
-                                    </div>
-                                    <div class="name">
-                                        <span t-esc="pat_name.split(']')[1].strip() if ']' in pat_name else pat_name"/>
-                                    </div>
-                                </td>
-                                <td class="center-cell">
-                                    <span t-field="o.state"/>
+                                    <span t-field="o.start_datetime"
+                                        t-options='{"widget": "datetime"}' />
                                 </td>
                             </tr>
                         </tbody>

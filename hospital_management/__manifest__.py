@@ -6,10 +6,7 @@
     "category": "Healthcare",
     "license": "LGPL-3",
     "depends": [
-        "base",
-        "mail",
         "hr",
-        "portal",
         "account",
     ],
     "data": [
@@ -18,8 +15,6 @@
         "data/ir_sequence_data.xml",
         "data/specialization_data.xml",
         "data/mail_template.xml",
-        "data/reminder_patient_mail.xml",
-        "data/birthday_doctor_mail.xml",
         "data/ir_cron.xml",
         "report/appointment_report.xml",
         "report/appointment_report_template.xml",

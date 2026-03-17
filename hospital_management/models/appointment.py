@@ -2,10 +2,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 import logging
-import pytz
-from datetime import datetime
 
 _logger = logging.getLogger(__name__)
+
 
 
 class HospitalAppointment(models.Model):
@@ -14,9 +13,7 @@ class HospitalAppointment(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin", "portal.mixin"]
     _order = "start_datetime desc"
 
-    # --------------------------------------------------
     # FIELDS
-    # --------------------------------------------------
 
     name = fields.Char(
         string="Appointment ID",
@@ -33,7 +30,8 @@ class HospitalAppointment(models.Model):
 
     doctor_id = fields.Many2one(
         "hospital.doctor",
-        domain="[('specialization_id', '=', specialization_id)]",
+        # domain="[('specialization_id', '=', specialization_id)]",.
+        domain = [],
         required=True,
         tracking=True,
     )
@@ -48,11 +46,7 @@ class HospitalAppointment(models.Model):
 
     description = fields.Text(tracking=True)
 
-    # consultation_fee = fields.Float(
-    #     related='doctor_id.consultation_fee',
-    #     store=True,
-    #     tracking=True
-    # )
+   
 
     consultation_fee = fields.Monetary(
         related="doctor_id.consultation_fee",
@@ -135,21 +129,21 @@ class HospitalAppointment(models.Model):
 
     def action_open_invoices(self):
         self.ensure_one()
-
-        invoices = self.env["account.move"].search(
-            [("invoice_origin", "=", self.name), ("move_type", "=", "out_invoice")]
-        )
-
+        
         return {
             "type": "ir.actions.act_window",
             "name": "Invoices",
             "res_model": "account.move",
             "view_mode": "list,form",
-            "domain": [("id", "in", invoices.ids)],
+            "domain": [
+                ("invoice_origin", "=", self.name), 
+                ("move_type", "=", "out_invoice")
+            ],
+            "context": "{'default_move_type': 'out_invoice'}", # Optional: Navi invoice banave to direct 'Customer Invoice' bane
         }
-
-    is_doc_admin = fields.Boolean(compute="_compute_visibility")
-    is_pnt = fields.Boolean(compute="_compute_visibility")
+    
+    is_doctor = fields.Boolean(compute="_compute_visibility")
+    is_patient = fields.Boolean(compute="_compute_visibility")
 
     @api.depends("invoice_id", "invoice_id.payment_state")
     def _compute_payment_done(self):
@@ -166,12 +160,12 @@ class HospitalAppointment(models.Model):
         # Admin group check
         is_admin = self.env.user.has_group("hospital_management.group_admin")
         for rec in self:
-            # Doctor check: Jo user Admin hoy athwa record no assigned doctor hoy
+            # Doctor check: 
             is_assigned_doc = rec.doctor_id.user_id.id == self.env.user.id
-            rec.is_doc_admin = is_admin or is_assigned_doc
+            rec.is_doctor = is_admin or is_assigned_doc
 
-            # Patient check: Jo current user appointment no patient hoy
-            rec.is_pnt = rec.patient_id.user_id.id == self.env.user.id
+            # Patient check:
+            rec.is_patient = rec.patient_id.user_id.id == self.env.user.id
 
     # --- Cancel Buttons Logic ---
 
@@ -218,7 +212,7 @@ class HospitalAppointment(models.Model):
     def _compute_end_datetime(self):
         for rec in self:
             if rec.start_datetime and rec.doctor_id:
-                slot = rec.doctor_id.slot_duration or 30
+                slot = rec.doctor_id.slot_duration or 15
                 rec.end_datetime = rec.start_datetime + timedelta(minutes=slot)
             else:
                 rec.end_datetime = False
@@ -235,7 +229,7 @@ class HospitalAppointment(models.Model):
                 )
         return super().create(vals_list)
 
-    # automatic je doc login hoi aenu specialization and doc id show thay
+    # automatic show specialization and name
 
     @api.model
     def default_get(self, fields_list):
@@ -252,24 +246,33 @@ class HospitalAppointment(models.Model):
             res["doctor_id"] = doctor.id
             res["specialization_id"] = doctor.specialization_id.id
 
+        patient = self.env["hospital.patient"].search(
+            [("user_id", "=", self.env.user.id)], limit=1
+        )
+
+        _logger.warning("LOGIN USER: %s", self.env.user.name)
+        _logger.warning("PATIENT FOUND: %s", patient)
+        if patient:
+            res["patient_id"] = patient.id
+
+
         return res
 
-    @api.constrains("start_datetime", "end_datetime")
-    def _check_same_day(self):
-        for rec in self:
-            if rec.start_datetime and rec.end_datetime:
-                if rec.start_datetime.date() != rec.end_datetime.date():
-                    raise ValidationError(
-                        "End Date must be same as Start Date. Only time can change."
-                    )
 
-    @api.constrains("start_datetime", "doctor_id", "patient_id")
+
+    @api.constrains("start_datetime",  "end_datetime","doctor_id", "patient_id")
     def _check_appointment_rules(self):
 
         for rec in self:
 
-            if not rec.start_datetime:
+            if not rec.start_datetime and rec.end_datetime:
                 continue
+
+            for rec in self:
+                if rec.start_datetime and rec.end_datetime and rec.start_datetime.date() != rec.end_datetime.date():
+                    raise ValidationError(
+                        "End Date must be same as Start Date. Only time can change."
+                    )
 
             local_dt = fields.Datetime.context_timestamp(self, rec.start_datetime)
 
@@ -303,7 +306,7 @@ class HospitalAppointment(models.Model):
 
             weekday = str(local_dt.weekday())
             appointment_time = local_dt.hour + local_dt.minute / 60.0
-            slot = rec.doctor_id.slot_duration or 30
+            slot = rec.doctor_id.slot_duration or 15
             matched = False
 
             for att in calendar.attendance_ids:
@@ -357,13 +360,10 @@ class HospitalAppointment(models.Model):
             if patient_overlap:
                 raise ValidationError("Patient already has appointment at this time.")
 
-    # --------------------------------------------------
-    # STATE ACTIONS (EMAIL + CHATTER LOG)
-    # --------------------------------------------------
+    # STATE ACTIONS 
 
     def action_requested(self):
         for rec in self:
-            _logger.warning("✅ REQUEST BUTTON CLICKED")
 
             rec.state = "request"
 
@@ -373,36 +373,12 @@ class HospitalAppointment(models.Model):
             )
 
             if not template:
-                _logger.error("❌ REQUEST TEMPLATE NOT FOUND")
                 raise ValidationError("Request Template Not Found")
 
-            _logger.warning("✅ REQUEST TEMPLATE FOUND")
 
             template.send_mail(rec.id, force_send=True)
 
-            _logger.warning("✅ REQUEST MAIL SENT")
 
-    # def action_confirm(self):
-    #     for rec in self:
-    #         _logger.warning("✅ CONFIRM BUTTON CLICKED")
-
-    #         rec.state = 'confirm'
-
-    #         template = self.env.ref(
-    #             'hospital_management.email_template_appointment_status',
-    #             raise_if_not_found=False
-    #         )
-
-    #         if not template:
-    #             _logger.error(" CONFIRM TEMPLATE NOT FOUND")
-    #             raise ValidationError("Confirm Template Not Found")
-
-    #         _logger.warning(" CONFIRM TEMPLATE FOUND")
-
-    #         template.send_mail(rec.id, force_send=True,raise_exception=False)
-
-    #         _logger.warning("CONFIRM MAIL SENT")
-    #         _logger.warning("Patient Partner Email: %s", rec.patient_id.partner_id.email)
 
     def action_confirm(self):
         for rec in self:
@@ -477,11 +453,8 @@ class HospitalAppointment(models.Model):
     def action_reset_to_draft(self):
         for rec in self:
             rec.state = "draft"
-            # rec.appointment_datetime = False
 
-    # --------------------------------------------------
-    # REMINDER (EMAIL + CHATTER LOG)
-    # --------------------------------------------------
+    # REMINDER 
 
     def action_send_appointment_reminder(self):
 
@@ -523,13 +496,44 @@ class HospitalAppointment(models.Model):
                 rec.reminder_sent = True
                 _logger.info("REMINDER SENT FOR %s", rec.name)
 
-    # @api.onchange('specialization_id')
-    # def _onchange_specialization_id(self):
-    #     if self.specialization_id:
-    #         self.doctor_id = False
-
-    @api.onchange("specialization_id")
+    
+    @api.onchange('specialization_id')
     def _onchange_specialization_id(self):
-        if self.specialization_id and self.doctor_id:
-            if self.doctor_id.specialization_id != self.specialization_id:
-                self.doctor_id = False
+        if self.specialization_id and self.doctor_id and self.doctor_id.specialization_id != self.specialization_id:
+            self.doctor_id = False
+
+    @api.onchange('doctor_id')
+    def _onchange_doctor_id(self):
+        if self.doctor_id:
+            self.specialization_id = self.doctor_id.specialization_id.id
+
+    def write(self, vals):
+        if 'state' in vals:
+            new_state = vals['state']
+            is_hospital_admin = self.env.user.has_group('hospital_management.group_admin')
+
+            for rec in self:
+                old_state = rec.state
+                
+                if not is_hospital_admin:
+                    # Required Description for Done
+                    if new_state == 'done' and not rec.doc_description:
+                        raise UserError("Action Required: Please provide the Consultation Description before setting the status to 'Done'.")
+
+                    # Required Reason for Cancel
+                    if new_state == 'cancel' and not rec.cancel_reason:
+                        raise UserError("Action Required: A Cancellation Reason must be provided to cancel this appointment.")
+
+                allowed_transitions = {
+                    'draft': ['request', 'cancel'],
+                    'request': ['confirm', 'cancel'],
+                    'confirm': ['consult', 'cancel'],
+                    'consult': ['done'],
+                    'done': [],
+                    'cancel': ['draft'],
+                }
+                
+                if new_state not in allowed_transitions.get(old_state, []):
+                    raise UserError(f"Access Restricted: You cannot move the appointment from '{old_state.capitalize()}' to '{new_state.capitalize()}' directly.")
+
+        return super(HospitalAppointment, self).write(vals)

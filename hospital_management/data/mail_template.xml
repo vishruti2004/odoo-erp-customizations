@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <data>
-
+    <data noupdate="1">
         <!--  APPOINTMENT REQUEST MAIL TO DOCTOR -->
-
         <record id="email_template_appointment_request" model="mail.template">
             <field name="name">Appointment Request To Doctor</field>
-            <field name="model_id" ref="model_hospital_appointment"/>
+            <field name="model_id" ref="model_hospital_appointment" />
             <field name="subject">New Appointment Request</field>
             <field name="email_from">{{ object.company_id.email_formatted }}</field>
             <field name="email_to">{{ object.doctor_id.email or '' }}</field>
@@ -14,125 +12,291 @@
 
             <field name="body_html" type="html">
                 <div>
-                <t t-set="base_url" t-value="object.get_base_url()"/>
+                    <t t-set="base_url" t-value="object.get_base_url()" />
 
-                <div style="font-family: Arial, sans-serif;">
+                    <div style="font-family: Arial, sans-serif;">
 
-                    <h2 style="color:#875A7B;">New Appointment Request</h2>
-                    
-                    <p>Hello <t t-out="object.doctor_id.partner_id.name"/>,</p>
-                    
-                    <p>You have received a new appointment request with the following details:</p>
-                    
-                    <h3>Appointment Details</h3>
-                    
-                    <ul style="list-style: none; padding-left: 0;">
-                        <li><strong>Patient:</strong> <t t-out="object.patient_id.name"/></li>
-                        <li><strong>Date &amp; Time:</strong> 
-                            <!-- <t t-out="format_datetime(object.appointment_datetime)"/> -->
-                            <t t-out="format_datetime(object.start_datetime)"/>
+                        <h2 style="color:#875A7B;">New Appointment Request</h2>
 
-                        </li>
-                        <li><strong>Duration:</strong> 30 Minutes</li>
-                    </ul>
+                        <p>Hello <t t-out="object.doctor_id.partner_id.name" />,</p>
 
-                    <h3>Patient Information</h3>
-                    
-                    <ul style="list-style: none; padding-left: 0;">
-                        <li><strong>Email:</strong> <t t-out="object.patient_id.email or ''"/></li>
-                        <li><strong>Phone:</strong> <t t-out="object.patient_id.phone or ''"/></li>
-                    </ul>
+                        <p>You have received a new appointment request with the following details:</p>
 
-                    <p>Please review this appointment request.</p>
+                        <h3>Appointment Details</h3>
 
-                    <!-- VIEW APPOINTMENT BUTTON -->
-                    <p style="margin-top:25px;">
-                    <a t-att-href="base_url + '/web#id=%s&amp;model=hospital.appointment&amp;view_type=form' % object.id"
-                        style="background-color:#875A7B;
+                        <ul style="list-style: none; padding-left: 0;">
+                            <li>
+                                <strong>Patient:</strong>
+                                <t t-out="object.patient_id.name" />
+                            </li>
+                            <li>
+                                <strong>Date &amp; Time:</strong>
+                                <!-- <t t-out="format_datetime(object.appointment_datetime)"/> -->
+                                <t t-out="format_datetime(object.start_datetime)" />
+
+                            </li>
+                            <li><strong>Duration:</strong> 30 Minutes</li>
+                        </ul>
+
+                        <h3>Patient Information</h3>
+
+                        <ul style="list-style: none; padding-left: 0;">
+                            <li>
+                                <strong>Email:</strong>
+                                <t t-out="object.patient_id.email or ''" />
+                            </li>
+                            <li>
+                                <strong>Phone:</strong>
+                                <t t-out="object.patient_id.phone or ''" />
+                            </li>
+                        </ul>
+
+                        <p>Please review this appointment request.</p>
+
+                        <!-- VIEW APPOINTMENT BUTTON -->
+                        <p style="margin-top:25px;">
+                            <a
+                                t-att-href="base_url + '/web#id=%s&amp;model=hospital.appointment&amp;view_type=form' % object.id"
+                                style="background-color:#875A7B;
                                 padding:12px 25px;
                                 text-decoration:none;
                                 color:white;
                                 border-radius:6px;
                                 font-weight:bold;
                                 display:inline-block;">
-                            View Appointment
-                    </a>
+                                View Appointment
+                            </a>
 
-                    </p>
+                        </p>
 
-                    <br/>
+                        <br />
 
-                    <p>
-                        Thank you,<br/>
+                        <p> Thank you,<br />
                         <strong>Hospital Management System</strong>
-                    </p>
+                        </p>
 
-                </div>
+                    </div>
                 </div>
             </field>
         </record>
 
-
         <!--  APPOINTMENT CONFIRMATION MAIL TO PATIENT-->
+        <record id="email_template_appointment_status" model="mail.template">
+            <field name="name">Appointment Status Update</field>
+            <field name="model_id" ref="model_hospital_appointment" />
+            <field name="subject">Appointment Update</field>
+            <field name="email_from">{{ object.company_id.email_formatted }}</field>
+            <field name="email_to">{{ object.patient_id.email or object.patient_id.partner_id.email
+                or '' }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
 
-    <record id="email_template_appointment_status" model="mail.template">
-    <field name="name">Appointment Status Update</field>
-    <field name="model_id" ref="model_hospital_appointment"/>
-    <field name="subject">Appointment Update</field>
-    <field name="email_from">{{ object.company_id.email_formatted }}</field>
-    <field name="email_to">{{ object.patient_id.email or object.patient_id.partner_id.email or '' }}</field>
-    <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="body_html" type="html">
+                <div>
+                    <div>
 
-    <field name="body_html" type="html">
-    <div>
-    <div>
+                        <t t-if="object.state == 'confirm'">
+                            <h3>Appointment Confirmed</h3>
+                            <p>Your appointment is confirmed.</p>
+                        </t>
 
-        <t t-if="object.state == 'confirm'">
-            <h3>Appointment Confirmed</h3>
-            <p>Your appointment is confirmed.</p>
-        </t>
+                        <t t-if="object.state == 'cancel'">
+                            <h3>Appointment Cancelled</h3>
+                            <p>Your appointment has been cancelled.</p>
 
-        <t t-if="object.state == 'cancel'">
-            <h3>Appointment Cancelled</h3>
-            <p>Your appointment has been cancelled.</p>
-
-            <p><strong>Reason:</strong></p>
-            <p><t t-out="object.cancel_reason"/></p>
-        </t>
+                            <p>
+                                <strong>Reason:</strong>
+                            </p>
+                            <p>
+                                <t t-out="object.cancel_reason" />
+                            </p>
+                        </t>
 
 
-
-        <!-- <p>
+                        <!-- <p>
             <strong>Date &amp; Time</strong>
             <t t-out="format_datetime(object.appointment_datetime)"/>
         </p> -->
 
-         <p>
-            <strong>Date &amp; Time</strong>
-            <t t-out="format_datetime(object.start_datetime)"/>
-        </p>
+                        <p>
+                            <strong>Date &amp; Time</strong>
+                            <t t-out="format_datetime(object.start_datetime)" />
+                        </p>
 
-       <t t-if="object.state == 'confirm' and object.invoice_id">
-    <p>
-        <a t-att-href="object.invoice_id.get_portal_url()"
-           style="background-color:#875A7B;
+                        <t t-if="object.state == 'confirm' and object.invoice_id">
+                            <p>
+                                <a t-att-href="object.invoice_id.get_portal_url()"
+                                    style="background-color:#875A7B;
                   padding:12px 25px;
                   color:white;
                   text-decoration:none;
                   border-radius:6px;
                   font-weight:bold;">
-            Pay Consultation Fee
-        </a>
-    </p>
-</t>
+                                    Pay Consultation Fee
+                                </a>
+                            </p>
+                        </t>
 
-    </div>
-    </div>
-    </field>
-</record>
+                    </div>
+                </div>
+            </field>
+        </record>
+
+        <!-- BIRTHDAY WISH MAIL TO DOCTOR -->
+        <record id="email_template_doctor_birthday_wish" model="mail.template">
+            <field name="name">Doctor Birthday Wish</field>
+            <field name="model_id" ref="model_hospital_doctor" />
+            <field name="subject">Happy Birthday {{ object.partner_id.name }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted }}</field>
+            <field name="email_to">{{ object.email }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="use_default_to" eval="False" />
 
 
+            <field name="body_html" type="html">
+                <div>
+                    <t t-set="base_url" t-value="object.get_base_url()" />
+
+                    <div style="font-family: Arial, sans-serif;">
+
+                        <h2 style="color:#875A7B;">
+                            <i class="fa fa-gift" /> Happy Birthday! </h2>
+                        <p>Dear <t t-out="object.partner_id.name" />,</p>
+
+                        <p>
+                            On behalf of the entire hospital management team,
+                            we wish you a very Happy Birthday.
+                        </p>
+
+                        <p>
+                            Your dedication, professionalism, and commitment
+                            to patient care are truly appreciated.
+                        </p>
+
+                        <p>
+                            May this year bring you continued success,
+                            good health, and happiness in both your
+                            personal and professional life.
+                        </p>
+
+                        <br />
+
+                        <p> Warm Regards,<br />
+                <strong>
+                                <t t-out="object.company_id.name" />
+                            </strong>
+                        </p>
+
+                    </div>
+                </div>
+            </field>
+        </record>
+
+        <!-- BIRTHDAY NOTIFICATION TO ALL DOCTOR -->
+        <record id="email_template_doctor_birthday_notification" model="mail.template">
+            <field name="name">Doctor Birthday Notification</field>
+            <field name="model_id" ref="model_hospital_doctor" />
+            <field name="subject">Birthday Notification - {{ object.partner_id.name }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="use_default_to" eval="False" />
+
+            <field name="body_html" type="html">
+                <div>
+                    <div style="font-family: Arial, sans-serif;">
 
 
+                        <h2 style="color:#875A7B;">
+                            <i class="fa fa-birthday-cake" /> Birthday Announcement </h2>
+                        <p>Dear Doctor,</p>
+
+                        <p> We are pleased to inform you that today is the birthday of <strong>
+                                <t t-out="object.partner_id.name" />
+                            </strong>
+                            . </p>
+
+                        <p>
+                            Please join us in wishing them a wonderful year ahead
+                            filled with success and happiness.
+                        </p>
+
+                        <p>
+                            Let us take a moment to appreciate their valuable
+                            contribution to our hospital.
+                        </p>
+
+                        <br />
+
+                        <p> Best Regards,<br />
+                <strong>
+                                <t t-out="object.company_id.name" />
+                            </strong>
+                        </p>
+
+                    </div>
+                </div>
+            </field>
+        </record>
+
+        <!-- APPOINTMENT REMINDER MAIL TO PATIENT -->
+        <record id="email_template_appointment_reminder" model="mail.template">
+            <field name="name">Appointment Reminder To Patient</field>
+            <field name="model_id" ref="model_hospital_appointment" />
+            <field name="subject">Reminder: Your Appointment</field>
+            <field name="email_from"> {{ object.company_id.email_formatted }}</field>
+            <field name="email_to">{{ object.patient_id.email }}</field>
+            <field name="email_layout_xmlid">mail.mail_notification_light</field>
+            <field name="use_default_to" eval="False" />
+
+
+            <field name="report_template_ids"
+                eval="[(4, ref('hospital_management.action_report_appointment'))]" />
+
+            <field name="body_html" type="html">
+                <div>
+                    <t t-set="base_url" t-value="object.get_base_url()" />
+
+                    <div style="font-family: Arial, sans-serif;">
+
+                        <h2 style="color:#875A7B;">Appointment Reminder</h2>
+
+                        <p>Hello <strong>
+                                <t t-out="object.patient_id.name" />
+                            </strong>
+                            ,</p>
+
+                        <p>
+                            This is a friendly reminder that you have an appointment scheduled.
+                        </p>
+
+                        <h3>Appointment Details</h3>
+
+                        <ul style="list-style: none; padding-left: 0;">
+                            <li>
+                                <strong>Date &amp; Time:</strong>
+                                <t t-out="format_datetime(object.start_datetime)" />
+                            </li>
+                            <li>
+                                <strong>Doctor:</strong>
+                                <t t-out="object.doctor_id.partner_id.name" />
+                            </li>
+                            <li>
+                                <strong>Specialization:</strong>
+                                <t t-out="object.specialization_id.name" />
+                            </li>
+                        </ul>
+
+                        <p style="margin-top:15px;">
+                            Please arrive 10 minutes before your scheduled time.
+                        </p>
+                        <br />
+
+                        <p> Thank you,<br />
+                <strong>Hospital Management System</strong>
+                        </p>
+
+                    </div>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>

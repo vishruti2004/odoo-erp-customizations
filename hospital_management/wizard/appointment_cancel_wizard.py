@@ -40,11 +40,6 @@ class AppointmentCancelWizard(models.TransientModel):
 
         template.send_mail(appointment.id, force_send=True,raise_exception=False)
 
-        # _logger.warning("Cancel Mail Created ID: %s", mail_id)
-
-        # mail_record = self.env['mail.mail'].browse(mail_id)
-        # _logger.warning("Cancel Mail State: %s", mail_record.state)
-        # _logger.warning("Cancel Email To: %s", mail_record.email_to)
 
         _logger.warning("========== CANCEL END ==========")
 

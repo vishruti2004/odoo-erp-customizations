@@ -5,10 +5,10 @@
         <field name="model">hospital.specialization</field>
         <field name="arch" type="xml">
             <list>
-                <field name="active" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle" />
 
-                <field name="name"/>
-                <field name="code"/>
+                <field name="name" />
+                <field name="code" />
                 <field name="description" />
 
             </list>
@@ -16,83 +16,79 @@
     </record>
 
     <record id="view_specialization_form" model="ir.ui.view">
-    <field name="name">hospital.specialization.form</field>
-    <field name="model">hospital.specialization</field>
-    <field name="arch" type="xml">
-        <form>
-            <sheet>
+        <field name="name">hospital.specialization.form</field>
+        <field name="model">hospital.specialization</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
 
-                <!-- Stat Button -->
-                <div class="oe_button_box" name="button_box">
+                    <!-- Stat Button -->
+                    <div class="oe_button_box" name="button_box">
 
-                    <button name="action_open_doctor"
+                        <button name="action_open_doctor"
                             type="object"
                             class="oe_stat_button"
                             icon="fa-user-md"
                             invisible="doctor_count == 0">
 
-                        <field name="doctor_count"
-                               widget="statinfo"
-                               string="Doctors"/>
-                    </button>
+                            <field name="doctor_count"
+                                widget="statinfo"
+                                string="Doctors" />
+                        </button>
 
-                </div>
+                    </div>
 
-                <group>
-                <group>
-                    <field name="code"/>
-                    <field name="name"/>
-                </group>
-                <group>
-                    <field name="active" widget="boolean_toggle"/>
-                </group>
-                </group>
-                <notebook>
-                    <page string="specialization description">
-                        <field name="description"
-                        placeholder="Add description about specialization"/>
-                    </page>
-                </notebook>
-            </sheet>
-            <chatter/>
-        </form>
-    </field>
-</record>
+                    <group>
+                        <group>
+                            <field name="code" />
+                            <field name="name" />
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="specialization description">
+                            <field name="description"
+                                placeholder="Add description about specialization" />
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
 
 
-<record id="view_specialization_search" model="ir.ui.view">
-    <field name="name">hospital.specialization.search</field>
-    <field name="model">hospital.specialization</field>
-    <field name="arch" type="xml">
-        <search string="Search Specialization">
+    <record id="view_specialization_search" model="ir.ui.view">
+        <field name="name">hospital.specialization.search</field>
+        <field name="model">hospital.specialization</field>
+        <field name="arch" type="xml">
+            <search string="Search Specialization">
 
-            <field name="name"/>
-            <field name="code"/>
+                <field name="name" />
+                <field name="code" />
 
-            <separator/>
+                <separator />
 
-            <filter name="filter_active"
+                <filter name="filter_active"
                     string="Active"
-                    domain="[('active','=',True)]"/>
+                    domain="[('active','=',True)]" />
 
-            <filter name="filter_inactive"
+                <filter name="filter_inactive"
                     string="Inactive"
-                    domain="[('active','=',False)]"/>
+                    domain="[('active','=',False)]" />
 
-            <separator/>
+                <separator />
 
-            <!-- Group By -->
-            <filter name="group_active"
+                <!-- Group By -->
+                <filter name="group_active"
                     string="Group by Active"
-                    context="{'group_by':'active'}"/>
+                    context="{'group_by':'active'}" />
 
-        </search>
-    </field>
-</record>
+            </search>
+        </field>
+    </record>
 
-    
-
-
-   
 
 </odoo>

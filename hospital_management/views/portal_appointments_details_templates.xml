@@ -4,21 +4,21 @@
     <template id="portal_appointment_page" name="My Appointment Detail">
 
         <t t-call="portal.portal_layout">
-            <t t-set="wrapwrap_classes" t-value="'o_portal_bg_dark'"/>
+            <t t-set="wrapwrap_classes" t-value="'o_portal_bg_dark'" />
 
             <div class="container mb64">
                 <div class="row">
 
-<!-- side bar -->
+                    <!-- side bar -->
                     <t t-call="portal.portal_record_sidebar">
 
-                        <t t-set="classes" t-value="'col-lg-3 d-print-none'"/>
+                        <t t-set="classes" t-value="'col-lg-3 d-print-none'" />
 
                         <t t-set="entries">
 
                             <div id="appointment-nav"
-                                 class="d-flex align-items-center flex-grow-1 p-0"
-                                 role="complementary">
+                                class="d-flex align-items-center flex-grow-1 p-0"
+                                role="complementary">
 
                                 <ul class="nav flex-column">
 
@@ -47,23 +47,17 @@
                                             <!-- Preview -->
 
                                             <a class="btn btn-outline-primary btn-sm flex-fill"
-                                            target="_blank"
-                                            t-att-href="'/report/pdf/hospital_management.report_appointment_document/%s' % appointment.id">
+                                                target="_blank"
+                                                t-att-href="'/report/pdf/hospital_management.report_appointment_document/%s' % appointment.id">
 
-                                                <i class="fa fa-eye me-1"/>
-                                                Preview
-
-                                            </a>
+                                                <i class="fa fa-eye me-1" /> Preview </a>
 
                                             <!-- Download -->
 
                                             <a class="btn btn-primary btn-sm flex-fill"
-                                            t-att-href="'/my/appointment/%s?report_type=pdf&amp;download=true' % appointment.id">
+                                                t-att-href="'/my/appointment/%s?report_type=pdf&amp;download=true' % appointment.id">
 
-                                                <i class="fa fa-download me-1"/>
-                                                Download
-
-                                            </a>
+                                                <i class="fa fa-download me-1" /> Download </a>
 
                                         </div>
 
@@ -85,23 +79,25 @@
                         <!--  APPOINTMENT  -->
 
                         <div id="appointment_section"
-                             class="card shadow-sm mb-4"
-                             style="scroll-margin-top:100px;">
+                            class="card shadow-sm mb-4"
+                            style="scroll-margin-top:100px;">
 
                             <!-- Header -->
 
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <div
+                                class="card-header bg-white d-flex justify-content-between align-items-center py-3">
 
                                 <h4 class="mb-0 text-primary">
-                                    <i class="fa fa-calendar-check-o me-2"/>
-                                    <span t-field="appointment.name"/>
+                                    <i class="fa fa-calendar-check-o me-2" />
+                                    <span t-field="appointment.name" />
                                 </h4>
 
                                 <div class="d-flex align-items-center gap-2">
 
                                     <!-- Status Badge -->
 
-                                    <span t-attf-class="badge rounded-pill p-2 px-3 #{
+                                    <span
+                                        t-attf-class="badge rounded-pill p-2 px-3 #{
                                         'bg-secondary' if appointment.state == 'draft' else
                                         'bg-info' if appointment.state == 'request' else
                                         'bg-success' if appointment.state == 'confirm' else
@@ -109,91 +105,85 @@
                                         'bg-primary' if appointment.state == 'done' else
                                         'bg-danger' if appointment.state == 'cancel' else 'bg-secondary'
                                     }"
-                                    style="font-size:0.9rem;min-width:120px;text-align:center;">
+                                        style="font-size:0.9rem;min-width:120px;text-align:center;">
 
-                                        <span t-field="appointment.state"/>
+                                        <span t-field="appointment.state" />
 
                                     </span>
-
 
 
                                     <!-- ACTION BUTTONS -->
 
 
-<!-- REQUEST (patient only) -->
-<a t-if="appointment.state == 'draft' and (
+                                    <!-- REQUEST (patient only) -->
+                                    <a
+                                        t-if="appointment.state == 'draft' and (
         appointment.patient_id.user_id.id == request.env.user.id
         or
         appointment.doctor_id.user_id.id == request.env.user.id
         or
         request.env.user.has_group('hospital_management.group_admin')
     )"
-   t-att-href="'/my/appointment/action/%s/request' % appointment.id"
-   class="btn btn-sm btn-success">
-    Request
+                                        t-att-href="'/my/appointment/action/%s/request' % appointment.id"
+                                        class="btn btn-sm btn-success">
+                                        Request
 </a>
 
-<!-- CONFIRM (doctor or admin) -->
-<a t-if="appointment.state == 'request' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
-   t-att-href="'/my/appointment/action/%s/confirm' % appointment.id"
-   class="btn btn-sm btn-success">
-    Confirm
+                                    <!-- CONFIRM (doctor or admin) -->
+                                    <a
+                                        t-if="appointment.state == 'request' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
+                                        t-att-href="'/my/appointment/action/%s/confirm' % appointment.id"
+                                        class="btn btn-sm btn-success">
+                                        Confirm
 </a>
 
-<!-- START CONSULTATION -->
-<a t-if="appointment.state == 'confirm' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
-   t-att-href="'/my/appointment/action/%s/consult' % appointment.id"
-   class="btn btn-sm btn-warning">
-    Start Consultation
+                                    <!-- START CONSULTATION -->
+                                    <a
+                                        t-if="appointment.state == 'confirm' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
+                                        t-att-href="'/my/appointment/action/%s/consult' % appointment.id"
+                                        class="btn btn-sm btn-warning">
+                                        Start Consultation
+                                    </a>
+
+                                    <!-- DONE -->
+                                    <button
+                                        t-if="appointment.state == 'consult' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
+                                        type="submit"
+                                        form="consult_done_form"
+                                        class="btn btn-sm btn-success">
+                                        Done
+                                    </button>
+
+
+                                    <a
+                                        t-if="appointment.state == 'request' and appointment.patient_id.user_id.id == request.env.user.id and appointment.doctor_id.user_id.id != request.env.user.id"
+                                        t-att-href="'/my/appointment/action/%s/cancel' % appointment.id"
+                                        class="btn btn-sm btn-danger">
+                                        Cancel
+                                    </a>
+
+                                    <a
+                                        t-if="appointment.state in ['draft', 'request', 'confirm'] and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
+                                        href="#"
+                                        class="btn btn-sm btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#cancelModal">
+                                        Cancel
+                                    </a>
+                                    <!-- RESET -->
+                                    <a
+                                        t-if="appointment.state == 'cancel' and (
+                                                appointment.patient_id.user_id.id == request.env.user.id
+                                                or
+                                                appointment.doctor_id.user_id.id == request.env.user.id
+                                                or
+                                                request.env.user.has_group('hospital_management.group_admin')
+                                            )"
+                                        t-att-href="'/my/appointment/action/%s/reset' % appointment.id"
+                                        class="btn btn-sm btn-secondary">
+                                        Reset to Draft
 </a>
-
-<!-- DONE -->
-<button t-if="appointment.state == 'consult' and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
-        type="submit"
-        form="consult_done_form"
-        class="btn btn-sm btn-success">
-    Done
-</button>
-
-<!-- CANCEL -->
-<!-- <a t-if="
-    (appointment.state == 'request' and appointment.patient_id.user_id.id == request.env.user.id)
-    or
-    (appointment.state in ['draft','request','confirm'] and 
-     (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin')))
-"
-href="#"
-class="btn btn-sm btn-danger"
-data-bs-toggle="modal"
-data-bs-target="#cancelModal">
-    Cancel
-</a> -->
-
-<a t-if="appointment.state == 'request' and appointment.patient_id.user_id.id == request.env.user.id and appointment.doctor_id.user_id.id != request.env.user.id"
-   t-att-href="'/my/appointment/action/%s/cancel' % appointment.id"
-   class="btn btn-sm btn-danger">
-    Cancel
-</a>
-
-<a t-if="appointment.state in ['draft', 'request', 'confirm'] and (appointment.doctor_id.user_id.id == request.env.user.id or request.env.user.has_group('hospital_management.group_admin'))"
-   href="#"
-   class="btn btn-sm btn-danger"
-   data-bs-toggle="modal"
-   data-bs-target="#cancelModal">
-    Cancel
-</a>
-<!-- RESET -->
-<a t-if="appointment.state == 'cancel' and (
-        appointment.patient_id.user_id.id == request.env.user.id
-        or
-        appointment.doctor_id.user_id.id == request.env.user.id
-        or
-        request.env.user.has_group('hospital_management.group_admin')
-    )"
-   t-att-href="'/my/appointment/action/%s/reset' % appointment.id"
-   class="btn btn-sm btn-secondary">
-    Reset to Draft
-</a>                       </div>
+                                </div>
 
                             </div>
 
@@ -216,7 +206,7 @@ data-bs-target="#cancelModal">
                                             <div class="col-5 text-muted">Specialization</div>
                                             <div class="col-7">
                                                 <strong>
-                                                    <span t-field="appointment.specialization_id"/>
+                                                    <span t-field="appointment.specialization_id" />
                                                 </strong>
                                             </div>
                                         </div>
@@ -224,14 +214,14 @@ data-bs-target="#cancelModal">
                                         <div class="row mb-3">
                                             <div class="col-5 text-muted">Doctor</div>
                                             <div class="col-7">
-                                                <span t-field="appointment.doctor_id"/>
+                                                <span t-field="appointment.doctor_id" />
                                             </div>
                                         </div>
 
                                         <div class="row mb-3">
                                             <div class="col-5 text-muted">Patient</div>
                                             <div class="col-7">
-                                                <span t-field="appointment.patient_id"/>
+                                                <span t-field="appointment.patient_id" />
                                             </div>
                                         </div>
 
@@ -241,12 +231,11 @@ data-bs-target="#cancelModal">
                                                 Consultation Fee
                                             </div>
 
-                                           
 
                                             <div class="col-7 text-success">
                                                 <strong>
                                                     <span t-field="appointment.consultation_fee"
-                                                        t-options='{"widget": "monetary", "display_currency": appointment.currency_id}'/>
+                                                        t-options='{"widget": "monetary", "display_currency": appointment.currency_id}' />
                                                 </strong>
                                             </div>
 
@@ -270,9 +259,9 @@ data-bs-target="#cancelModal">
                                             </div>
 
                                             <div class="col-7">
-                                                <i class="fa fa-clock-o me-1 text-muted"/>
+                                                <i class="fa fa-clock-o me-1 text-muted" />
                                                 <span t-field="appointment.start_datetime"
-                                                      t-options='{"widget":"datetime"}'/>
+                                                    t-options='{"widget":"datetime"}' />
                                             </div>
 
                                         </div>
@@ -284,9 +273,9 @@ data-bs-target="#cancelModal">
                                             </div>
 
                                             <div class="col-7">
-                                                <i class="fa fa-clock-o me-1 text-muted"/>
+                                                <i class="fa fa-clock-o me-1 text-muted" />
                                                 <span t-field="appointment.end_datetime"
-                                                      t-options='{"widget":"datetime"}'/>
+                                                    t-options='{"widget":"datetime"}' />
                                             </div>
 
                                         </div>
@@ -299,8 +288,8 @@ data-bs-target="#cancelModal">
                                 <!--  DESCRIPTION  -->
 
                                 <div id="description_section"
-                                     class="row mt-4"
-                                     style="scroll-margin-top:100px;">
+                                    class="row mt-4"
+                                    style="scroll-margin-top:100px;">
 
                                     <div class="col-12">
 
@@ -312,15 +301,16 @@ data-bs-target="#cancelModal">
 
                                                 <t t-if="appointment.description">
 
-                                                    <h6 class="text-uppercase text-muted small fw-bold mb-2">
-                                                        <i class="fa fa-file-text-o me-1"/>
-                                                        Patient Description
-                                                    </h6>
+                                                    <h6
+                                                        class="text-uppercase text-muted small fw-bold mb-2">
+                                                        <i class="fa fa-file-text-o me-1" /> Patient
+                                                        Description </h6>
 
-                                                    <div class="p-3 bg-white border rounded shadow-sm mb-4">
+                                                    <div
+                                                        class="p-3 bg-white border rounded shadow-sm mb-4">
 
                                                         <p class="card-text text-dark mb-0"
-                                                           t-field="appointment.description"/>
+                                                            t-field="appointment.description" />
 
                                                     </div>
 
@@ -331,30 +321,31 @@ data-bs-target="#cancelModal">
 
                                                 <t t-if="appointment.state in ['consult','done']">
 
-                                                    <h6 class="text-uppercase text-success small fw-bold mb-2">
-                                                        <i class="fa fa-user-md me-1"/>
-                                                        Doctor Description
-                                                    </h6>
+                                                    <h6
+                                                        class="text-uppercase text-success small fw-bold mb-2">
+                                                        <i class="fa fa-user-md me-1" /> Doctor
+                                                        Description </h6>
 
 
                                                     <t t-if="appointment.state == 'consult'">
 
                                                         <form id="consult_done_form"
-                                                              method="post"
-                                                              t-att-action="'/my/appointment/action/%s/done' % appointment.id">
+                                                            method="post"
+                                                            t-att-action="'/my/appointment/action/%s/done' % appointment.id">
 
                                                             <input type="hidden"
-                                                                   name="csrf_token"
-                                                                   t-att-value="request.csrf_token()"/>
+                                                                name="csrf_token"
+                                                                t-att-value="request.csrf_token()" />
 
                                                             <textarea name="doc_description"
-                                                                      id="doc_description"
-                                                                      class="form-control"
-                                                                      rows="3"
-                                                                      placeholder="Enter consultation notes..."
-                                                                      required="1">
+                                                                id="doc_description"
+                                                                class="form-control"
+                                                                rows="3"
+                                                                placeholder="Enter consultation notes..."
+                                                                required="1">
 
-                                                                <t t-esc="appointment.doc_description"/>
+                                                                <t
+                                                                    t-esc="appointment.doc_description" />
 
                                                             </textarea>
 
@@ -365,10 +356,11 @@ data-bs-target="#cancelModal">
 
                                                     <t t-if="appointment.state == 'done'">
 
-                                                        <div class="p-3 bg-white border-start border-success border-4 rounded shadow-sm mb-4">
+                                                        <div
+                                                            class="p-3 bg-white border-start border-success border-4 rounded shadow-sm mb-4">
 
                                                             <p class="card-text text-dark mb-0"
-                                                               t-field="appointment.doc_description"/>
+                                                                t-field="appointment.doc_description" />
 
                                                         </div>
 
@@ -381,15 +373,16 @@ data-bs-target="#cancelModal">
 
                                                 <t t-if="appointment.state == 'cancel'">
 
-                                                    <h6 class="text-uppercase text-danger small fw-bold mb-2">
-                                                        <i class="fa fa-exclamation-circle me-1"/>
-                                                        Cancellation Reason
-                                                    </h6>
+                                                    <h6
+                                                        class="text-uppercase text-danger small fw-bold mb-2">
+                                                        <i class="fa fa-exclamation-circle me-1" />
+                                                        Cancellation Reason </h6>
 
-                                                    <div class="p-3 bg-white border-start border-danger border-4 rounded shadow-sm">
+                                                    <div
+                                                        class="p-3 bg-white border-start border-danger border-4 rounded shadow-sm">
 
                                                         <p class="card-text text-danger mb-0"
-                                                           t-field="appointment.cancel_reason"/>
+                                                            t-field="appointment.cancel_reason" />
 
                                                     </div>
 
@@ -411,12 +404,12 @@ data-bs-target="#cancelModal">
                         <!-- communication  -->
 
                         <div id="communication_section"
-                             style="scroll-margin-top:100px;">
+                            style="scroll-margin-top:100px;">
 
                             <h3>Communication History</h3>
 
                             <t t-call="portal.message_thread">
-                                <t t-set="object" t-value="appointment"/>
+                                <t t-set="object" t-value="appointment" />
                             </t>
 
                         </div>
@@ -436,11 +429,11 @@ data-bs-target="#cancelModal">
                     <div class="modal-content">
 
                         <form method="post"
-                              t-att-action="'/my/appointment/action/%s/cancel' % appointment.id">
+                            t-att-action="'/my/appointment/action/%s/cancel' % appointment.id">
 
                             <input type="hidden"
-                                   name="csrf_token"
-                                   t-att-value="request.csrf_token()"/>
+                                name="csrf_token"
+                                t-att-value="request.csrf_token()" />
 
                             <div class="modal-header">
 
@@ -449,8 +442,8 @@ data-bs-target="#cancelModal">
                                 </h6>
 
                                 <button type="button"
-                                        class="btn-close"
-                                        data-bs-dismiss="modal"/>
+                                    class="btn-close"
+                                    data-bs-dismiss="modal" />
 
                             </div>
 
@@ -461,21 +454,21 @@ data-bs-target="#cancelModal">
                                 </label>
 
                                 <textarea name="cancel_reason"
-                                          class="form-control"
-                                          required="1"/>
+                                    class="form-control"
+                                    required="1" />
 
                             </div>
 
                             <div class="modal-footer">
 
                                 <button type="submit"
-                                        class="btn btn-danger btn-sm">
+                                    class="btn btn-danger btn-sm">
                                     Confirm Cancel
                                 </button>
 
                                 <button type="button"
-                                        class="btn btn-secondary btn-sm"
-                                        data-bs-dismiss="modal">
+                                    class="btn btn-secondary btn-sm"
+                                    data-bs-dismiss="modal">
                                     Close
                                 </button>
 

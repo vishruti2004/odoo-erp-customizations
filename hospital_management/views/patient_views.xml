@@ -6,91 +6,85 @@
         <field name="model">hospital.patient</field>
         <field name="arch" type="xml">
             <list>
-                <field name="active" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle" />
 
-                <field name="patient_code"/>
-                <field name="name"/>
-                <field name="email" optional="show"/>
-                <field name="phone"/>
-                <field name="street" optional="show"/>
-                <field name="city" optional="show"/>
-                <field name="date_of_birth"/>
-                <field name="age"/>
-                <field name="gender"/>
-                <field name="blood_group"/>
-                <field name="patient_type"/>
-                <field name="emergency_contact" optional="show"/>
+                <field name="patient_code" />
+                <field name="name" />
+                <field name="email" optional="show" />
+                <field name="phone" />
+                <field name="street" optional="show" />
+                <field name="city" optional="show" />
+                <field name="date_of_birth" />
+                <field name="age" />
+                <field name="gender" />
+                <field name="blood_group" />
+                <field name="patient_type" />
+                <field name="emergency_contact" optional="show" />
             </list>
         </field>
     </record>
 
     <!-- form view -->
-  <record id="view_hospital_patient_form" model="ir.ui.view">
-    <field name="name">hospital.patient.form</field>
-    <field name="model">hospital.patient</field>
-    <field name="arch" type="xml">
-        <form string="Patient">
+    <record id="view_hospital_patient_form" model="ir.ui.view">
+        <field name="name">hospital.patient.form</field>
+        <field name="model">hospital.patient</field>
+        <field name="arch" type="xml">
+            <form string="Patient">
 
-            <sheet>
+                <sheet>
 
-                <!-- Stat Button -->
-                <div class="oe_button_box" name="button_box">
-                    <button name="action_open_appointments"
+                    <!-- Stat Button -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_appointments"
                             type="object"
                             class="oe_stat_button"
                             icon="fa-calendar"
                             invisible="appointment_count == 0">
-                        <div class="o_stat_info">
-                            <span class="o_stat_value">
-                                <field name="appointment_count"/>
-                            </span>
-                            <span class="o_stat_text">
-                                Appointments
-                            </span>
-                        </div>
-                    </button>
-                </div>
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="appointment_count" />
+                                </span>
+                                <span class="o_stat_text">
+                                    Appointments
+                                </span>
+                            </div>
+                        </button>
+                    </div>
 
-                <!-- Basic Information -->
-                <group>
-                <group string="Basic Information">
-                    <field name="active" widget="boolean_toggle"/>
-                    <field name="patient_code" readonly="1"/>
-                    <field name="partner_id"/>
-                    <field name="patient_type"/>
-                </group>
+                    <!-- Basic Information -->
+                    <group>
+                        <group string="Basic Information">
+                            <field name="active" widget="boolean_toggle" />
+                            <field name="patient_code" readonly="1" />
+                            <field name="partner_id" />
+                            <field name="patient_type" />
+                        </group>
 
-                <!-- Personal Details -->
-                <group string="Personal Details">
-                    <field name="date_of_birth"/>
-                    <field name="age" readonly="1"/>
-                    <field name="gender"/>
-                    <field name="blood_group"/>
-                    <field name="emergency_contact"/>
-                </group>
+                        <!-- Personal Details -->
+                        <group string="Personal Details">
+                            <field name="date_of_birth" />
+                            <field name="age" readonly="1" />
+                            <field name="gender" />
+                            <field name="blood_group" />
+                            <field name="emergency_contact" />
+                        </group>
 
-                </group>
+                    </group>
 
-                <!-- Notebook -->
-                <notebook>
-                    <page string="Medical History">
-                        <field name="medical_history"/>
-                    </page>
-                </notebook>
 
-            </sheet>
+                </sheet>
 
-            <chatter/>
+                <chatter />
 
-        </form>
-    </field>
-</record>
+            </form>
+        </field>
+    </record>
 
 
     <!-- root menu  -->
-<menuitem id="menu_hospital_root"
-              name="Hospital"
-              sequence="10"/>
+    <menuitem id="menu_hospital_root"
+        name="Hospital"
+        sequence="10" />
 
     <!-- action  -->
     <record id="action_hospital_patient" model="ir.actions.act_window">
@@ -101,10 +95,10 @@
 
     <!-- menu -->
     <menuitem id="menu_hospital_patient"
-              name="Patients"
-          parent="hospital_management.menu_hospital_root"
-              action="action_hospital_patient"
-              sequence="20"
-              groups="hospital_management.group_admin"/>
+        name="Patients"
+        parent="hospital_management.menu_hospital_root"
+        action="action_hospital_patient"
+        sequence="20"
+        groups="hospital_management.group_admin" />
 
 </odoo>

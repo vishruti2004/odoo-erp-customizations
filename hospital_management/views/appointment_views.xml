@@ -6,21 +6,20 @@
         <field name="model">hospital.appointment</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="specialization_id"/>
-                <field name="doctor_id"/>
-                <field name="patient_id"/>
-                <!-- <field name="appointment_datetime"/>  -->
-                <field name="start_datetime"/> 
-                <field name="end_datetime"/> 
+                <field name="name" />
+                <field name="specialization_id" />
+                <field name="doctor_id" />
+                <field name="patient_id" />
+                <field name="start_datetime" />
+                <field name="end_datetime" />
 
                 <field name="state"
-                       widget="badge"
-                       decoration-info="state == 'request'"
-                       decoration-success="state == 'confirm'"
-                       decoration-danger="state == 'cancel'"
-                       decoration-warning="state == 'consult'"
-                       decoration-muted="state == 'done'"/>
+                    widget="badge"
+                    decoration-info="state == 'request'"
+                    decoration-success="state == 'confirm'"
+                    decoration-danger="state == 'cancel'"
+                    decoration-warning="state == 'consult'"
+                    decoration-muted="state == 'done'" />
             </list>
         </field>
     </record>
@@ -28,25 +27,20 @@
     <!-- calendar view -->
 
     <record id="view_hospital_appointment_calendar" model="ir.ui.view">
-    <field name="name">hospital.appointment.calendar</field>
-    <field name="model">hospital.appointment</field>
-    <field name="arch" type="xml">
-        
-        <calendar string="Appointments"
-                  date_start="start_datetime"
-                  mode="week"
-                  event_open_popup="true"  
-                  quick_create="0">
-
-            <field name="name"/>
-            <!-- <field name="appointment_datetime"/> -->
-            <field name="start_datetime"/>
-            <field name="state"/>
-            
-        </calendar>
-
-    </field>
-</record>
+        <field name="name">hospital.appointment.calendar</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <calendar string="Appointments"
+                date_start="start_datetime"
+                mode="week"
+                event_open_popup="true"
+                quick_create="0">
+                <field name="name" />
+                <field name="start_datetime" />
+                <field name="state" />
+            </calendar>
+        </field>
+    </record>
 
     <!-- graph view -->
     <record id="view_appointment_graph" model="ir.ui.view">
@@ -54,300 +48,239 @@
         <field name="model">hospital.appointment</field>
         <field name="arch" type="xml">
             <graph string="Appointments" sample="1">
-                <field name="doctor_id"/>
-                <field name="consultation_fee" type="measure"/>
+                <field name="doctor_id" />
+                <field name="consultation_fee" type="measure" />
             </graph>
         </field>
     </record>
 
-    <!-- <!form view--> 
-
-     <record id="view_hospital_appointment_form" model="ir.ui.view">
+    <!-- <!form view-->
+    <record id="view_hospital_appointment_form" model="ir.ui.view">
         <field name="name">hospital.appointment.form</field>
         <field name="model">hospital.appointment</field>
         <field name="arch" type="xml">
-
             <form string="Appointment">
+                <header>
+                    <field name="is_doctor" invisible="1" />
+                    <field name="is_patient" invisible="1" />
 
-<header>
-    <field name="is_doc_admin" invisible="1"/>
-    <field name="is_pnt" invisible="1"/>
+                    <button name="action_requested" type="object" string="Request"
+                        class="btn-success"
+                        invisible="state != 'draft' or (not is_patient and not is_doctor)" />
 
-    <button name="action_requested" type="object" string="Request" class="btn-success"
-            invisible="state != 'draft' or (not is_pnt and not is_doc_admin)"/>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-success"
+                        invisible="state != 'request' or not is_doctor" />
 
-    <button name="action_confirm" type="object" string="Confirm" class="btn-success"
-            invisible="state != 'request' or not is_doc_admin"/>
+                    <button name="action_consult" type="object" string="Start Consultation"
+                        class="btn-primary"
+                        invisible="state != 'confirm' or not is_doctor" />
 
-    <button name="action_consult" type="object" string="Start Consultation" class="btn-primary"
-            invisible="state != 'confirm' or not is_doc_admin"/>
+                    <button name="action_done" type="object" string="Done" class="btn-success"
+                        invisible="state != 'consult' or not is_doctor" />
 
-    <button name="action_done" type="object" string="Done" class="btn-success"
-            invisible="state != 'consult' or not is_doc_admin"/>
+                    <button name="action_cancel" type="object" string="Cancel" class="btn-danger"
+                        invisible="state not in ('draft', 'request', 'confirm') or not is_doctor" />
 
-    <button name="action_cancel" type="object" string="Cancel" class="btn-danger"
-            invisible="state not in ('draft', 'request', 'confirm') or not is_doc_admin"/>
+                    <button name="action_patient_cancel" type="object" string="Cancel"
+                        class="btn-danger"
+                        invisible="state != 'request' or not is_patient or is_doctor" />
 
-    <button name="action_patient_cancel" type="object" string="Cancel" class="btn-danger"
-            invisible="state != 'request' or not is_pnt or is_doc_admin"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                        class="btn-secondary"
+                        invisible="state != 'cancel'" />
 
-    <button name="action_reset_to_draft" type="object" string="Reset to Draft" class="btn-secondary"
-            invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,request,confirm,consult,done" />
+                </header>
+                <sheet>
 
-    <field name="state" widget="statusbar" statusbar_visible="draft,request,confirm,consult,done"/>
-</header>
+                    <!-- SMART BUTTON -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_invoices"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-pencil-square-o"
+                            invisible="invoice_total == 0">
 
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">
+                                    Invoiced
+                                </span>
+                                <span class="o_stat_value">
+                                    <field name="invoice_total"
+                                        widget="monetary"
+                                        options="{'currency_field': 'currency_id'}" />
+                                </span>
+                            </div>
+                        </button>
+                    </div>
 
-<sheet>
-
-    <!-- SMART BUTTON -->
-    <div class="oe_button_box" name="button_box">
-
-    <button name="action_open_invoices"
-            type="object"
-            class="oe_stat_button"
-            icon="fa-pencil-square-o"
-            invisible="invoice_total == 0">
-
-        <div class="o_stat_info">
-
-         <span class="o_stat_text">
-                Invoiced
-            </span>
-            <span class="o_stat_value">
-                <field name="invoice_total"
-                       widget="monetary"
-                       options="{'currency_field': 'currency_id'}"/>
-            </span>
-
-           
-        </div>
-
-    </button>
-
-</div>
-
-    <group>
-        <field name="name" readonly="1"/>
-
-        <field name="specialization_id"
-               options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"
-               readonly="state != 'draft'"/>
-
-        <field name="doctor_id"
-               context="{'from_appointment': True}"
-               options="{'no_create': True, 'no_create_edit': True}"
-               readonly="state != 'draft'"/>
-
-        <field name="patient_id" readonly="state != 'draft'"/>
-
-        <field name="start_datetime" readonly="state != 'draft'"/>
-        <field name="end_datetime" readonly="state != 'draft'"/>
-
-        <field name="currency_id" invisible="1"/>
-
-        <field name="consultation_fee" readonly="state != 'draft'"/>
-
-        <field name="description" readonly="state != 'draft'"/>
-
-        <field name="cancel_reason"
-               invisible="state != 'cancel'"
-               readonly="state != 'draft'"/>
-
-        <field name="doc_description"
-               invisible="state not in ['consult', 'done']"
-               readonly="state == 'done'"/>
-
-        <field name="payment_done"/>
-
-    </group>
-
-</sheet>
-
-<chatter/>
-
-</form>
-
-
+                    <group>
+                        <field name="name" readonly="1" />
+                        <field name="specialization_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" readonly="state != 'draft'" />
+                        <field name="doctor_id" domain="specialization_id and [('specialization_id', '=', specialization_id)] or []"   context="{'from_appointment': True}" options="{'no_create': True, 'no_create_edit': True}" readonly="state != 'draft'" />
+                        <field name="patient_id" readonly="state != 'draft'" />
+                        <field name="start_datetime" readonly="state != 'draft'" />
+                        <field name="end_datetime" readonly="state != 'draft'" />
+                        <field name="currency_id" invisible="1" />
+                        <field name="consultation_fee" readonly="state != 'draft'" />
+                        <field name="description" readonly="state != 'draft'" />
+                        <field name="cancel_reason" invisible="state != 'cancel'" readonly="state != 'draft'" />
+                        <field name="doc_description" invisible="state not in ['consult', 'done']" readonly="state == 'done'" />
+                        <field name="payment_done" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
         </field>
     </record>
 
     <!-- kanban view -->
-  <record id="view_hospital_appointment_kanban" model="ir.ui.view">
-    <field name="name">hospital.appointment.kanban</field>
-    <field name="model">hospital.appointment</field>
-    <field name="arch" type="xml">
+    <record id="view_hospital_appointment_kanban" model="ir.ui.view">
+        <field name="name">hospital.appointment.kanban</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile o_kanban_dashboard"  highlight_color="color">
+                <field name="name" />
+                <field name="doctor_id" />
+                <field name="specialization_id" />
+                <field name="start_datetime" />
+                <field name="end_datetime" />
+                <field name="consultation_fee" />
+                <field name="state" />
+                <field name="color" />
+                <templates>
+                    <t t-name="menu">
+                        <field name="color" widget="kanban_color_picker" />
+                    </t>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 ">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                               <strong class="fs-5 fw-bold text-dark">
+                                    <field name="name" />
+                                </strong>
 
-        <kanban class="o_kanban_mobile o_kanban_dashboard"
-                highlight_color="color"
->
+                                <span class="fs-5 fw-bold text-dark"> ₹ <field
+                                        name="consultation_fee" />
+                                </span>
+                            </div>
+                            <div class="border-top mb-2"></div>
+                            <div class="text-muted small mb-1">
+                                <i class="fa fa-user-md me-1" title="user icon" />
+                            <field name="specialization_id" /> - <field name="doctor_id" />
+                            </div>
 
-            <!-- Fields -->
-            <field name="name"/>
-            <field name="doctor_id"/> 
-            <field name="specialization_id"/>
-            <!-- <field name="appointment_datetime"/> -->
-            <field name="start_datetime"/>
-            <field name="end_datetime"/>
-            <field name="consultation_fee"/>
-            <field name="state"/>
-            <field name="color"/>
+                            <div class="text-muted small">
+                                <i class="fa fa-calendar me-1" title="calandar icon" />
+                                <field name="start_datetime" />
+                                <span class="mx-1"> - </span>
+                                <field name="end_datetime" />
+                            </div>
 
-            <templates>
-
-                <t t-name="menu">
-                    <field name="color" widget="kanban_color_picker"/>
-                </t>
-
-                <t t-name="card">
-                    <div class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 ">
-
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            
-                            <strong class="fs-5 fw-bold text-dark">
-                                <field name="name"/>
-                            </strong>
-
-                            <span class="fs-5 fw-bold text-dark">
-                                ₹ <field name="consultation_fee"/>
-                            </span>
-
+                            <div class="d-flex justify-content-end mt-3">
+                                <field name="state"
+                                    widget="badge"
+                                    decoration-info="state == 'request'"
+                                    decoration-success="state == 'confirm'"
+                                    decoration-danger="state == 'cancel'"
+                                    decoration-warning="state == 'consult'"
+                                    decoration-primary="state == 'done'"
+                                    decoration-secondary="state == 'draft'" />
+                            </div>
                         </div>
+                    </t>
+                </templates>
+            </kanban>
 
-                        <div class="border-top mb-2"></div>
+        </field>
+    </record>
 
-                        <div class="text-muted small mb-1">
-                            <i class="fa fa-user-md me-1" title="user icon"/>
-                            <field name="specialization_id"/> -
-                            <field name="doctor_id"/>
-                        </div>
-
-                        <div class="text-muted small">
-                              <i class="fa fa-calendar me-1" title="calandar icon"/>
-                             <field name="start_datetime"/>
-                    <span class="mx-1"> - </span>
-                    <field name="end_datetime"/>
-                </div>
-
-
-                        <!-- <div class="text-muted small">
-                            <i class="fa fa-calendar me-1" title="calander icon"/>
-                            <field name="end_datetime"/>
-                        </div> -->
-
-                        <div class="d-flex justify-content-end mt-3">
-                            <field name="state"
-                                   widget="badge"
-                                   decoration-info="state == 'request'"
-                                   decoration-success="state == 'confirm'"
-                                   decoration-danger="state == 'cancel'"
-                                   decoration-warning="state == 'consult'"
-                                   decoration-primary="state == 'done'"
-                                   decoration-secondary="state == 'draft'"/>
-                        </div>
-
-                    </div>
-                </t>
-
-            </templates>
-
-        </kanban>
-
-    </field>
-</record>
-
-<!-- pivot view -->
-<record id="view_hospital_appointment_pivot" model="ir.ui.view">
-    <field name="name">hospital.appointment.pivot</field>
-    <field name="model">hospital.appointment</field>
-    <field name="arch" type="xml">
-        <pivot string="Appointment Analysis">
-            <field name="doctor_id" type="row"/>
-            <field name="state" type="col"/>
-            <field name="consultation_fee" type="measure"/>
-        </pivot>
-    </field>
-</record>
+    <!-- pivot view -->
+    <record id="view_hospital_appointment_pivot" model="ir.ui.view">
+        <field name="name">hospital.appointment.pivot</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <pivot string="Appointment Analysis">
+                <field name="doctor_id" type="row" />
+                <field name="state" type="col" />
+                <field name="consultation_fee" type="measure" />
+            </pivot>
+        </field>
+    </record>
 
 
-<!-- search view -->
-<record id="view_hospital_appointment_search" model="ir.ui.view">
-    <field name="name">hospital.appointment.search</field>
-    <field name="model">hospital.appointment</field>
-    <field name="arch" type="xml">
-        <search>
+    <!-- search view -->
+    <record id="view_hospital_appointment_search" model="ir.ui.view">
+        <field name="name">hospital.appointment.search</field>
+        <field name="model">hospital.appointment</field>
+        <field name="arch" type="xml">
+            <search>
 
-        
-           <field name="name"
-       string="Search"
-       filter_domain="['|','|','|','|',
+
+                <field name="name"
+                    string="Search"
+                    filter_domain="['|','|','|','|',
            ('name','ilike',self),
            ('patient_id.partner_id','ilike',self),
            ('patient_id.patient_code','ilike',self),
            ('doctor_id.partner_id','ilike',self),
            ('doctor_id.doctor_code','ilike',self)
-       ]"/>
-            <field name="specialization_id"/>
-            <field name="state"/>
-            <!-- <field name="appointment_datetime"/> -->
+       ]" />
+                <field name="specialization_id" />
+                <field name="state" />
 
-            <separator/>
+                <separator />
 
-            <filter name="draft"
+                <filter name="draft"
                     string="Draft"
-                    domain="[('state','=','draft')]"/>
+                    domain="[('state','=','draft')]" />
 
-            <filter name="request"
+                <filter name="request"
                     string="Requested"
-                    domain="[('state','=','request')]"/>
+                    domain="[('state','=','request')]" />
 
-            <filter name="confirm"
+                <filter name="confirm"
                     string="Confirmed"
-                    domain="[('state','=','confirm')]"/>
+                    domain="[('state','=','confirm')]" />
 
-            <filter name="consult"
+                <filter name="consult"
                     string="In Consultation"
-                    domain="[('state','=','consult')]"/>
+                    domain="[('state','=','consult')]" />
 
-            <filter name="done"
+                <filter name="done"
                     string="Done"
-                    domain="[('state','=','done')]"/>
+                    domain="[('state','=','done')]" />
 
-            <filter name="cancel"
+                <filter name="cancel"
                     string="Cancelled"
-                    domain="[('state','=','cancel')]"/>
+                    domain="[('state','=','cancel')]" />
 
-            <separator/>
+                <separator />
 
-            
 
-            <filter name="group_doctor"
+                <filter name="group_doctor"
                     string="Doctor"
-                    context="{'group_by':'doctor_id'}"/>
+                    context="{'group_by':'doctor_id'}" />
 
-            <filter name="group_patient"
+                <filter name="group_patient"
                     string="Patient"
-                    context="{'group_by':'patient_id'}"/>
+                    context="{'group_by':'patient_id'}" />
 
-            <filter name="group_specialization"
+                <filter name="group_specialization"
                     string="Specialization"
-                    context="{'group_by':'specialization_id'}"/>
+                    context="{'group_by':'specialization_id'}" />
 
-            <filter name="group_state"
+                <filter name="group_state"
                     string="Status"
-                    context="{'group_by':'state'}"/>
-<!-- 
-            <filter name="group_date"
-                    string="Appointment Date"
-                    context="{'group_by':'appointment_datetime'}"/> -->
+                    context="{'group_by':'state'}" />
 
-              <filter name="group_date"
+                <filter name="group_date"
                     string="Appointment Date"
-                    context="{'group_by':'start_datetime'}"/>
+                    context="{'group_by':'start_datetime'}" />
 
-        </search>
-    </field>
-</record>
+            </search>
+        </field>
+    </record>
 
 
     <!-- action -->
@@ -355,18 +288,16 @@
         <field name="name">Appointments</field>
         <field name="res_model">hospital.appointment</field>
         <field name="view_mode">kanban,list,form,calendar,pivot,graph</field>
-         <field name="limit">10</field>
+        <field name="limit">10</field>
     </record>
 
 
-     <!-- menu -->
+    <!-- menu -->
     <menuitem id="menu_hospital_appointment"
-              name="Appointments"
-              parent="menu_hospital_root"
-              action="action_hospital_appointment"
-              sequence="30"
-              groups="hospital_management.group_admin,hospital_management.group_doctor,hospital_management.group_patient"/>
+        name="Appointments"
+        parent="menu_hospital_root"
+        action="action_hospital_appointment"
+        sequence="30"
+        groups="hospital_management.group_admin,hospital_management.group_doctor,hospital_management.group_patient" />
 
 </odoo> 
-
-

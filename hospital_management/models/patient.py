@@ -122,43 +122,6 @@ class HospitalPatient(models.Model):
             else:
                 rec.age = 0
 
-    # CREATE OVERRIDE
-
-    # @api.model_create_multi
-    # def create(self, vals_list):
-
-    #     for vals in vals_list:
-    #         if vals.get('patient_code', 'New') == 'New':
-    #             vals['patient_code'] = self.env['ir.sequence'].next_by_code(
-    #                 'hospital.patient'
-    #             ) or 'New'
-
-    #     records = super().create(vals_list)
-
-    #     for rec in records:
-
-    #         if rec.partner_id:
-    #             rec.partner_id.write({
-    #                 'is_patient': True,
-    #                 'is_doctor': False
-    #             })
-
-    #         group_user = self.env.ref('base.group_user')
-    #         group_patient = self.env.ref('hospital_management.group_patient')
-
-    #         user = self.env['res.users'].sudo().with_context(
-    #             no_reset_password=True
-    #         ).create({
-    #             'name': rec.name,
-    #             'login': rec.patient_code,
-    #             'password': 'patient123',
-    #             'partner_id': rec.partner_id.id,
-    #             'group_ids': [(6, 0, [group_user.id, group_patient.id])],
-    #         })
-
-    #         rec.user_id = user.id
-
-    #     return records
 
     @api.model_create_multi
     def create(self, vals_list):

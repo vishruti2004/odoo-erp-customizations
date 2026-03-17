@@ -6,18 +6,18 @@
 
                 <!-- Error Message -->
                 <div t-if="error_msg"
-                     id="error_alert"
-                     class="alert alert-danger alert-dismissible fade show shadow-sm"
-                     role="alert">
+                    id="error_alert"
+                    class="alert alert-danger alert-dismissible fade show shadow-sm"
+                    role="alert">
 
-                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <i class="fa fa-exclamation-triangle me-2" />
                     <strong>Error:</strong>
-                    <t t-esc="error_msg"/>
+                    <t t-esc="error_msg" />
 
                     <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Close"/>
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close" />
 
                 </div>
 
@@ -25,9 +25,7 @@
 
                     <div class="card-header bg-primary text-white py-3">
                         <h4 class="mb-0">
-                            <i class="fa fa-calendar-plus-o me-2"/>
-                            Book New Appointment
-                        </h4>
+                            <i class="fa fa-calendar-plus-o me-2" /> Book New Appointment </h4>
                     </div>
 
                     <div class="card-body p-4 bg-white">
@@ -35,13 +33,13 @@
                         <form action="/my/appointment/add/submit" method="post">
 
                             <input type="hidden"
-                                   name="csrf_token"
-                                   t-att-value="request.csrf_token()"/>
+                                name="csrf_token"
+                                t-att-value="request.csrf_token()" />
 
                             <!-- hidden appointment id for edit -->
                             <input type="hidden"
-                                   name="appointment_id"
-                                   t-att-value="appointment.id if appointment else ''"/>
+                                name="appointment_id"
+                                t-att-value="appointment.id if appointment else ''" />
 
                             <div class="row g-4">
 
@@ -54,9 +52,9 @@
                                         </label>
 
                                         <input type="text"
-                                               class="form-control bg-light"
-                                               t-att-value="appointment.name"
-                                               readonly="readonly"/>
+                                            class="form-control bg-light"
+                                            t-att-value="appointment.name"
+                                            readonly="readonly" />
                                     </div>
                                 </t>
 
@@ -70,17 +68,17 @@
 
                                     <!-- MAIN CHANGE 1: onchange hata diya -->
                                     <select name="specialization_id"
-                                            class="form-select border-2"
-                                            required="required">
+                                        class="form-select border-2"
+                                        required="required">
 
                                         <option value="">Select Specialization</option>
 
                                         <t t-foreach="specializations" t-as="spec">
 
                                             <option t-att-value="spec.id"
-                                                    t-att-selected="spec.id == selected_spec_id">
+                                                t-att-selected="spec.id == selected_spec_id">
 
-                                                <t t-esc="spec.name"/>
+                                                <t t-esc="spec.name" />
 
                                             </option>
 
@@ -99,65 +97,65 @@
                                     </label>
 
                                     <!-- MAIN CHANGE 2: onchange hata diya -->
-                                   <select name="doctor_id"
-        id="doctor_id"
-        class="form-select border-2"
-        required="required"
-        t-att-disabled="not doctors">
+                                    <select name="doctor_id"
+                                        id="doctor_id"
+                                        class="form-select border-2"
+                                        required="required"
+                                        t-att-disabled="not doctors">
 
-    <option value="">Select Doctor</option>
+                                        <option value="">Select Doctor</option>
 
-    <t t-foreach="doctors" t-as="doc">
+                                        <t t-foreach="doctors" t-as="doc">
 
-        <option t-att-value="doc.id"
-                t-att-data-spec="doc.specialization_id.id"
-                t-att-data-slot="doc.slot_duration or 30"
-                t-att-selected="selected_doc and doc.id == selected_doc.id">
+                                            <option t-att-value="doc.id"
+                                                t-att-data-spec="doc.specialization_id.id"
+                                                t-att-data-slot="doc.slot_duration or 30"
+                                                t-att-selected="selected_doc and doc.id == selected_doc.id">
 
-            <t t-esc="doc.name"/>
+                                                <t t-esc="doc.name" />
 
-        </option>
+                                            </option>
 
-    </t>
+                                        </t>
 
-</select>
+                                    </select>
 
                                 </div>
 
                                 <!-- Patient -->
 
-                               <div class="col-md-6">
+                                <div class="col-md-6">
 
-    <label class="form-label fw-bold">
-        Patient
-    </label>
+                                    <label class="form-label fw-bold">
+                                        Patient
+                                    </label>
 
-    <select name="patient_id"
-            class="form-select border-2"
-            required="required">
+                                    <select name="patient_id"
+                                        class="form-select border-2"
+                                        required="required">
 
-        <option value="">Select Patient</option>
+                                        <option value="">Select Patient</option>
 
-        <t t-foreach="patients" t-as="pat">
+                                        <t t-foreach="patients" t-as="pat">
 
-            <option t-att-value="pat.id"
-                    t-att-selected="
-                        (appointment and pat.id == appointment.patient_id.id)
-                        or
-                        (post_data and pat.id == int(post_data.get('patient_id', 0)))
-                        or
-                        (login_patient and pat.id == login_patient.id)
-                    ">
+                                            <option t-att-value="pat.id"
+                                                t-att-selected="
+                                                        (appointment and pat.id == appointment.patient_id.id)
+                                                        or
+                                                        (post_data and pat.id == int(post_data.get('patient_id', 0)))
+                                                        or
+                                                        (login_patient and pat.id == login_patient.id)
+                                                    ">
 
-                <t t-esc="pat.name"/>
+                                                <t t-esc="pat.name" />
 
-            </option>
+                                            </option>
 
-        </t>
+                                        </t>
 
-    </select>
+                                    </select>
 
-</div>
+                                </div>
 
                                 <!-- Start Datetime -->
 
@@ -168,15 +166,15 @@
                                     </label>
 
                                     <input type="datetime-local"
-                                           name="start_datetime"
-                                           id="start_dt"
-                                           class="form-control border-2"
-                                           required="required"
-                                           t-att-value="
+                                        name="start_datetime"
+                                        id="start_dt"
+                                        class="form-control border-2"
+                                        required="required"
+                                        t-att-value="
                                                 appointment and 
                                                 context_timestamp(appointment.start_datetime).strftime('%Y-%m-%dT%H:%M')
                                                 or post_data.get('start_datetime')
-                                           "/>
+                                           " />
 
                                 </div>
 
@@ -189,15 +187,15 @@
                                     </label>
 
                                     <input type="datetime-local"
-                                           name="end_datetime"
-                                           id="end_dt"
-                                           class="form-control border-2"
-                                           required="required"
-                                           t-att-value="
+                                        name="end_datetime"
+                                        id="end_dt"
+                                        class="form-control border-2"
+                                        required="required"
+                                        t-att-value="
                                                 appointment and 
                                                 context_timestamp(appointment.end_datetime).strftime('%Y-%m-%dT%H:%M')
                                                 or post_data.get('end_datetime')
-                                           "/>
+                                           " />
 
                                 </div>
 
@@ -210,13 +208,13 @@
                                     </label>
 
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light" 
-                                              t-esc="selected_doc.currency_id.symbol if selected_doc else res_company.currency_id.symbol"/>
+                                        <span class="input-group-text bg-light"
+                                            t-esc="selected_doc.currency_id.symbol if selected_doc else res_company.currency_id.symbol" />
 
                                         <input type="text"
-                                               class="form-control bg-light border-2 fw-bold"
-                                               t-att-value="selected_doc.consultation_fee if selected_doc else '0.00'"
-                                               readonly="readonly"/>
+                                            class="form-control bg-light border-2 fw-bold"
+                                            t-att-value="selected_doc.consultation_fee if selected_doc else '0.00'"
+                                            readonly="readonly" />
                                     </div>
 
                                 </div>
@@ -230,11 +228,12 @@
                                     </label>
 
                                     <textarea name="description"
-                                              rows="3"
-                                              class="form-control border-2"
-                                              placeholder="Describe the health issue...">
+                                        rows="3"
+                                        class="form-control border-2"
+                                        placeholder="Describe the health issue...">
 
-                                        <t t-esc="appointment.description if appointment else post_data.get('description', '')"/>
+                                        <t
+                                            t-esc="appointment.description if appointment else post_data.get('description', '')" />
                                     </textarea>
 
                                 </div>
@@ -244,12 +243,12 @@
                             <div class="mt-5 border-top pt-4">
 
                                 <button type="submit"
-                                        class="btn btn-success px-5 rounded-0 fw-bold">
+                                    class="btn btn-success px-5 rounded-0 fw-bold">
                                     SUBMIT
                                 </button>
 
                                 <a href="/my/appointments"
-                                   class="btn btn-outline-danger px-4 ms-2 rounded-0 fw-bold">
+                                    class="btn btn-outline-danger px-4 ms-2 rounded-0 fw-bold">
                                     CANCEL
                                 </a>
 
@@ -262,22 +261,21 @@
                 </div>
 
             </div>
-
- <script type="text/javascript">
+<script type="text/javascript">
 document.addEventListener("DOMContentLoaded", function(){
 
     const specSelect = document.querySelector('[name="specialization_id"]');
     const doctorSelect = document.querySelector('[name="doctor_id"]');
+    const allDoctors = Array.from(doctorSelect.options);
     const startInput = document.querySelector('[name="start_datetime"]');
     const endInput = document.querySelector('[name="end_datetime"]');
 
-    // store all doctor options
-    const allDoctors = Array.from(doctorSelect.options);
+    // SPECIALIZATION → FILTER
 
-    // SPECIALIZATION → FILTER DOCTORS
-    specSelect.addEventListener("change", function(){
+    function filterDoctors(){
 
-        const specId = this.value;
+        const specId = specSelect.value;
+        const currentDoctor = doctorSelect.value;
 
         doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
 
@@ -288,30 +286,44 @@ document.addEventListener("DOMContentLoaded", function(){
             const doctorSpec = opt.getAttribute("data-spec");
 
             if(!specId || doctorSpec === specId){
-                doctorSelect.appendChild(opt.cloneNode(true));
+
+                const newOpt = opt.cloneNode(true);
+
+                if(opt.value === currentDoctor){
+                    newOpt.selected = true;
+                }
+
+                doctorSelect.appendChild(newOpt);
             }
 
         });
 
+    }
+
+    // SPECIALIZATION CHANGE
+
+    specSelect.addEventListener("change", function(){
+        filterDoctors();
     });
 
+    // DOCTOR CHANGE
 
-    // DOCTOR → AUTO SELECT SPECIALIZATION
     doctorSelect.addEventListener("change", function(){
 
         const selected = this.options[this.selectedIndex];
 
         if(selected &amp;&amp; selected.value){
+
             const specId = selected.getAttribute("data-spec");
+
             if(specId){
                 specSelect.value = specId;
+
+                filterDoctors();
             }
         }
 
     });
-
-
-    // START DATE → AUTO END DATE 
     if(startInput){
         startInput.addEventListener("change", function(){
 

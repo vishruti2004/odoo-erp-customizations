@@ -60,14 +60,6 @@ class PortalAppointments(CustomerPortal):
 
         searchbar_sortings = {
             "id": {"label": "Appointment ID", "order": "id desc"},
-            # 'doctor': {
-            #     'label': 'Doctor',
-            #     'order': 'doctor_id'
-            # },
-            # 'patient': {
-            #     'label': 'Patient',
-            #     'order': 'patient_id'
-            # },
             "specialization": {"label": "Specialization", "order": "specialization_id"},
             "status": {"label": "Status", "order": "state"},
         }
@@ -280,14 +272,7 @@ class PortalAppointments(CustomerPortal):
         **kwargs,
     ):
 
-        # Appointment = request.env['hospital.appointment'].sudo()
-        # appointment = Appointment.browse(appointment_id)
-
-        # if not appointment.exists():
-        #     return request.render("website.404")
-
-        # _document_check_access method automatic check security,record rules and give error if record is not exits
-
+       
         appointment = self._document_check_access(
             "hospital.appointment", appointment_id, access_token
         )
@@ -329,8 +314,7 @@ class PortalAppointments(CustomerPortal):
 
         # FIND LOGIN DOCTOR
         login_doctor = (
-            request.env["hospital.doctor"]
-            .sudo()
+            request.env["hospital.doctor"].sudo()
             .search([("user_id", "=", user.id)], limit=1)
         )
 

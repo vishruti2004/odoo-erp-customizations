@@ -6,17 +6,17 @@
         <field name="arch" type="xml">
             <form string="Cancel Appointment">
                 <group>
-                    <field name="appointment_id" invisible="1"/>
-                    <field name="cancel_reason"/>
+                    <field name="appointment_id" invisible="1" />
+                    <field name="cancel_reason" />
                 </group>
                 <footer>
                     <button name="action_confirm_cancel"
-                            type="object"
-                            string="Confirm Cancel"
-                            class="btn-danger"/>
+                        type="object"
+                        string="Confirm Cancel"
+                        class="btn-danger" />
                     <button string="Close"
-                            special="cancel"
-                            class="btn-secondary"/>
+                        special="cancel"
+                        class="btn-secondary" />
                 </footer>
             </form>
         </field>

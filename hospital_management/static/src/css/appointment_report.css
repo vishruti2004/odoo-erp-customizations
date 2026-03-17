@@ -50,10 +50,9 @@
 
 /* ---------- Appointment Duration & Other Sections ---------- */
 
-/* આ નવો સુધારો છે જે mt-4 ને બરાબર કામ કરવા દેશે */
 .appointment-report div.mt-4 {
-    clear: both;           /* ઉપરના float ને સાફ કરવા માટે */
-    padding-top: 20px;     /* વધારાની જગ્યા માટે */
+    clear: both;           
+    padding-top: 20px;   
     display: block;
 }
 

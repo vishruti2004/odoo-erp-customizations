@@ -50,7 +50,6 @@ class HospitalDoctor(models.Model):
         "resource.calendar", string="Working Schedule", required=True, tracking=True
     )
 
-    # consultation_fee = fields.Float(string="Consultation Fee",tracking=True)
 
     consultation_fee = fields.Monetary(
         string="Consultation Fee", currency_field="currency_id", tracking=True
@@ -61,7 +60,7 @@ class HospitalDoctor(models.Model):
     )
 
     slot_duration = fields.Integer(
-        string="Slot Duration (Minutes)", default=15, required=True, tracking=True
+        string="Slot Duration (Minutes)", default=15, required=True, tracking=True,
     )
 
     #  One2many relation
@@ -114,34 +113,7 @@ class HospitalDoctor(models.Model):
         for rec in self:
             rec.display_name = f"[{rec.doctor_code or ''}] {rec.name or ''}"
 
-    # sequence code doctor
-
-    # @api.model_create_multi
-    # def create(self, vals_list):
-    #     for vals in vals_list:
-    #         if vals.get('doctor_code', 'New') == 'New':
-    #             vals['doctor_code'] = self.env['ir.sequence'].next_by_code(
-    #                 'hospital.doctor'
-    #             ) or 'New'
-
-    #     records = super().create(vals_list)
-
-    #     for rec in records:
-    #         group_user = self.env.ref('base.group_user')
-    #         group_doctor = self.env.ref('hospital_management.group_doctor')
-
-    #         user = self.env['res.users'].sudo().with_context(
-    #             no_reset_password=True
-    #         ).create({
-    #             'name': rec.name,
-    #             'login': rec.doctor_code,
-    #             # 'password': 'doctor123',
-    #             'partner_id': rec.partner_id.id,
-    #             'group_ids': [(6, 0, [group_user.id, group_doctor.id])],
-    #         })
-    #         rec.user_id = user.id
-
-    #     return records
+   
 
     @api.model_create_multi
     def create(self, vals_list):
