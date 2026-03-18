@@ -8,15 +8,10 @@
             <field name="model">hospital.appointment</field>
             <field name="report_type">qweb-pdf</field>
 
-
             <field name="report_name">hospital_management.appointment_summary_template</field>
             <field name="report_file">hospital_management.appointment_summary_template</field>
 
-            <field name="print_report_name">
-                "'Appointment Summary - %s' % (object.display_name)"
-            </field>
-
+            <field name="print_report_name">"'Appointment Summary - %s' % (object.display_name)" </field>
         </record>
-
     </data>
 </odoo> 

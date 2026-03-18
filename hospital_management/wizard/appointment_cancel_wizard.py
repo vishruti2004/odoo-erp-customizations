@@ -19,7 +19,7 @@ class AppointmentCancelWizard(models.TransientModel):
 
     def action_confirm_cancel(self):
 
-        _logger.warning("========== CANCEL START ==========")
+        _logger.debug("========== CANCEL START ==========")
 
         appointment = self.appointment_id
 
@@ -41,6 +41,6 @@ class AppointmentCancelWizard(models.TransientModel):
         template.send_mail(appointment.id, force_send=True,raise_exception=False)
 
 
-        _logger.warning("========== CANCEL END ==========")
+        _logger.debug("========== CANCEL END ==========")
 
         return {'type': 'ir.actions.act_window_close'}

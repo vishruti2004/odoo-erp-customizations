@@ -7,7 +7,6 @@
         <field name="arch" type="xml">
             <list>
                 <field name="active" widget="boolean_toggle" />
-
                 <field name="patient_code" />
                 <field name="name" />
                 <field name="email" optional="show" />
@@ -30,7 +29,6 @@
         <field name="model">hospital.patient</field>
         <field name="arch" type="xml">
             <form string="Patient">
-
                 <sheet>
 
                     <!-- Stat Button -->
@@ -68,18 +66,12 @@
                             <field name="blood_group" />
                             <field name="emergency_contact" />
                         </group>
-
                     </group>
-
-
                 </sheet>
-
                 <chatter />
-
             </form>
         </field>
     </record>
-
 
     <!-- root menu  -->
     <menuitem id="menu_hospital_root"
@@ -100,5 +92,4 @@
         action="action_hospital_patient"
         sequence="20"
         groups="hospital_management.group_admin" />
-
 </odoo>

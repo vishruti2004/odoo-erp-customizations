@@ -153,7 +153,7 @@ class HospitalAppointment(models.Model):
             else:
                 rec.payment_done = False
 
-            _logger.warning("PAYMENT STATE: %s", rec.invoice_id.payment_state)
+            _logger.debug("PAYMENT STATE: %s", rec.invoice_id.payment_state)
 
     @api.depends("doctor_id", "patient_id")
     def _compute_visibility(self):
@@ -239,8 +239,8 @@ class HospitalAppointment(models.Model):
             [("user_id", "=", self.env.user.id)], limit=1
         )
 
-        _logger.warning("LOGIN USER: %s", self.env.user.name)
-        _logger.warning("DOCTOR FOUND: %s", doctor)
+        _logger.debug("LOGIN USER: %s", self.env.user.name)
+        _logger.debug("DOCTOR FOUND: %s", doctor)
 
         if doctor:
             res["doctor_id"] = doctor.id
@@ -250,8 +250,8 @@ class HospitalAppointment(models.Model):
             [("user_id", "=", self.env.user.id)], limit=1
         )
 
-        _logger.warning("LOGIN USER: %s", self.env.user.name)
-        _logger.warning("PATIENT FOUND: %s", patient)
+        _logger.debug("LOGIN USER: %s", self.env.user.name)
+        _logger.debug("PATIENT FOUND: %s", patient)
         if patient:
             res["patient_id"] = patient.id
 
@@ -383,7 +383,7 @@ class HospitalAppointment(models.Model):
     def action_confirm(self):
         for rec in self:
 
-            _logger.warning("CONFIRM BUTTON CLICKED")
+            _logger.debug("CONFIRM BUTTON CLICKED")
 
             rec.state = "confirm"
 

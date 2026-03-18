@@ -159,10 +159,7 @@
                                <strong class="fs-5 fw-bold text-dark">
                                     <field name="name" />
                                 </strong>
-
-                                <span class="fs-5 fw-bold text-dark"> ₹ <field
-                                        name="consultation_fee" />
-                                </span>
+                                <field name="consultation_fee" />
                             </div>
                             <div class="border-top mb-2"></div>
                             <div class="text-muted small mb-1">
@@ -191,7 +188,6 @@
                     </t>
                 </templates>
             </kanban>
-
         </field>
     </record>
 
@@ -215,20 +211,15 @@
         <field name="model">hospital.appointment</field>
         <field name="arch" type="xml">
             <search>
-
-
-                <field name="name"
-                    string="Search"
-                    filter_domain="['|','|','|','|',
-           ('name','ilike',self),
-           ('patient_id.partner_id','ilike',self),
-           ('patient_id.patient_code','ilike',self),
-           ('doctor_id.partner_id','ilike',self),
-           ('doctor_id.doctor_code','ilike',self)
-       ]" />
+                <field name="name" string="Search"  filter_domain="['|','|','|','|',
+                    ('name','ilike',self),
+                    ('patient_id.partner_id','ilike',self),
+                    ('patient_id.patient_code','ilike',self),
+                    ('doctor_id.partner_id','ilike',self),
+                    ('doctor_id.doctor_code','ilike',self)
+                ]" />
                 <field name="specialization_id" />
                 <field name="state" />
-
                 <separator />
 
                 <filter name="draft"
@@ -277,11 +268,9 @@
                 <filter name="group_date"
                     string="Appointment Date"
                     context="{'group_by':'start_datetime'}" />
-
             </search>
         </field>
     </record>
-
 
     <!-- action -->
     <record id="action_hospital_appointment" model="ir.actions.act_window">
@@ -291,7 +280,6 @@
         <field name="limit">10</field>
     </record>
 
-
     <!-- menu -->
     <menuitem id="menu_hospital_appointment"
         name="Appointments"
@@ -299,5 +287,4 @@
         action="action_hospital_appointment"
         sequence="30"
         groups="hospital_management.group_admin,hospital_management.group_doctor,hospital_management.group_patient" />
-
 </odoo> 

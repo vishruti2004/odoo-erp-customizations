@@ -7,18 +7,15 @@
         <field name="arch" type="xml">
             <list string="Doctors">
                 <field name="active" widget="boolean_toggle" />
-
                 <field name="doctor_code" />
                 <field name="partner_id" />
                 <field name="email" />
                 <field name="phone" />
                 <field name="date_of_birth" />
-
                 <field name="specialization_id" />
                 <field name="resource_calendar_id" />
                 <field name="currency_id" column_invisible="1" />
                 <field name="consultation_fee" />
-
                 <field name="slot_duration" />
             </list>
         </field>
@@ -32,7 +29,6 @@
             <form string="Doctor" edit="is_editable" delete="is_editable">
                 <sheet>
                     <field name="is_editable" invisible="1" />
-
                     <div class="oe_button_box" name="button_box">
                         <button name="action_open_appointments"
                             type="object"
@@ -85,5 +81,4 @@
         action="action_hospital_doctor"
         sequence="15"
         groups="hospital_management.group_admin,hospital_management.group_doctor" />
-
 </odoo>

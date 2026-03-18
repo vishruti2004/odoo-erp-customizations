@@ -26,6 +26,4 @@
         <field name="prefix">APT</field>
         <field name="padding">4</field>
     </record>
-
-
 </odoo>

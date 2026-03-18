@@ -1,16 +1,13 @@
 <odoo>
-
     <record id="view_specialization_list" model="ir.ui.view">
         <field name="name">hospital.specialization.tree</field>
         <field name="model">hospital.specialization</field>
         <field name="arch" type="xml">
             <list>
                 <field name="active" widget="boolean_toggle" />
-
                 <field name="name" />
                 <field name="code" />
                 <field name="description" />
-
             </list>
         </field>
     </record>
@@ -21,10 +18,8 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-
                     <!-- Stat Button -->
                     <div class="oe_button_box" name="button_box">
-
                         <button name="action_open_doctor"
                             type="object"
                             class="oe_stat_button"
@@ -35,7 +30,6 @@
                                 widget="statinfo"
                                 string="Doctors" />
                         </button>
-
                     </div>
 
                     <group>
@@ -65,12 +59,9 @@
         <field name="model">hospital.specialization</field>
         <field name="arch" type="xml">
             <search string="Search Specialization">
-
                 <field name="name" />
                 <field name="code" />
-
                 <separator />
-
                 <filter name="filter_active"
                     string="Active"
                     domain="[('active','=',True)]" />
@@ -78,17 +69,13 @@
                 <filter name="filter_inactive"
                     string="Inactive"
                     domain="[('active','=',False)]" />
-
                 <separator />
 
                 <!-- Group By -->
                 <filter name="group_active"
                     string="Group by Active"
                     context="{'group_by':'active'}" />
-
             </search>
         </field>
     </record>
-
-
 </odoo>

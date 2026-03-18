@@ -1,89 +1,57 @@
 <odoo>
     <template id="portal_my_appointments" name="My Appointments">
-
         <t t-call="portal.portal_layout">
-
             <t t-set="page_name" t-value="'appointment'" />
             <t t-set="breadcrumbs_searchbar" t-value="True" />
-
             <t t-call="portal.portal_searchbar">
                 <t t-set="title">Your Appointments</t>
             </t>
-
             <div class="d-flex justify-content-end align-items-center">
                 <a href="/my/appointment/add" class="btn btn-primary shadow-sm">
                     New
                 </a>
             </div>
-
             <div t-if="not appointments" class="alert alert-warning mt-3">
                 No appointments found.
             </div>
-
             <t t-if="appointments" t-call="portal.portal_table">
-
                 <thead>
                     <tr>
-
-                        <th>ID</th>
-
-                        <th t-if="groupby != 'specialization_id'">
-                            Specialization
-                        </th>
-
-                        <th t-if="groupby != 'doctor_id'">
-                            Doctor
-                        </th>
-
-                        <th t-if="groupby != 'patient_id'">
-                            Patient
-                        </th>
-
+                       <th>ID</th>
+                        <th t-if="groupby != 'specialization_id'">Specialization</th>
+                        <th t-if="groupby != 'doctor_id'">Doctor</th>
+                        <th t-if="groupby != 'patient_id'">Patient</th>
                         <th>Start</th>
                         <th>End</th>
-
-                        <th t-if="groupby != 'state'">
-                            Status
-                        </th>
-
+                        <th t-if="groupby != 'state'">Status</th>
                     </tr>
                 </thead>
 
                 <tbody>
-
                     <t t-foreach="grouped_appointments" t-as="group">
-
-
                         <t t-if="groupby != 'none'">
                             <tr class="table-secondary">
                                 <td colspan="7">
-
                                     <t t-if="groupby == 'doctor_id'">
                                         <strong t-field="group['records'][0].doctor_id.display_name" />
                                     </t>
-
                                     <t t-if="groupby == 'patient_id'">
                                         <strong
                                             t-field="group['records'][0].patient_id.display_name" />
                                     </t>
-
                                     <t t-if="groupby == 'specialization_id'">
                                         <strong t-field="group['records'][0].specialization_id.name" />
                                     </t>
-
                                     <t t-if="groupby == 'state'">
                                         <strong t-field="group['records'][0].state" />
                                     </t>
-
                                 </td>
                             </tr>
                         </t>
 
                         <!-- RECORD LOOP -->
                         <t t-foreach="group['records']" t-as="rec">
-
                             <tr>
-
                                 <td>
                                     <a t-attf-href="/my/appointment/#{rec.id}">
                                         <span t-field="rec.name" />
@@ -95,49 +63,32 @@
                                 </td>
 
                                 <td t-if="groupby != 'doctor_id'">
-
-                                    <t t-set="doc_name"
-                                        t-value="rec.doctor_id.display_name" />
-
+                                    <t t-set="doc_name" t-value="rec.doctor_id.display_name" />
                                     <div class="fw-bold">
-                                        <t
-                                            t-esc="doc_name.split(']')[0] + ']' if ']' in doc_name else ''" />
+                                        <t t-esc="doc_name.split(']')[0] + ']' if ']' in doc_name else ''" />
                                     </div>
-
                                     <div>
-                                        <t
-                                            t-esc="doc_name.split(']')[1].strip() if ']' in doc_name else doc_name" />
+                                        <t t-esc="doc_name.split(']')[1].strip() if ']' in doc_name else doc_name" />
                                     </div>
-
                                 </td>
 
                                 <td t-if="groupby != 'patient_id'">
-
                                     <t t-set="pat_name"
                                         t-value="rec.patient_id.display_name" />
-
                                     <div class="fw-bold">
-                                        <t
-                                            t-esc="pat_name.split(']')[0] + ']' if ']' in pat_name else ''" />
+                                        <t t-esc="pat_name.split(']')[0] + ']' if ']' in pat_name else ''" />
                                     </div>
-
                                     <div>
-                                        <t
-                                            t-esc="pat_name.split(']')[1].strip() if ']' in pat_name else pat_name" />
+                                        <t t-esc="pat_name.split(']')[1].strip() if ']' in pat_name else pat_name" />
                                     </div>
-
                                 </td>
-
                                 <td>
                                     <span t-field="rec.start_datetime" />
                                 </td>
-
                                 <td>
                                     <span t-field="rec.end_datetime" />
                                 </td>
-
                                 <td t-if="groupby != 'state'">
-
                                     <div t-if="rec.state == 'draft'"
                                         class="d-flex align-items-center gap-2">
 
@@ -147,50 +98,36 @@
 
                                         <a t-attf-href="/my/appointment/edit/#{rec.id}"
                                             class="btn btn-sm btn-outline-primary">
-
                                             <i class="fa fa-pencil" />
                                         </a>
 
                                     </div>
-
                                     <div t-elif="rec.state == 'request'"
                                         class="badge rounded-pill bg-info">
                                         Request
                                     </div>
-
                                     <div t-elif="rec.state == 'confirm'"
                                         class="badge rounded-pill bg-success">
                                         Confirmed
                                     </div>
-
                                     <div t-elif="rec.state == 'consult'"
                                         class="badge rounded-pill bg-warning text-dark">
                                         In Consultation
                                     </div>
-
                                     <div t-elif="rec.state == 'done'"
                                         class="badge rounded-pill bg-primary">
                                         Done
                                     </div>
-
                                     <div t-elif="rec.state == 'cancel'"
                                         class="badge rounded-pill bg-danger">
                                         Cancelled
                                     </div>
-
                                 </td>
-
                             </tr>
-
                         </t>
-
                     </t>
-
                 </tbody>
-
             </t>
-
         </t>
-
     </template>
 </odoo>

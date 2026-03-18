@@ -3,28 +3,20 @@
     <data>
 
         <!-- patient reminder mail -->
-
         <record id="ir_cron_appointment_reminder" model="ir.cron">
             <field name="name">Appointment Reminder Cron</field>
-
             <field name="model_id" ref="model_hospital_appointment" />
             <field name="state">code</field>
             <field name="code">model.action_send_appointment_reminder()</field>
-
             <field name="user_id" ref="base.user_root" />
 
             <!-- Run Daily -->
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-
             <field name="active">True</field>
-
         </record>
 
-
         <!-- birthday Notification to  Doctor -->
-
-
         <record id="ir_cron_doctor_birthday" model="ir.cron">
             <field name="name">Doctor Birthday Mail Cron</field>
 
@@ -43,6 +35,5 @@
 
             <field name="active">True</field>
         </record>
-
     </data>
 </odoo>

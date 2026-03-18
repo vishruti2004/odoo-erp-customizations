@@ -152,7 +152,7 @@ class HospitalDoctor(models.Model):
                             "login": rec.email,
                             "partner_id": rec.partner_id.id,
                             "group_ids": [
-                                (6, 0, [group_user.id, group_doctor.id, group_invoice])
+                                (6, 0, [group_user.id, group_doctor.id, group_invoice.id])
                             ],
                         }
                     )

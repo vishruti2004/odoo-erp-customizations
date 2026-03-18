@@ -4,7 +4,6 @@
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
                 <div class="page appointment_report_container">
-
                     <div class="report-header">
                         <table style="width: 100%; border: none !important;">
                             <tr>

@@ -14,7 +14,6 @@
                         <!-- LEFT -->
                         <setting string="Reminder Days"
                             help="Set number of days before appointment reminder.">
-
                             <div class="content-group">
                                 <div class="row mt16">
                                     <label for="reminder_days" class="col-lg-4 o_light_label" />
@@ -23,16 +22,12 @@
                                     </div>
                                 </div>
                             </div>
-
                         </setting>
-
 
                         <!-- RIGHT -->
                         <setting string="Patient Portal Access Only"
                             help="Patient users can access only portal side">
-
                             <field name="patient_portal_access_only" />
-
                             <div class="content-group mt16"
                                 invisible="not patient_portal_access_only">
 
@@ -42,11 +37,8 @@
                                         <field name="portal_patient_ids" widget="many2many_tags" />
                                     </div>
                                 </div>
-
                             </div>
-
                         </setting>
-
                     </block>
                 </app>
             </xpath>

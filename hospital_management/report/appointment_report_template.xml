@@ -4,27 +4,8 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
-
                     <div class="page appointment-report">
-
-                        <!-- <div class="appointment-header">
-                            <div class="row">
-                                <div class="col-6">
-                                    <img t-if="res_company.logo"
-                                         t-att-src="'/web/image/res.company/%s/logo' % res_company.id"
-                                         class="company-logo"/>
-                                </div>
-                                <div class="col-6 text-end company-info">
-                                    <h3 t-esc="res_company.name"/>
-                                    <div t-esc="res_company.email"/>
-                                    <div t-esc="res_company.phone"/>
-                                </div>
-                            </div>
-                        </div> -->
-
-                        <h2 class="appointment-title"> Appointment ID : <span t-field="doc.name" />
-                        </h2>
-
+                        <h2 class="appointment-title"> Appointment ID : <span t-field="doc.name" /></h2>
                         <div class="row mt-4">
                             <div class="col-6">
                                 <div class="info-box">
@@ -66,28 +47,12 @@
                             </div>
                         </div>
 
-                        <!-- <div class="mt-4 date-section" t-if="doc.start_datetime">
-                            <strong>Start Time:</strong>
-                            <span t-field="doc.start_datetime"/>
-                        </div>
-
-                        <div class="mt-4 date-section" t-if="doc.end_datetime">
-                            <strong>End Time:</strong>
-                            <span t-field="doc.end_datetime"/>
-                        </div> -->
-
                         <div class="mt-4">
                             <h4 class="section-title">Appointment Duration</h4>
-
                             <div class="content-box">
-
                                 <strong>Date :</strong>
-
-                                <span t-field="doc.start_datetime"
-                                    t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}' />
-                                - <span t-field="doc.end_datetime"
-                                    t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}' />
-
+                                <span t-field="doc.start_datetime" t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}' />-
+                                <span t-field="doc.end_datetime" t-options='{"widget":"datetime","format":"dd/MM/yyyy hh:mm a"}' />
                             </div>
                         </div>
 
@@ -117,11 +82,8 @@
                                 <span t-field="doc.consultation_fee"
                                     t-options='{"widget": "monetary", "display_currency": doc.currency_id}' />
                             </h3>
-
                         </div>
-
                     </div>
-
                 </t>
             </t>
         </t>

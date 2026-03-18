@@ -14,12 +14,15 @@
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
         "data/specialization_data.xml",
-        "data/mail_template.xml",
-        "data/ir_cron.xml",
+       
         "report/appointment_report.xml",
         "report/appointment_report_template.xml",
         "report/appointment_summary_report.xml",
         "report/appointment_summary_template.xml",
+
+         "data/mail_template.xml",
+        "data/ir_cron.xml",
+
         "views/patient_views.xml",
         "views/res_partner_views.xml",
         "views/doctor_views.xml",
