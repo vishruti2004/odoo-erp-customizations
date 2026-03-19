@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ACTION -->
+    <record id="action_hospital_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">hospital_dashboard_tag</field>
+    </record>
+
+    <!-- MENU -->
+    <menuitem id="menu_hospital_dashboard"
+        name="Dashboard"
+        parent="hospital_management.menu_hospital_root"
+        action="action_hospital_dashboard"
+        sequence="1"
+        groups="hospital_management.group_admin,hospital_management.group_doctor" />
+
+</odoo>

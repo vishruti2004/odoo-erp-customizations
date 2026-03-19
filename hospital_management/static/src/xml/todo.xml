@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hospital.TodoItem">
+        <div class="d-flex align-items-center justify-content-between p-2 border-bottom" 
+             t-att-class="props.todo.isCompleted ? 'text-muted text-decoration-line-through' : ''">
+            <div>
+                <input type="checkbox" 
+                       t-att-checked="props.todo.isCompleted" 
+                       t-on-change="() => props.toggleState(props.todo.id)" 
+                       class="me-2"/>
+                <t t-esc="props.todo.id"/>. <t t-esc="props.todo.description"/>
+            </div>
+            <span class="fa fa-remove text-danger" 
+                  t-on-click="() => props.removeTodo(props.todo.id)" 
+                  style="cursor: pointer;"/>
+        </div>
+    </t>
+
+    <t t-name="hospital.TodoList">
+        <div class="p-4 shadow-sm bg-white rounded border" style="max-width: 400px;">
+            <h3 class="mb-3">My Tasks</h3>
+            
+            <input type="text" 
+                   class="form-control mb-3" 
+                   placeholder="Add a Todo" 
+                   t-ref="todoInput"
+                   t-on-keyup="addTodo"/>
+            
+            <t t-foreach="todos" t-as="todo" t-key="todo.id">
+                <TodoItem todo="todo" 
+                          toggleState.bind="toggleState" 
+                          removeTodo.bind="removeTodo"/>
+            </t>
+        </div>
+    </t>
+
+</templates>

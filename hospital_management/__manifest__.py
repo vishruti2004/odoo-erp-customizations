@@ -28,6 +28,7 @@
         "views/doctor_views.xml",
         "views/specialization_views.xml",
         "views/appointment_views.xml",
+        "views/dashboard_views.xml",
         "views/res_config_settings_view.xml",
         "views/portal_appointments_templates.xml",
         "views/portal_home_templates.xml",
@@ -35,6 +36,7 @@
         "views/portal_appointments_add_templates.xml",
         "wizard/appointment_cancel_wizard_view.xml",
         "wizard/appointment_summary_wizard_view.xml",
+
     ],
     "assets": {
         "web.report_assets_common": [
@@ -44,6 +46,20 @@
         "web.assets_frontend": [
             "hospital_management/static/src/css/portal.css",
         ],
+
+        "web.assets_backend": [
+        "hospital_management/static/src/js/dashboard.js",
+        "hospital_management/static/src/js/counter.js",
+        "hospital_management/static/src/js/card.js",
+        "hospital_management/static/src/js/TodoItem.js",
+        "hospital_management/static/src/js/TodoList.js",
+
+
+        "hospital_management/static/src/xml/*.xml",
+
+        ],
+
+       
     },
     "installable": True,
     "application": True,

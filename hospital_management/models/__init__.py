@@ -6,3 +6,4 @@ from . import appointment
 from . import doctor_availability
 from . import res_config_settings
 from . import account_move
+from . import todo

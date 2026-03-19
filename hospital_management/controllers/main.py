@@ -30,8 +30,8 @@ class HospitalLogin(Home):
     @http.route(["/web", "/odoo", "/odoo/<path:subpath>"], type="http", auth="user")
     def web_client(self, s_action=None, **kw):
 
-        if self._is_restricted_patient(request.session.uid):
-            return request.redirect("/my", 303)
+        # if self._is_restricted_patient(request.session.uid):
+        #     return request.redirect("/my", 303)
 
         return super().web_client(s_action=s_action, **kw)
 
@@ -39,7 +39,7 @@ class HospitalLogin(Home):
     def web_login(self, redirect=None, **kw):
         response = super().web_login(redirect=redirect, **kw)
 
-        if request.session.uid and self._is_restricted_patient(request.session.uid):
-            return request.redirect("/my", 303)
+        # if request.session.uid and self._is_restricted_patient(request.session.uid):
+        #     return request.redirect("/my", 303)
 
         return response

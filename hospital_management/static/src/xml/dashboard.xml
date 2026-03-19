@@ -1,0 +1,28 @@
+<t t-name="hospital_dashboard_template">
+    <div class="p-4">
+
+        <h2 class="mb-4">Practice Dashboard</h2>
+
+        <!-- Counters -->
+        <div class="mb-4 d-flex gap-3">
+            <Counter onChange.bind="incrementSum"/>
+            <Counter onChange.bind="incrementSum"/>
+        </div>
+
+        <!-- Sum -->
+        <h4>The sum is: <t t-esc="state.sum"/></h4>
+
+        <!-- Cards -->
+        <div class="d-flex flex-wrap mt-4">
+            <t t-foreach="cards" t-as="c" t-key="c.title">
+                <Card title="c.title" content="c.content"/>
+            </t>
+        </div>
+
+        <!-- todo list -->
+        <div class="mt-4">
+            <TodoList/>
+        </div>
+
+    </div>
+</t>

@@ -8,3 +8,4 @@ access_hospital_appointment_doctor,hospital.appointment.doctor,model_hospital_ap
 access_hospital_appointment_patient,hospital.appointment.patient,model_hospital_appointment,hospital_management.group_patient,1,1,1,0
 access_appointment_cancel_wizard,access.appointment.cancel.wizard,model_appointment_cancel_wizard,base.group_user,1,1,1,1
 access_appointment_summary_wizard,appointment.summary.wizard,model_appointment_summary_wizard,base.group_user,1,1,1,1
+access_hospital_todo,hospital.todo,model_hospital_todo,base.group_user,1,1,1,1
