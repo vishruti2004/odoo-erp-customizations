@@ -1,28 +1,39 @@
-<t t-name="hospital_dashboard_template">
-    <div class="p-4">
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hospital_management.HospitalDashboard">
+        <Layout display="{controlPanel: {}}" className="'o_dashboard h-100 bg-light overflow-auto'">
+            <div class="container-fluid p-4">
+                
+                <div class="row m-0 mt-2 justify-content-center">
+                    <div class="col-12 col-sm-6 col-lg-3 p-2">
+                        <Card label="'Total Patients'" value="state.total.patients" icon="'fa-users'" bgClass="'bg-primary'" 
+                            onClick="() => this.openListView('hospital.patient', 'Patients')"/>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 p-2">
+                        <Card label="'Total Doctors'" value="state.total.doctors" icon="'fa-user-md'" bgClass="'bg-success'" 
+                            onClick="() => this.openListView('hospital.doctor', 'Doctors')"/>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 p-2">
+                        <Card label="'Appointments'" value="state.total.appointments" icon="'fa-calendar'" bgClass="'bg-info'" 
+                            onClick="() => this.openListView('hospital.appointment', 'All Appointments')"/>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 p-2">
+                        <Card label="'Today Appointments'" value="state.total.today_appointments" icon="'fa-clock-o'" bgClass="'bg-warning'" 
+                            onClick="() => this.openTodayAppointments()"/>
+                    </div>
+                </div>
 
-        <h2 class="mb-4">Practice Dashboard</h2>
+                <div class="row m-0 mt-5 justify-content-center">
+                    <div class="col-12 col-md-8 col-lg-5">
+                        <ChartRender 
+                            type="'doughnut'" 
+                            label="'Appointments by Status'" 
+                            data="appointmentChartData" 
+                        />
+                    </div>
+                </div>
 
-        <!-- Counters -->
-        <div class="mb-4 d-flex gap-3">
-            <Counter onChange.bind="incrementSum"/>
-            <Counter onChange.bind="incrementSum"/>
-        </div>
-
-        <!-- Sum -->
-        <h4>The sum is: <t t-esc="state.sum"/></h4>
-
-        <!-- Cards -->
-        <div class="d-flex flex-wrap mt-4">
-            <t t-foreach="cards" t-as="c" t-key="c.title">
-                <Card title="c.title" content="c.content"/>
-            </t>
-        </div>
-
-        <!-- todo list -->
-        <div class="mt-4">
-            <TodoList/>
-        </div>
-
-    </div>
-</t>
+            </div>
+        </Layout>
+    </t>
+</templates>

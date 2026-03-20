@@ -48,14 +48,23 @@
         ],
 
         "web.assets_backend": [
-        "hospital_management/static/src/js/dashboard.js",
-        "hospital_management/static/src/js/counter.js",
-        "hospital_management/static/src/js/card.js",
-        "hospital_management/static/src/js/TodoItem.js",
-        "hospital_management/static/src/js/TodoList.js",
+            "hospital_management/static/src/js/dashboard.js",
+            "hospital_management/static/src/js/card.js",
+            "hospital_management/static/src/js/ChartRender.js",
+
+            "hospital_management/static/src/xml/dashboard.xml",
+            "hospital_management/static/src/xml/ChartRender.xml",
+            "hospital_management/static/src/xml/card.xml",
 
 
-        "hospital_management/static/src/xml/*.xml",
+        # "hospital_management/static/src/js/dashboard.js",
+        # "hospital_management/static/src/js/counter.js",
+        # "hospital_management/static/src/js/card.js",
+        # "hospital_management/static/src/js/TodoItem.js",
+        # "hospital_management/static/src/js/TodoList.js",
+
+
+        # "hospital_management/static/src/xml/*.xml",
 
         ],
 

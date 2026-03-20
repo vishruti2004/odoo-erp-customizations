@@ -76,7 +76,7 @@ export class TodoList extends Component {
         
         const result = await this.orm.create("hospital.todo", [{
             description: description,
-            isCompleted: false,
+            is_completed: false,
         }]);
         
         const newId = result[0]; 
@@ -84,7 +84,7 @@ export class TodoList extends Component {
         this.todos.push({
             id: newId, 
             description: description,
-            isCompleted: false,
+            is_completed: false,
         });
 
         ev.target.value = ""; 

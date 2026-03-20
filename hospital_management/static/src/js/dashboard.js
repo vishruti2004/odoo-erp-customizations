@@ -1,35 +1,75 @@
-import { Component, useState } from "@odoo/owl";
-import { registry } from "@web/core/registry";
-import { Counter } from "./counter";
-import { Card } from "./card";
-import { markup } from "@odoo/owl";
-import { TodoList } from "./TodoList";
+/** @odoo-module **/
 
-class HospitalDashboard extends Component {
+import { registry } from "@web/core/registry";
+import { Layout } from "@web/search/layout";
+import { Card } from "./card"; 
+import { ChartRender } from "./ChartRender"; 
+import { rpc } from "@web/core/network/rpc"; 
+import { useService } from "@web/core/utils/hooks"; 
+import { Component, onWillStart, useState } from "@odoo/owl";
+
+export class HospitalDashboard extends Component {
+    static components = { Layout, Card, ChartRender }; 
+    static template = "hospital_management.HospitalDashboard";
 
     setup() {
+        this.action = useService("action");
+        
+        // Initial state with empty structure to avoid undefined errors
         this.state = useState({
-            sum: 0,
+            total: { 
+                patients: 0, 
+                doctors: 0, 
+                appointments: 0, 
+                today_appointments: 0,
+                state_json: [] 
+            }
         });
 
-        this.cards = [
-            { title: "Patients", content: "10" },
-            { title: "Doctors", content: "5" },
-            { title: "Appointments", content: markup("<b>20</b>") },
-        ];
+        onWillStart(async () => {
+            await this.loadDashboardData();
+        });
     }
 
-    incrementSum = (value) => {
-        this.state.sum = this.state.sum + 1;
+    async loadDashboardData() {
+        try {
+            const data = await rpc("/hospital/dashboard_data", {});
+            if (data) {
+                this.state.total = data;
+            }
+        } catch (error) {
+            console.error("Dashboard RPC Error:", error);
+        }
+    }
+
+    get appointmentChartData() {
+    return {
+        labels: this.state.total.state_json.map(d => d.state),
+        counts: this.state.total.state_json.map(d => d.state_count),
     };
+    }
+
+    openListView(resModel, name, domain = []) {
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: name,
+            res_model: resModel,
+            views: [[false, "list"], [false, "form"]],
+            domain: domain,
+            target: "current",
+        });
+    }
+
+    openTodayAppointments() {
+        const today = new Date().toISOString().split('T')[0];
+        const domain = [
+            ["start_datetime", ">=", today + " 00:00:00"],
+            ["start_datetime", "<=", today + " 23:59:59"],
+            ["state", "in", ["confirm", "consult", "done"]]
+        ];
+        this.openListView("hospital.appointment", "Today's Appointments", domain);
+    }
 }
 
-HospitalDashboard.template = "hospital_dashboard_template";
-
-HospitalDashboard.components = {
-    Counter,
-    Card,
-    TodoList
-};
-
+// Registering the action tag for Odoo Menu
 registry.category("actions").add("hospital_dashboard_tag", HospitalDashboard);

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hospital_management.ChartRender">
+        <div class="bg-white shadow-sm p-3 rounded text-center h-100 border">
+            <h5 class="mb-3 text-muted fw-bold">
+                <t t-esc="props.label"/>
+            </h5>
+            
+            <div style="height: 300px; position: relative;">
+                <canvas t-ref="chartCanvas"></canvas>
+            </div>
+        </div>
+    </t>
+</templates>
