@@ -5,76 +5,101 @@ import { Component, onWillStart, onMounted, useRef, onWillUnmount, useEffect } f
 
 export class ChartRender extends Component {
     static template = "hospital_management.ChartRender";
-    static props = {
-        type: { type: String, optional: true },
-        label: { type: String },
-        data: { type: Object },
-    };
-
+    
     setup() {
         this.chartRef = useRef("chartCanvas");
         this.chart = null;
+
+        this.stateColors = {
+            'cancel': '#e74c3c',  
+            'confirm': '#219d9b', 
+            'consult': '#f1c40f',
+            'done': '#574e7e',    
+            'draft': '#d3dbe2',  
+            'request': '#199a4e' 
+        };
 
         onWillStart(async () => {
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js");
         });
 
-        onMounted(() => {
-            this.renderChart();
-        });
-
-        useEffect(() => {
-            if (this.props.data && this.props.data.labels && this.props.data.labels.length > 0) {
-                this.renderChart();
-            }
-        }, () => [this.props.data]);
-
-        onWillUnmount(() => {
-            if (this.chart) {
-                this.chart.destroy();
-            }
-        });
+        onMounted(() => { this.renderChart(); });
+        
+        useEffect(() => { this.renderChart(); }, () => [this.props.data]);
+        
+        onWillUnmount(() => { if (this.chart) this.chart.destroy(); });
     }
 
     renderChart() {
-        if (this.chart) {
-            this.chart.destroy();
+        if (!this.props.data || !this.chartRef.el) return;
+        if (this.chart) this.chart.destroy();
+
+        const type = this.props.type.toLowerCase();
+        const isCircular = (type === 'pie' || type === 'doughnut');
+        let datasets = [];
+
+        // 1. Bar Chart Logic 
+        if (type === 'bar') {
+            datasets = (this.props.data.datasets || []).map(ds => ({
+                ...ds,
+                backgroundColor: this.stateColors[ds.label.toLowerCase()] || '#cccccc',
+                borderWidth: 1
+            }));
+        } 
+        // 2. Line Chart Logic 
+        else if (type === 'line') {
+            datasets = [{
+                label: 'Total Amount',
+                data: this.props.data.counts,
+                borderColor: '#219d9b',
+                backgroundColor: 'rgba(33, 157, 155, 0.1)',
+                fill: true, tension: 0.4, borderWidth: 3
+            }];
+        }
+        // 3. Pie/Doughnut Logic 
+        else {
+            const bgColors = (this.props.data.labels || []).map(l => this.stateColors[l.toLowerCase()] || '#cccccc');
+            datasets = [{
+                label: this.props.label || 'Status',
+                data: this.props.data.counts,
+                backgroundColor: bgColors,
+                hoverOffset: 15
+            }];
         }
 
-        const canvas = this.chartRef.el;
-        if (!canvas) return;
-
-        this.chart = new Chart(canvas, {
-            type: this.props.type || 'Pie',
-            data: {
-                labels: this.props.data.labels,
-                datasets: [{
-                    label: this.props.label,
-                    data: this.props.data.counts,
-                    backgroundColor: [
-                       '#e74c3c' , '#219d9b', '#f1c40f','#574e7e' , '#d3dbe2', '#199a4e'
-                    ],
-                    hoverOffset: 15,
-                    borderWidth: 2,
-                }]
+        // Final Chart Object Creation
+        this.chart = new Chart(this.chartRef.el, {
+            type: type,
+            data: { 
+                labels: this.props.data.labels || [], 
+                datasets: datasets 
             },
             options: {
-                responsive: true,
+                responsive: true, 
                 maintainAspectRatio: false,
-                cutout: '70%', 
-                plugins: {
-                    legend: {
+                scales: {
+                    // Pie chart ma scales na hoy, etle condition muki che
+                    x: { display: !isCircular, stacked: type === 'bar', grid: { display: false } },
+                    y: { display: !isCircular, stacked: type === 'bar', beginAtZero: true }
+                },
+                plugins: { 
+                    legend: { 
+                        display: true, 
                         position: 'bottom',
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true,
-                        }
+                        labels: { usePointStyle: true, padding: 20 }
                     },
                     tooltip: {
                         enabled: true,
                         callbacks: {
                             label: function(context) {
-                                return ` ${context.label}: ${context.raw}`;
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== undefined) {
+                                    label += context.parsed.y;
+                                } else {
+                                    label += context.parsed;
+                                }
+                                return label;
                             }
                         }
                     }

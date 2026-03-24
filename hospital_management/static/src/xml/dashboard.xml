@@ -2,34 +2,58 @@
 <templates xml:space="preserve">
     <t t-name="hospital_management.HospitalDashboard">
         <Layout display="{controlPanel: {}}" className="'o_dashboard h-100 bg-light overflow-auto'">
-            <div class="container-fluid p-4">
+            <div class="container-fluid p-3">
                 
-                <div class="row m-0 mt-2 justify-content-center">
-                    <div class="col-12 col-sm-6 col-lg-3 p-2">
-                        <Card label="'Total Patients'" value="state.total.patients" icon="'fa-users'" bgClass="'bg-primary'" 
+                <div class="row row-cols-1 row-cols-md-5 g-2 m-0 mt-2">
+                    <div class="col">
+                        <Card label="'Total Patients'" value="state.total.patients" icon="'fa-users'" bgClass="'bg-primary'"
                             onClick="() => this.openListView('hospital.patient', 'Patients')"/>
                     </div>
-                    <div class="col-12 col-sm-6 col-lg-3 p-2">
-                        <Card label="'Total Doctors'" value="state.total.doctors" icon="'fa-user-md'" bgClass="'bg-success'" 
+                    <div class="col">
+                        <Card label="'Total Doctors'" value="state.total.doctors" icon="'fa-user-md'" bgClass="'bg-success'"
                             onClick="() => this.openListView('hospital.doctor', 'Doctors')"/>
                     </div>
-                    <div class="col-12 col-sm-6 col-lg-3 p-2">
-                        <Card label="'Appointments'" value="state.total.appointments" icon="'fa-calendar'" bgClass="'bg-info'" 
+                    <div class="col">
+                        <Card label="'Appointments'" value="state.total.appointments" icon="'fa-calendar'" bgClass="'bg-info'"
                             onClick="() => this.openListView('hospital.appointment', 'All Appointments')"/>
                     </div>
-                    <div class="col-12 col-sm-6 col-lg-3 p-2">
-                        <Card label="'Today Appointments'" value="state.total.today_appointments" icon="'fa-clock-o'" bgClass="'bg-warning'" 
+                    <div class="col">
+                        <Card label="'Today'" value="state.total.today_appointments" icon="'fa-clock-o'" bgClass="'bg-warning'"
                             onClick="() => this.openTodayAppointments()"/>
+                    </div>
+                    <div class="col">
+                        <Card label="'Total Done'" value="state.total.total_done_count" icon="'fa-check-circle'" bgClass="'bg-secondary'"
+                            onClick="() => this.openListView('hospital.appointment', 'Done Appointments', [['state', '=', 'done']])"/>
                     </div>
                 </div>
 
-                <div class="row m-0 mt-5 justify-content-center">
-                    <div class="col-12 col-md-8 col-lg-5">
-                        <ChartRender 
-                            type="'doughnut'" 
-                            label="'Appointments by Status'" 
-                            data="appointmentChartData" 
-                        />
+                <div class="row g-3 m-0 mt-4">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body" style="height: 400px;">
+                                <h6 class="fw-bold border-bottom pb-2">Appointment Status</h6>
+                                <ChartRender type="'doughnut'" data="appointmentChartData"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body" style="height: 400px;">
+                                <h6 class="fw-bold border-bottom pb-2">Monthly Trends</h6>
+                                <ChartRender type="'bar'" data="trendChartData"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 m-0 mt-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body" style="height: 400px;">
+                                <h6 class="fw-bold border-bottom pb-2">Monthly Paid Performance</h6>
+                                <ChartRender type="'line'" label="'Paid Amount'" data="paymentLineChartData"/>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

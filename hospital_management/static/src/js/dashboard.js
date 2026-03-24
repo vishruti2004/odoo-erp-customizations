@@ -14,50 +14,57 @@ export class HospitalDashboard extends Component {
 
     setup() {
         this.action = useService("action");
-        
-        // Initial state with empty structure to avoid undefined errors
         this.state = useState({
             total: { 
-                patients: 0, 
-                doctors: 0, 
-                appointments: 0, 
-                today_appointments: 0,
-                state_json: [] 
+                patients: 0, doctors: 0, appointments: 0, today_appointments: 0,
+                total_done_count: 0, 
+                state_json: [], trend_json: [], payment_json: [] 
             }
         });
 
         onWillStart(async () => {
-            await this.loadDashboardData();
-        });
-    }
-
-    async loadDashboardData() {
-        try {
             const data = await rpc("/hospital/dashboard_data", {});
             if (data) {
                 this.state.total = data;
             }
-        } catch (error) {
-            console.error("Dashboard RPC Error:", error);
-        }
+        });
     }
 
     get appointmentChartData() {
-    return {
-        labels: this.state.total.state_json.map(d => d.state),
-        counts: this.state.total.state_json.map(d => d.state_count),
-    };
+        const data = this.state.total.state_json || [];
+        return {
+            labels: data.map(d => d.state || 'Draft'),
+            counts: data.map(d => d.__count || d.state_count || 0),
+        };
     }
 
-    openListView(resModel, name, domain = []) {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            name: name,
-            res_model: resModel,
-            views: [[false, "list"], [false, "form"]],
-            domain: domain,
-            target: "current",
-        });
+    get trendChartData() {
+        const trend = this.state.total.trend_json || [];
+        const weeks = [...new Set(trend.map(d => d['start_datetime:week']))];
+        const states = [...new Set(trend.map(d => d.state))];
+        return {
+            labels: weeks,
+            datasets: states.map(s => ({
+                label: s,
+                data: weeks.map(w => {
+                    const found = trend.find(d => d['start_datetime:week'] === w && d.state === s);
+                    return found ? (found.__count || 0) : 0;
+                })
+            }))
+        };
+    }
+
+    get paymentLineChartData() {
+        const data = this.state.total.payment_json || [];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        
+        return {
+            labels: months,
+            counts: months.map((m) => {
+                const found = data.find(d => d['start_datetime:month'] === m);
+                return found ? (found.__count || 0) : 0;
+            })
+        };
     }
 
     openTodayAppointments() {
@@ -67,9 +74,14 @@ export class HospitalDashboard extends Component {
             ["start_datetime", "<=", today + " 23:59:59"],
             ["state", "in", ["confirm", "consult", "done"]]
         ];
-        this.openListView("hospital.appointment", "Today's Appointments", domain);
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: "Today's Appointments",
+            res_model: 'hospital.appointment',
+            views: [[false, 'list'], [false, 'form']],
+            domain: domain,
+        });
     }
 }
 
-// Registering the action tag for Odoo Menu
 registry.category("actions").add("hospital_dashboard_tag", HospitalDashboard);

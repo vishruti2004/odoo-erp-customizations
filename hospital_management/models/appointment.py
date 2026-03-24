@@ -104,11 +104,11 @@ class HospitalAppointment(models.Model):
     #     for rec in self:
     #         rec.website_url = "/my/appointment/%s" % rec.id
 
-    invoice_ids = fields.One2many(
-        "account.move",
-        "invoice_origin",
-        string="Invoices",
-    )
+    # invoice_ids = fields.One2many(
+    #     "account.move",
+    #     "invoice_origin",
+    #     string="Invoices",
+    # )
 
     invoice_total = fields.Monetary(
         string="Invoiced",
@@ -394,6 +394,7 @@ class HospitalAppointment(models.Model):
                     {
                         "move_type": "out_invoice",
                         "partner_id": rec.patient_id.partner_id.id,
+                        "ref": rec.name,
                         "invoice_origin": rec.name,
                         "company_id": rec.company_id.id,
                         "currency_id": rec.currency_id.id,
