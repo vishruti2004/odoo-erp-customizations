@@ -1,0 +1,51 @@
+<t t-name="hospital_management.DoctorList">
+    <div class="card shadow-sm border-0 mt-5" style="border-radius: 8px;">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+            <h6 class="mb-0 fw-bold text-muted">Top 5 Doctors</h6>
+            
+            <div class="d-flex align-items-center">
+                <small class="text-muted me-2" t-att-class="state.isMonthWise ? '' : 'fw-bold text-primary'">Year</small>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" 
+                           t-att-checked="state.isMonthWise" 
+                           t-on-change="onTogglePeriod" 
+                           style="cursor: pointer;"/>
+                </div>
+                <small class="text-muted ms-1" t-att-class="state.isMonthWise ? 'fw-bold text-primary' : ''">Month</small>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light text-muted small">
+                    <tr>
+                        <th class="ps-4 border-0" style="width: 60px;">#</th>
+                        <th class="border-0">Name</th>
+                        <th class="pe-4 border-0 text-center" style="width: 120px;">Appointments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-if="state.loading">
+                        <tr><td colspan="3" class="text-center py-4">Loading...</td></tr>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="state.doctors" t-as="doc" t-key="doc_index">
+                            <tr class="align-middle">
+                                <td class="ps-4 text-muted"><t t-esc="doc_index + 1"/>.</td>
+                                <td>
+                                    <div class="text-dark"><t t-esc="doc.name"/></div>
+                                </td>
+                                <td class="pe-4 text-center">
+                                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle border border-2" 
+                                         style="width: 32px; height: 32px; font-size: 0.85rem; background-color: #f8f9fa; color: #666; font-weight: 500;">
+                                        <t t-esc="doc.count"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </t>
+                    </t>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</t>
