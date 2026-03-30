@@ -2,79 +2,92 @@
     <t t-name="hospital_management.HospitalDashboard">
         <Layout display="{controlPanel: {}}" className="'o_dashboard h-100 bg-light overflow-auto'">
             <div class="container-fluid p-3">
-                
-                <div class="row row-cols-1 row-cols-md-5 g-2 m-0 mt-2">
-                    <div class="col">
+
+                <!-- Cards -->
+                <div class="row g-2 mx-0 mt-2 d-flex justify-content-between">
+                    <div style="flex: 1; min-width: 180px;">
                         <Card label="'Total Patients'" value="state.total.patients" icon="'fa-users'" bgClass="'bg-primary'"
                             onClick="() => this.openListView('hospital.patient', 'Patients')"/>
                     </div>
-                    <div class="col">
+                    
+                    <div style="flex: 1; min-width: 180px;">
                         <Card label="'Total Doctors'" value="state.total.doctors" icon="'fa-user-md'" bgClass="'bg-success'"
                             onClick="() => this.openListView('hospital.doctor', 'Doctors')"/>
                     </div>
-                    <div class="col">
-                        <Card label="'Appointments'" value="state.total.appointments" icon="'fa-calendar'" bgClass="'bg-info'"
+                    
+                    <div style="flex: 1; min-width: 180px;">
+                        <Card label="'Appointments'" value="totalAppointments" icon="'fa-calendar'" bgClass="'bg-info'"
                             onClick="() => this.openListView('hospital.appointment', 'All Appointments')"/>
                     </div>
-                    <div class="col">
+                    
+                    <div style="flex: 1; min-width: 180px;">
                         <Card label="'Today'" value="state.total.today_appointments" icon="'fa-clock-o'" bgClass="'bg-warning'"
                             onClick="() => this.openTodayAppointments()"/>
                     </div>
-                    <div class="col">
-                        <Card label="'Total Done'" value="state.total.total_done_count" icon="'fa-check-circle'" bgClass="'bg-secondary'"
+                    
+                    <div style="flex: 1; min-width: 180px;">
+                        <Card label="'Total Done'" value="totalDoneCount" icon="'fa-check-circle'" bgClass="'bg-secondary'"
                             onClick="() => this.openListView('hospital.appointment', 'Done Appointments', [['state', '=', 'done']])"/>
                     </div>
                 </div>
 
+                <!-- pie chart and bar chart -->
                 <div class="row g-3 m-0 mt-4">
                     <div class="col-md-6">
                         <div class="card shadow-sm border-0 h-100">
-                            <div class="card-body" style="height: 400px;">
-                                <h6 class="fw-bold border-bottom pb-2">Appointment Status</h6>
-                                <ChartRender type="'doughnut'" data="appointmentChartData"/>
+                            <div class="card-body">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3">Appointment Status</h6>
+                                <div style="height: 350px;">
+                                    <ChartRender type="'doughnut'" data="appointmentChartData"/>
+                                </div>
                             </div>
                         </div>
                     </div>
-
                     <div class="col-md-6">
                         <div class="card shadow-sm border-0 h-100">
-                            <div class="card-body" style="height: 400px;">
-                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                                     <h6 class="fw-bold m-0">Appointment Trends</h6>
-                                    
                                     <select class="form-select form-select-sm w-auto border-0 bg-light fw-bold" 
                                             t-on-change="onTrendFilterChange"
                                             t-att-value="state.trend_period">
-                                        <option value="all">All Time (Years)</option>
-                                        <option value="this_year">This Year (Months)</option>
-                                        <option value="previous_year">Previous Year</option>
-                                        <option value="this_month">This Month (Weeks)</option>
+                                        <option value="all">All</option>
+                                        <option value="this_year">This Year</option>
+                                        <option value="this_month">This Month</option>
                                         <option value="previous_month">Previous Month</option>
                                         <option value="next_month">Next Month</option>
-
                                     </select>
                                 </div>
-                                <ChartRender type="'bar'" data="trendChartData"/>
+                                <div style="height: 350px;">
+                                    <ChartRender type="'bar'" data="trendChartData"/>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!--  Payment Chart  -->
                 <div class="row g-3 m-0 mt-4">
                     <div class="col-12">
                         <div class="card shadow-sm border-0">
-                            <div class="card-body" style="height: 400px;">
-                                <h6 class="fw-bold border-bottom pb-2">Monthly Appointment Payment</h6>
-                                <ChartRender type="'line'" label="'Paid Amount'" data="paymentLineChartData" currency="state.currencySymbol"/>
+                            <div class="card-body">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3">Monthly Appointment Payment</h6>
+                                <div style="height: 350px;">
+                                    <ChartRender type="'line'" data="paymentLineChartData" currency="state.currencySymbol"/>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-5 mb-4"> 
+                <!-- Top Doctors -->
+                <div class="row g-3 m-0 mt-4 mb-4">
                     <div class="col-md-6">
-                        <div class="shadow-sm rounded bg-white">
-                            <DoctorList/> 
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3">Top Doctors</h6>
+                                <DoctorList doctors="state.total.top_doctors"/>
+                            </div>
                         </div>
                     </div>
                 </div>

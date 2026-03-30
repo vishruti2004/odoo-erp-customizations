@@ -8,6 +8,7 @@
     "depends": [
         "hr",
         "account",
+        "web",
     ],
     "data": [
         "security/security.xml",
@@ -48,11 +49,15 @@
         ],
 
         "web.assets_backend": [
+            "hospital_management/static/src/services/dashboard_services.js",
+
             "hospital_management/static/src/js/ChartRender.js",
 
             "hospital_management/static/src/js/dashboard.js",
             "hospital_management/static/src/js/card.js",
             "hospital_management/static/src/js/Doctorlist.js",
+
+
 
             "hospital_management/static/src/xml/dashboard.xml",
             "hospital_management/static/src/xml/ChartRender.xml",

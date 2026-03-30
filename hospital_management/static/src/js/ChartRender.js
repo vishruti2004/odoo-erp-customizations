@@ -22,7 +22,12 @@ export class ChartRender extends Component {
         });
 
         onMounted(() => { this.renderChart(); });
-        useEffect(() => { this.renderChart(); }, () => [this.props.data]);
+        
+        //   JSON.stringify - update properly
+        useEffect(() => { 
+            this.renderChart(); 
+        }, () => [JSON.stringify(this.props.data)]);
+        
         onWillUnmount(() => { if (this.chart) this.chart.destroy(); });
     }
 
@@ -33,27 +38,13 @@ export class ChartRender extends Component {
         var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         return weekNo;
     }
-    
-    getMonthRange(date) {
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-        return { firstDay, lastDay };
-    }
-    
-    getWeekRange(date) {
-        const start = new Date(date);
-        start.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1));
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        return { start, end };
-    }
 
     renderChart() {
         if (!this.props.data || !this.chartRef.el) return;
         if (this.chart) this.chart.destroy();
 
         const self = this;
-        const type = this.props.type.toLowerCase();
+        const type = this.props.type ? this.props.type.toLowerCase() : 'bar';
         const isCircular = (type === 'pie' || type === 'doughnut');
         let datasets = [];
 
@@ -61,30 +52,24 @@ export class ChartRender extends Component {
             datasets = (this.props.data.datasets || []).map(ds => ({
                 ...ds,
                 backgroundColor: this.stateColors[ds.label] || '#cccccc',
-                borderWidth: 1,
-                borderRadius: 4
+                borderWidth: 1
             }));
         }
         else if (type === 'line') {
             datasets = [{
                 label: 'Total Amount',
-                data: this.props.data.counts,
+                data: this.props.data.counts || [],
                 borderColor: '#219d9b',
                 backgroundColor: 'rgba(33, 157, 155, 0.1)',
-                fill: true, 
-                tension: 0.4, 
-                borderWidth: 3,
-                pointRadius: 4,
-                pointBackgroundColor: '#219d9b'
+                fill: true, tension: 0.4, borderWidth: 3
             }];
         }
         else {
             const bgColors = (this.props.data.labels || []).map(l => this.stateColors[l] || '#cccccc');
             datasets = [{
-                data: this.props.data.counts,
+                data: this.props.data.counts || [],
                 backgroundColor: bgColors,
-                hoverOffset: 15,
-                borderWidth: 0
+                hoverOffset: 15
             }];
         }
 
@@ -103,27 +88,19 @@ export class ChartRender extends Component {
                         stacked: type === 'bar',
                         grid: { display: false },
                         ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
                             callback: function(val, index) {
                                 const label = this.getLabelForValue(val);
-                                
-                                if (label && label.includes('W') && label.match(/W\d+/)) {
-                                    return label;
+                                const dateRangeMatch = label.match(/(\d+)-(\d+)\s(\w+)/);
+                                if (dateRangeMatch) {
+                                    const month = dateRangeMatch[3];
+                                    const monthNames = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06',
+                                                      'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'};
+                                    const monthNum = monthNames[month];
+                                    const year = new Date().getFullYear();
+                                    const startDate = new Date(year, parseInt(monthNum)-1, parseInt(dateRangeMatch[1]));
+                                    const weekNum = self.getWeekNumber(startDate);
+                                    return `W${weekNum}`;
                                 }
-                                
-                                if (label && label.includes(' ') && !label.includes('-')) {
-                                    const parts = label.split(' ');
-                                    if (parts.length === 2 && !isNaN(parts[1])) {
-                                        return parts[0]; 
-                                    }
-                                }
-                                
-                                // Year format
-                                if (label && !isNaN(label) && label.length === 4) {
-                                    return label;
-                                }
-                                
                                 return label;
                             }
                         }
@@ -132,8 +109,13 @@ export class ChartRender extends Component {
                         display: !isCircular, 
                         stacked: type === 'bar', 
                         beginAtZero: true,
-                        grid: {
-                            color: '#e9ecef'
+                        ticks: {
+                            callback: function(val) {
+                                if (self.props.currency) {
+                                    return self.props.currency + ' ' + val;
+                                }
+                                return val;
+                            }
                         }
                     }
                 },
@@ -141,82 +123,48 @@ export class ChartRender extends Component {
                     legend: {
                         display: type !== 'line',
                         position: 'bottom',
-                        labels: { 
-                            usePointStyle: true, 
-                            padding: 20,
-                            boxWidth: 12,
-                            font: {
-                                size: 11
-                            }
-                        }
+                        labels: { usePointStyle: true, padding: 20 }
                     },
                     tooltip: {
                         callbacks: {
                             title: function(context) {
                                 const label = context[0].label;
-                                
-                                // Handle week format 
-                                if (label && label.includes('W')) {
-                                    const match = label.match(/W(\d+)\s(\d{4})/);
-                                    if (match) {
-                                        const weekNum = parseInt(match[1]);
-                                        const year = parseInt(match[2]);
-                                        const date = new Date(year, 0, 1 + (weekNum - 1) * 7);
-                                        const start = new Date(date);
-                                        start.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1));
-                                        const end = new Date(start);
-                                        end.setDate(start.getDate() + 6);
-                                        
-                                        const options = { day: '2-digit', month: 'short' };
-                                        return `${start.toLocaleDateString('en-GB', options)} - ${end.toLocaleDateString('en-GB', options)} ${year}`;
-                                    }
-                                    return label;
+                                const weekMatch = label.match(/(\d+)-(\d+)\s(\w+)/);
+                                if (weekMatch) {
+                                    const startDay = weekMatch[1];
+                                    const endDay = weekMatch[2];
+                                    const month = weekMatch[3];
+                                    const currentYear = new Date().getFullYear();
+                                    return `${startDay} ${month} ${currentYear} - ${endDay} ${month} ${currentYear}`;
                                 }
-                                
-                                // Handle month format 
-                                if (label && label.includes(' ') && !label.includes('-')) {
-                                    const parts = label.split(' ');
-                                    if (parts.length === 2) {
-                                        const monthName = parts[0];
-                                        const year = parts[1];
-                                        const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June', 
-                                                            'July', 'August', 'September', 'October', 'November', 'December']
-                                                            .indexOf(monthName);
-                                        if (monthIndex !== -1) {
-                                            const firstDay = new Date(year, monthIndex, 1);
-                                            const lastDay = new Date(year, monthIndex + 1, 0);
-                                            const options = { day: '2-digit', month: 'short' };
-                                            return `${firstDay.toLocaleDateString('en-GB', options)} - ${lastDay.toLocaleDateString('en-GB', options)} ${year}`;
-                                        }
-                                    }
-                                    return label;
+                                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                                   'July', 'August', 'September', 'October', 'November', 'December'];
+                                if (monthNames.includes(label)) {
+                                    const monthIndex = monthNames.indexOf(label);
+                                    const currentYear = new Date().getFullYear();
+                                    const lastDay = new Date(currentYear, monthIndex + 1, 0).getDate();
+                                    return `1 ${label.substring(0,3)} ${currentYear} - ${lastDay} ${label.substring(0,3)} ${currentYear}`;
                                 }
-                                
-                                // Handle year format
                                 if (label && !isNaN(label) && label.length === 4) {
-                                    return `Full Year ${label}`;
+                                    return ` Year ${label}`;
                                 }
-                                
                                 return label;
                             },
                             label: function(context) {
                                 let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
+                                if (label) { label += ': '; }
                                 if (context.parsed.y !== undefined) {
-                                    label += context.parsed.y;
+                                    if (self.props.currency) {
+                                        label += self.props.currency + ' ' + context.parsed.y;
+                                    } else {
+                                        label += context.parsed.y;
+                                    }
                                 } else {
                                     label += context.parsed;
                                 }
                                 return label;
                             }
-                        },
-                        backgroundColor: '#fff',
-                        titleColor: '#2c3e50',
-                        bodyColor: '#34495e',
-                        borderColor: '#bdc3c7',
-                        borderWidth: 1
+                        }
                     }
                 }
             }
