@@ -23,7 +23,6 @@ export class ChartRender extends Component {
 
         onMounted(() => { this.renderChart(); });
         
-        //   JSON.stringify - update properly
         useEffect(() => { 
             this.renderChart(); 
         }, () => [JSON.stringify(this.props.data)]);

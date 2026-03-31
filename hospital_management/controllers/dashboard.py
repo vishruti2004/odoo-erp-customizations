@@ -162,8 +162,11 @@ class HospitalDashboard(http.Controller):
             "top_doctors": top_doctors,
             "patients": appt_obj.env['hospital.patient'].search_count([]),
             "doctors": appt_obj.env['hospital.doctor'].search_count([]),
-            "today_appointments": appt_obj.search_count([('start_datetime', '>=', f"{today} 00:00:00"),
-                                                        ('start_datetime', '<=', f"{today} 23:59:59")]),
+            "today_appointments": appt_obj.search_count([
+                ('start_datetime', '>=', f"{today} 00:00:00"),
+                ('start_datetime', '<=', f"{today} 23:59:59"),
+                ('state', 'in', ['confirm', 'consult', 'done']) 
+            ]),
             "total_appointments": total_appointments,
             "total_done_count": total_done_count,
             "total_payment_year": total_payment_year,

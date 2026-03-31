@@ -1,9 +1,9 @@
+/** @odoo-module **/
 import { registry } from "@web/core/registry";
 import { Layout } from "@web/search/layout";
 import { Card } from "./card";
 import { ChartRender } from "./ChartRender";
 import { DoctorList } from "./Doctorlist";
-import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
 import { Component, onWillStart, useState } from "@odoo/owl";
 
@@ -11,13 +11,19 @@ export class HospitalDashboard extends Component {
     static components = { Layout, Card, ChartRender, DoctorList };
     static template = "hospital_management.HospitalDashboard";
 
-   setup() {
+    setup() {
         this.action = useService("action");
-        // આપણી નવી બનાવેલી સર્વિસ અહિયાં લોડ કરો
         this.dashboardService = useService("hospital_dashboard_service");
+        this._isFetching = false; 
         
         this.state = useState({
-            total: { /* ... તારું જૂનું સ્ટેટ ... */ },
+            total: {
+                patients: 0, doctors: 0, appointments: 0, today_appointments: 0,
+                total_appointments: 0, total_done_count: 0, total_payment_year: 0,
+                state_json: [], trend_json: [], payment_json: [],
+                available_years: []
+            },
+            currencySymbol: "",
             trend_period: 'all',
             selected_year: null
         });
@@ -27,17 +33,28 @@ export class HospitalDashboard extends Component {
         });
     }
 
+
+
     async fetchDashboardData() {
-        // હવે RPC ની જગ્યાએ સીધું સર્વિસને કોલ કરો
-        const data = await this.dashboardService.fetchData(
-            this.state.trend_period, 
-            this.state.selected_year
-        );
+    if (this._isFetching) return;
+    this._isFetching = true;
+
+    try {
+        const params = {
+            trend_period: this.state.trend_period,
+            year: this.state.selected_year
+        };
+
+        const data = await this.dashboardService.getDashboardData(params);
+
         if (data) {
             this.state.total = { ...data };
             this.state.currencySymbol = data.currency_symbol;
         }
+    } finally {
+        this._isFetching = false;
     }
+}
 
     async onTrendFilterChange(ev) {
         this.state.trend_period = ev.target.value;
@@ -52,6 +69,21 @@ export class HospitalDashboard extends Component {
             res_model: model,
             views: [[false, 'list'], [false, 'form']],
             domain: domain,
+        });
+    }
+
+    openTodayAppointments() {
+        const today = new Date().toISOString().split('T')[0];
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: "Today's Appointments",
+            res_model: 'hospital.appointment',
+            views: [[false, 'list'], [false, 'form']],
+            domain: [
+                ["start_datetime", ">=", today + " 00:00:00"],
+                ["start_datetime", "<=", today + " 23:59:59"],
+                ["state", "in", ["confirm", "consult", "done"]]
+            ],
         });
     }
 
@@ -111,20 +143,6 @@ export class HospitalDashboard extends Component {
     get totalDoneCount() { return this.state.total.total_done_count || 0; }
     get totalPaymentYear() { return this.state.total.total_payment_year || 0; }
 
-    openTodayAppointments() {
-        const today = new Date().toISOString().split('T')[0];
-        this.action.doAction({
-            type: 'ir.actions.act_window',
-            name: "Today's Appointments",
-            res_model: 'hospital.appointment',
-            views: [[false, 'list'], [false, 'form']],
-            domain: [
-                ["start_datetime", ">=", today + " 00:00:00"],
-                ["start_datetime", "<=", today + " 23:59:59"],
-                ["state", "in", ["confirm", "consult", "done"]]
-            ],
-        });
-    }
+   
 }
-
 registry.category("actions").add("hospital_dashboard_tag", HospitalDashboard);
