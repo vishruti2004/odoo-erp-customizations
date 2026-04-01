@@ -1,10 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <template id="hospital_snippets_register" inherit_id="website.snippets" name="Hospital Snippets Register">
+        
         <xpath expr="//snippets[@id='snippet_groups']" position="inside">
             <t t-snippet="hospital_management.s_doctor_list" 
-            string="Doctor List"
-            t-thumbnail="/website/static/src/img/snippets_thumbs/s_three_columns.svg"
-            data-snippet="s_doctor_tabs"/>
+               t-thumbnail="/hospital_management/static/src/img/doctor_thumb.svg"/>
         </xpath>
+        
+        <xpath expr="//snippets[@id='snippet_structure']" position="inside">
+            <t t-snippet="hospital_management.s_doctor_list"/>
+        </xpath>
+        
     </template>
-</odoo> 
+</odoo>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="website.AnimateOption" t-inherit-mode="extension">
+        
+        <xpath expr="." position="inside">
+            
+            <hr class="my-3" style="border-top: 1px solid #dee2e6;"/>
+            <h6 class="mb-2 text-primary" style="font-weight: bold;">Hospital Options</h6>
+
+            <BuilderRow label.translate="Specialization">
+                <BuilderSelect dataAttributeAction="'specialization'">
+                    <BuilderSelectItem dataAttributeActionValue="'all'">All Specializations</BuilderSelectItem>
+                    <BuilderSelectItem dataAttributeActionValue="'1'">Cardiologist</BuilderSelectItem>
+                    <BuilderSelectItem dataAttributeActionValue="'2'">Pediatrician</BuilderSelectItem>
+                    <BuilderSelectItem dataAttributeActionValue="'3'">Orthopedic</BuilderSelectItem>
+                </BuilderSelect>
+            </BuilderRow>
+
+            <BuilderRow label.translate="Columns">
+                <BuilderRange dataAttributeAction="'columns'" min="1" max="4" step="1" displayRangeValue="true"/>
+            </BuilderRow>
+            
+        </xpath>
+    </t>
+</templates>

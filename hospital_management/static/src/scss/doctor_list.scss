@@ -1,0 +1,17 @@
+.doctor-main-wrapper {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef !important;
+}
+
+.doctor-inner-card {
+    background: #ffffff;
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        border-color: #007bff !important;
+    }
+}
+
+.doctor-card-item.d-none {
+    display: none !important;
+}
