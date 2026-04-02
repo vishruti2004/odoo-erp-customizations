@@ -1,41 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <template id="s_doctor_list" name="Doctor List">
-        <section class="s_doctor_list o_colored_level py-5" 
-                 data-specialization="all" 
-                 data-columns="3"
-                 data-snippet="s_doctor_list"
-                 data-js="doctorSnippetPlugin"> <div class="container">
-                <div class="doctor-main-wrapper p-4 p-lg-5 shadow-lg border border-light" 
-                     style="border-radius: 30px; background-color: #ffffff;">
-                    
-                    <div class="row mb-5 text-center">
-                        <div class="col-lg-12">
-                            <h2 class="display-5 fw-bold text-dark">Meet Our Specialists</h2>
-                            <p class="text-muted">Expert doctors available for your care.</p>
-                            <hr class="mx-auto" style="width: 50px; border-top: 3px solid #007bff; opacity: 1;"/>
+   <template id="s_doctor_list" name="Doctor List">
+    <section class="s_doctor_list o_colored_level py-5" 
+             data-snippet="s_doctor_list"
+             data-js="hospital_doctor_option"> <div class="container">
+            <h2 class="text-center mb-5">Meet Our Specialists</h2>
+            <div class="row doctor-grid g-4 justify-content-center">
+                <t t-set="doctors" t-value="request.env['hospital.doctor'].sudo().search([('active', '=', True)])"/>
+                <t t-foreach="doctors" t-as="doctor">
+                    <div class="col-md-4 doctor-card-item" t-att-data-specialization="doctor.specialization_id.id">
+                        <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: 20px;">
+                             <h5 class="fw-bold"><t t-out="doctor.name"/></h5>
+                             <p class="badge bg-light text-primary"><t t-out="doctor.specialization_id.name"/></p>
                         </div>
                     </div>
-
-                    <div class="row doctor-grid g-4 justify-content-center">
-                        <t t-set="doctors" t-value="request.env['hospital.doctor'].sudo().search([('active', '=', True)])"/>
-                        <t t-foreach="doctors" t-as="doctor">
-                            <div class="col-md-4 col-sm-6 doctor-card-item" t-att-data-specialization="doctor.specialization_id.id">
-                                <div class="card h-100 border border-1 shadow-sm doctor-inner-card" style="border-radius: 20px;">
-                                    <div class="card-body text-center p-4">
-                                        <t t-if="doctor.partner_id.image_1920">
-                                            <img t-att-src="image_data_uri(doctor.partner_id.image_1920)" class="rounded-circle mb-3" style="width: 90px; height: 90px; object-fit: cover;"/>
-                                        </t>
-                                        <h5 class="fw-bold mb-1"><t t-out="doctor.name"/></h5>
-                                        <span class="badge bg-light text-primary mb-3"><t t-out="doctor.specialization_id.name"/></span>
-                                        <!-- <a t-attf-href="/appointment/book?doctor_id=#{doctor.id}" class="btn btn-primary w-100 rounded-pill">Book Now</a> -->
-                                    </div>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
-                </div>
+                </t>
             </div>
-        </section>
-    </template>
+        </div>
+    </section>
+</template>
 </odoo>

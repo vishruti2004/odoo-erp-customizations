@@ -13,7 +13,8 @@
         "account", 
         "website", 
         "web",
-        "html_builder"
+        "html_builder",
+        "html_editor"
     ],
     "data": [
         # Security
@@ -57,10 +58,13 @@
     ],
     "assets": {
    
-        "website.assets_wysiwyg": [
+        "website.website_builder_assets": [
+            ('include', 'html_builder.assets'),
             "hospital_management/static/src/js/s_doctor_list_option.js",
-            "hospital_management/static/src/xml/s_doctor_snippet_options.xml",
+            "hospital_management/static/src/xml/s_doctor_list_option.xml",
         ],
+
+      
     
         "web.assets_frontend": [
             "hospital_management/static/src/scss/doctor_list.scss",

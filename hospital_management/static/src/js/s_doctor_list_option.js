@@ -1,36 +1,77 @@
 /** @odoo-module **/
 
-import { DynamicSnippetOption } from "@website/builder/plugins/options/dynamic_snippet_option";
 import { registry } from "@web/core/registry";
+import { ThemeTabPlugin } from "@website/builder/plugins/theme/theme_tab_plugin";
+import { BaseOptionComponent } from "@html_builder/core/utils";
+import { withSequence } from "@html_editor/utils/resource";
+import { OPTION_POSITIONS } from "@website/builder/plugins/theme/theme_tab_plugin";
+import { theme_options} from "@website/builder/plugins/theme/theme_tab_plugin";
 
-console.log(">>> Doctor JS File Loaded Successfully"); 
+console.log(" JS LOADED");
 
-export class DoctorSnippetOption extends DynamicSnippetOption {
-    static template = "hospital_management.DoctorSnippetOptions";
-    static selector = "section.s_doctor_list";
+// class CustomThemeTabPlugin extends ThemeTabPlugin {
+//     static id = "customThemeTab";
+
+//     // constructor() {
+//     //     super(...arguments);
+//     //     console.log(" Plugin Initialized");
+//     // }
+
+   
+//     // get resources() {
+//     //     const res = super.resources;
+
+//     //     if (!res || !res.theme_options) {
+//     //         return res || {};
+//     //     }
+
+//     //     res.theme_options.push(
+//     //         withSequence(
+//     //             (OPTION_POSITIONS.ADVANCED || 80) + 5,
+//     //             this.getThemeOptionBlock(
+//     //                 "theme-doctor-specialization",
+//     //                 "Doctor Specialization",
+//     //                 class DoctorOption extends BaseOptionComponent {
+//     //                     static template = "hospital_management.doctor_snippet_options_template";
+
+//     //                     setup() {
+//     //                         super.setup();
+//     //                         console.log(" Doctor Option Setup Done");
+//     //                     }
+//     //                 }
+//     //             )
+//     //         )
+//     //     );
+
+//     //     return res;
+//     // }
+//     resources = {
+//         ...super.resources,
+//         theme_options: [
+//             ...super.resources.theme_options,
+//             withSequence(
+//                     OPTION_POSITIONS.ADVANCED,
+//                     this.getThemeOptionBlock(
+//                     "theme-card",
+//                     "Card Style",
+//                     class ThemeCardOption extends BaseOptionComponent {
+//                         static template = "hospital_management.doctor_snippet_options_template";
+//                     }
+//                 )
+//             ),
+//         ],
+//     };
+// }
+
+// registry.category("website-plugins").add("customThemeTab", CustomThemeTabPlugin);
+
+export class DoctorOption extends BaseOptionComponent {
+    static template = "hospital_management.doctor_snippet_options_template";
+    static dependencies = ["DoctorOption"];
+    static selector = ".s_doctor_list";
 
     setup() {
         super.setup();
-        console.log(">>> DoctorSnippetOption Setup Called for:", this.target);
-    }
-
-    async specialization(value) {
-        console.log(">>> Specialization Changed to:", value);
-        this.target.dataset.specialization = value;
-        this.reset();
-    }
-
-    async columns(value) {
-        console.log(">>> Columns Changed to:", value);
-        this.target.dataset.columns = value;
-        const grid = this.target.querySelector('.row'); 
-        if (grid) {
-            const classes = Array.from(grid.classList).filter(c => c.startsWith('row-cols-'));
-            grid.classList.remove(...classes);
-            grid.classList.add(`row-cols-${value}`);
-        }
-        this.reset();
+        debugger
     }
 }
-
-registry.category("website_snippet_options").add("hospital_doctor_option", DoctorSnippetOption);
