@@ -1,34 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-
-    <!-- <t t-name="hospital_management.doctor_snippet_options_template">
-        <BuilderContext>
-            <BuilderRow label.translate="Specialization">
-                <BuilderSelect action="'setSpecialization'">
-                    <BuilderSelectItem actionValue="'all'">All Doctors</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'cardio'">Cardiologist</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'pedia'">Pediatrician</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'general'">General Physician</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'neuro'">Neurologist</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'ortho'">Orthopedic</BuilderSelectItem>
-                </BuilderSelect>
-            </BuilderRow>
-        </BuilderContext>
-    </t> -->
-
-    <t t-name="hospital_management.DoctorOption" t-inherit="website.DynamicSnippetOption">
-        <xpath expr="//BuilderRow" position="after">
-            <BuilderRow label.translate="Specialization">
-                <BuilderSelect action="'setSpecialization'">
-                    <BuilderSelectItem actionValue="'all'">All Doctors</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'cardio'">Cardiologist</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'pedia'">Pediatrician</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'general'">General Physician</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'neuro'">Neurologist</BuilderSelectItem>
-                    <BuilderSelectItem actionValue="'ortho'">Orthopedic</BuilderSelectItem>
-                </BuilderSelect>
-            </BuilderRow>
-        </xpath>
+    <t t-name="hospital_management.DoctorListOption">
+        <BuilderRow label.translate="Specialization">
+            <BuilderSelect>
+                <BuilderSelectItem classAction="''">All Doctors</BuilderSelectItem>
+                <BuilderSelectItem classAction="'doctor-filter-CARDIO'">Cardiologist</BuilderSelectItem>
+                <BuilderSelectItem classAction="'doctor-filter-PEDIATRIC'">Pediatrician</BuilderSelectItem>
+                <BuilderSelectItem classAction="'doctor-filter-GENERAL'">General Physician</BuilderSelectItem>
+                <BuilderSelectItem classAction="'doctor-filter-NEURO'">Neurologist</BuilderSelectItem>
+                <BuilderSelectItem classAction="'doctor-filter-ORTHO'">Orthopedic</BuilderSelectItem>
+            </BuilderSelect>
+        </BuilderRow>
     </t>
-
 </templates>

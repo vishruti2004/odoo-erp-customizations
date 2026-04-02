@@ -3,12 +3,13 @@
    <template id="s_doctor_list" name="Doctor List">
     <section class="s_doctor_list o_colored_level py-5" 
              data-snippet="s_doctor_list"
-             data-js="hospital_doctor_option"> <div class="container">
+             >
+        <div class="container">
             <h2 class="text-center mb-5">Meet Our Specialists</h2>
             <div class="row doctor-grid g-4 justify-content-center">
                 <t t-set="doctors" t-value="request.env['hospital.doctor'].sudo().search([('active', '=', True)])"/>
                 <t t-foreach="doctors" t-as="doctor">
-                    <div class="col-md-4 doctor-card-item" t-att-data-specialization="doctor.specialization_id.id">
+                    <div class="col-md-4 doctor-card-item" t-att-data-specialization="doctor.specialization_id.code">
                         <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: 20px;">
                              <h5 class="fw-bold"><t t-out="doctor.name"/></h5>
                              <p class="badge bg-light text-primary"><t t-out="doctor.specialization_id.name"/></p>
