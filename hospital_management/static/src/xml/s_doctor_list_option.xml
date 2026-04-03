@@ -1,14 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hospital_management.DoctorListOption">
         <BuilderRow label.translate="Specialization">
             <BuilderSelect>
                 <BuilderSelectItem classAction="''">All Doctors</BuilderSelectItem>
-                <BuilderSelectItem classAction="'doctor-filter-CARDIO'">Cardiologist</BuilderSelectItem>
-                <BuilderSelectItem classAction="'doctor-filter-PEDIATRIC'">Pediatrician</BuilderSelectItem>
-                <BuilderSelectItem classAction="'doctor-filter-GENERAL'">General Physician</BuilderSelectItem>
-                <BuilderSelectItem classAction="'doctor-filter-NEURO'">Neurologist</BuilderSelectItem>
-                <BuilderSelectItem classAction="'doctor-filter-ORTHO'">Orthopedic</BuilderSelectItem>
+                <t t-if="state.specializations">
+                    <t t-foreach="state.specializations" t-as="spec" t-key="spec.id">
+                        <BuilderSelectItem classAction="`doctor-filter-${spec.code}`">
+                            <t t-esc="spec.name"/>
+                        </BuilderSelectItem>
+                    </t>
+                </t>
             </BuilderSelect>
         </BuilderRow>
     </t>

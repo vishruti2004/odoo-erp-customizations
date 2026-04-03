@@ -1,23 +1,46 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-   <template id="s_doctor_list" name="Doctor List">
-    <section class="s_doctor_list o_colored_level py-5" 
-             data-snippet="s_doctor_list"
-             >
-        <div class="container">
-            <h2 class="text-center mb-5">Meet Our Specialists</h2>
-            <div class="row doctor-grid g-4 justify-content-center">
-                <t t-set="doctors" t-value="request.env['hospital.doctor'].sudo().search([('active', '=', True)])"/>
-                <t t-foreach="doctors" t-as="doctor">
-                    <div class="col-md-4 doctor-card-item" t-att-data-specialization="doctor.specialization_id.code">
-                        <div class="card h-100 p-3 shadow-sm border-0" style="border-radius: 20px;">
-                             <h5 class="fw-bold"><t t-out="doctor.name"/></h5>
-                             <p class="badge bg-light text-primary"><t t-out="doctor.specialization_id.name"/></p>
+    <template id="s_doctor_list" name="Doctor List">
+        <section class="s_doctor_list py-5" data-snippet="s_doctor_list">
+            <div class="container">
+                <h2 class="text-center mb-5 fw-bold" style="color: #714B67;">Meet Our Specialists</h2>
+                <div class="row o_doctor_container">
+                    <div class="text-center p-5 w-100">
+                        <i class="fa fa-spinner fa-spin fa-2x text-muted"></i>
+                        <p class="mt-2">Loading Doctors...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="doctor_card_template">
+        <t t-foreach="doctors" t-as="doctor" t-key="doctor.id">
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="card h-100 shadow-sm border-0 text-center p-3" style="border-radius: 15px; background: #fff; position: relative;">
+                    <div style="height: 5px; background: #714B67; position: absolute; top: 0; left: 0; right: 0; border-radius: 15px 15px 0 0;"></div>
+                    <h5 class="fw-bold mt-3 mb-1"><t t-out="doctor.name"/></h5>
+                    <span class="badge rounded-pill mb-3 px-3 py-2" style="background: #f1eef0; color: #714B67;">
+                        <t t-out="doctor.specialization_id.name or 'General'"/>
+                    </span>
+                    <div class="text-start px-2" style="font-size: 0.85rem; color: #555;">
+                        <div class="mb-2">
+                            <i class="fa fa-phone me-2 text-primary"></i> 
+                            <t t-out="doctor.phone or 'N/A'"/>
+                        </div>
+                        <div class="mb-2 text-truncate">
+                            <i class="fa fa-envelope me-2 text-danger"></i> 
+                            <t t-out="doctor.email or 'N/A'"/>
+                        </div>
+                        <div class="fw-bold text-dark mt-2 pt-1 border-top">
+                            <i class="fa fa-money me-1 text-success"></i>
+                            Fees: ₹ <t t-out="doctor.consultation_fee or '0.00'"/>
                         </div>
                     </div>
-                </t>
+                </div>
             </div>
-        </div>
-    </section>
-</template>
+        </t>
+    </template>
+
+
 </odoo>

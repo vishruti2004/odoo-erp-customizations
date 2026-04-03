@@ -4,64 +4,80 @@ import { registry } from "@web/core/registry";
 
 export class DoctorListSnippet extends Interaction {
     static selector = ".s_doctor_list";
+    dynamicContent = true;
 
-    start() {
-        this._applySpecializationFilter();
+    setup() {
+        this.orm = this.services.orm;
+    }
+
+    async onWillStart() {
+        await this._fetchCards();
+    }
+
+    async start() {
+        await this._fetchCards();
         this._observeOptionChanges();
     }
 
-    destroy() {
-        if (this._classObserver) {
-            this._classObserver.disconnect();
-            this._classObserver = null;
-        }
-        super.destroy();
-    }
-
-    _observeOptionChanges() {
-        this._classObserver = new MutationObserver((mutations) => {
-            const hasClassChange = mutations.some((mutation) => mutation.attributeName === "class");
-            if (hasClassChange) {
-                this._applySpecializationFilter();
-            }
-        });
-        this._classObserver.observe(this.el, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
-    }
-
-    _applySpecializationFilter() {
-        const specializationId = this._getSelectedSpecializationId();
-        const items = this.el.querySelectorAll(".doctor-card-item");
-
-        if (!specializationId) {
-            for (const item of items) {
-                item.classList.remove("d-none");
-            }
+    async _fetchCards() {
+        const container = this.el.querySelector(".o_doctor_container");
+        if (!container) {
+            console.log("Container not found");
             return;
         }
 
-        for (const item of items) {
-            const shouldShow = item.dataset.specialization === specializationId;
-            item.classList.toggle("d-none", !shouldShow);
+        let specCode = '0';
+        const filterClass = Array.from(this.el.classList).find(c => c.startsWith("doctor-filter-"));
+        if (filterClass) {
+            specCode = filterClass.replace('doctor-filter-', '');
+        }
+        
+        console.log("Fetching doctors with code:", specCode);
+
+        container.innerHTML = '<div class="text-center p-5"><i class="fa fa-spinner fa-spin fa-2x"></i><p>Loading Doctors...</p></div>';
+
+        try {
+            const result = await this.orm.call(
+                'hospital.doctor',
+                'get_filtered_doctors_html',
+                [specCode]
+            );
+            
+            console.log("Response:", result);
+            
+            if (result && result.html) {
+                container.innerHTML = result.html;
+            } else {
+                container.innerHTML = '<div class="text-center p-5">No Doctors Found.</div>';
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            container.innerHTML = '<div class="text-center p-5 text-danger">Error loading doctors.</div>';
         }
     }
 
-    _getSelectedSpecializationId() {
-        const filterClass = Array.from(this.el.classList).find((className) =>
-            className.startsWith("doctor-filter-")
-        );
-        return filterClass ? filterClass.replace("doctor-filter-", "") : null;
+    _observeOptionChanges() {
+        if (this._observer) {
+            this._observer.disconnect();
+        }
+        
+        this._observer = new MutationObserver(() => {
+            console.log("Class changed, reloading...");
+            this._fetchCards();
+        });
+        
+        this._observer.observe(this.el, { 
+            attributes: true, 
+            attributeFilter: ["class"] 
+        });
+    }
+
+    destroy() {
+        if (this._observer) {
+            this._observer.disconnect();
+        }
+        super.destroy();
     }
 }
 
-registry
-    .category("public.interactions")
-    .add("hospital_management.DoctorListSnippet", DoctorListSnippet);
-
-registry
-    .category("public.interactions.edit")
-    .add("hospital_management.DoctorListSnippet", {
-        Interaction: DoctorListSnippet,
-    });
+registry.category("public.interactions").add("hospital_management.doctor_list", DoctorListSnippet);

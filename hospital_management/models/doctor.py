@@ -227,3 +227,21 @@ class HospitalDoctor(models.Model):
                 b_doctor.name,
                 len(other_doctors),
             )
+    
+    def get_filtered_doctors_html(self, specialization_code='0'):
+        domain = [('active', '=', True)]
+        
+        if specialization_code and specialization_code != '0':
+            domain.append(('specialization_id.code', '=', specialization_code))
+        
+        doctors = self.sudo().search(domain)
+        
+        html = self.env['ir.ui.view']._render_template(
+            "hospital_management.doctor_card_template",
+            {'doctors': doctors}
+        )
+        
+        return {
+            'html': html,
+            'count': len(doctors)
+        }
