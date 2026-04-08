@@ -9,6 +9,7 @@
     "license": "LGPL-3",
     "website": "www.yourhospital.com",
     "depends": [
+        "base",
         "hr", 
         "account", 
         "website", 
@@ -26,6 +27,7 @@
         "data/specialization_data.xml",
         "data/mail_template.xml",
         "data/ir_cron.xml",
+        "data/dynamic_filter_data.xml",
         
         # Reports
         "report/appointment_report.xml",
@@ -48,30 +50,37 @@
         "views/portal_appointments_details_templates.xml",
         "views/portal_appointments_add_templates.xml",
         
-        # Snippets
+        # Snippets 
+        "views/snippets/s_dynamic_doctor_card.xml",     
+        "views/snippets/s_dynamic_doctor_list.xml",      
+        "views/snippets/snippets.xml",                
         "views/snippets/s_doctor_list.xml",
-        "views/snippets/snippets.xml",
-        
+        "views/snippets/s_doctor_list_preview.xml",
+
         # Wizards
         "wizard/appointment_cancel_wizard_view.xml",
         "wizard/appointment_summary_wizard_view.xml",
     ],
     "assets": {
-   
         "website.website_builder_assets": [
             ('include', 'html_builder.assets'),
             "hospital_management/static/src/js/s_doctor_list_option.js",
             "hospital_management/static/src/xml/s_doctor_list_option.xml",
+
+
+            "hospital_management/static/src/xml/s_dynamic_option.xml",
+            "hospital_management/static/src/js/dynamic_snippet_doctor_option.js",
+            "hospital_management/static/src/js/dynamic_snippet_doctor_option_plugin.js",
         ],
 
-      
-    
         "web.assets_frontend": [
             "hospital_management/static/src/scss/doctor_list.scss",
-            "hospital_management/static/src/js/s_doctor_list.js",
             "hospital_management/static/src/css/portal.css",
+
+            "hospital_management/static/src/js/s_doctor_list.js",
+            "hospital_management/static/src/js/s_dynamic_doctor.js",
         ],
-        
+
         "web.assets_backend": [
             "hospital_management/static/src/css/dashboard.css",
             "hospital_management/static/src/services/dashboard_services.js",
@@ -84,7 +93,7 @@
             "hospital_management/static/src/xml/card.xml",
             "hospital_management/static/src/xml/Doctorlist.xml",
         ],
-        
+
         "web.report_assets_common": [
             "hospital_management/static/src/css/appointment_report.css",
             "hospital_management/static/src/css/appointment_summary_report.css",

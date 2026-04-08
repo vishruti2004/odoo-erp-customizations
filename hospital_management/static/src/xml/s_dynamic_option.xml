@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    
+<t t-inherit="website.DynamicSnippetOption" t-inherit-mode="extension">
+    <xpath expr="//BuilderSelect[@id=&quot;'model_opt'&quot;]" position="inside">
+        <BuilderSelectItem actionParam="'hospital.doctor'">doctor</BuilderSelectItem>
+    </xpath>
+</t>
+    <t t-name="hospital_management.DoctorDynamicSnippetOptionOwl" t-inherit="website.DynamicSnippetCarouselOption">
+        
+        <xpath expr="//BuilderRow[*[@id=&quot;'filter_opt'&quot;]]" position="after">
+            <BuilderRow label.translate="Specialization" t-if="this.el?.classList?.contains('s_dynamic_doctors')">
+                
+                <BuilderSelect dataAttributeAction="'specializationId'" preview="false" id="'specialization_opt'">
+                    
+                    <BuilderSelectItem dataAttributeActionValue="'all'">All Specializations</BuilderSelectItem>
+                    
+                    <t t-foreach="state.specializations || []" t-as="spec" t-key="`${spec.id}`">
+                        <BuilderSelectItem dataAttributeActionValue="`${spec.id}`" t-out="spec.name"/>
+                    </t>
+                    
+                </BuilderSelect>
+            </BuilderRow>
+        </xpath>
+    </t>
+</templates>

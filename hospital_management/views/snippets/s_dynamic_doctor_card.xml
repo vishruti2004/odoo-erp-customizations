@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<template id="dynamic_filter_template_doctor_card_template">
+    <t t-foreach="records" t-as="data">
+        <t t-set="record" t-value="data['_record']"/>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body p-3 text-center">
+                    <h5 class="fw-bold"><t t-esc="record.name"/></h5>
+                    
+                    <p class="text-muted small">
+                        <t t-if="record.specialization_id" t-esc="record.specialization_id.name"/>
+                        <t t-else="">General Physician</t>
+                    </p>
+                    
+                    <p class="text-primary fw-bold">
+                         <t t-esc="record.consultation_fee"/>
+                    </p>
+
+                    <div class="text-start small text-muted mb-3">
+                        <div><i class="fa fa-phone me-2"/> <t t-esc="record.phone"/></div>
+                        <div><i class="fa fa-envelope me-2"/> <t t-esc="record.email"/></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</template>
+</odoo>

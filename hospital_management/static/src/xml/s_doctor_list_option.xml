@@ -1,11 +1,14 @@
 <templates xml:space="preserve">
     <t t-name="hospital_management.DoctorListOption">
         <BuilderRow label.translate="Specialization">
-            <BuilderSelect>
-                <BuilderSelectItem classAction="''">All Doctors</BuilderSelectItem>
+            <BuilderSelect classAction="'doctor-filter-'" t-on-change="onChangeFilter">
+                <BuilderSelectItem classAction="'doctor-filter-0'">
+                    All Doctors
+                </BuilderSelectItem>      
                 <t t-if="state.specializations">
                     <t t-foreach="state.specializations" t-as="spec" t-key="spec.id">
-                        <BuilderSelectItem classAction="`doctor-filter-${spec.code}`">
+                        <BuilderSelectItem 
+                            classAction="'doctor-filter-' + spec.code">
                             <t t-esc="spec.name"/>
                         </BuilderSelectItem>
                     </t>

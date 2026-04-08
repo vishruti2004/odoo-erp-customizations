@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="s_doctor_list_preview_data" name="Doctor List Preview Data">
+        <div class="o_doctor_container d-flex flex-wrap gap-3 justify-content-center" 
+             contenteditable="false">
+            
+            <div class="d-contents o_not_editable" contenteditable="false">
+                <div style="width: 300px;" class="card h-100 shadow-sm border-0 text-center p-3">
+                    <h5 class="fw-bold mt-3">Dr. sample Name</h5>
+                    <span class="badge rounded-pill mb-3" style="background: #f1eef0; color: #714B67;">Specialization</span>
+                </div>
+                <div style="width: 300px;" class="card h-100 shadow-sm border-0 text-center p-3">
+                    <h5 class="fw-bold mt-3">Dr. Sample Name</h5>
+                    <span class="badge rounded-pill mb-3" style="background: #f1eef0; color: #714B67;">Specialization</span>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>

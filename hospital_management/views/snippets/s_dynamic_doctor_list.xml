@@ -1,0 +1,11 @@
+
+<odoo>
+    <!-- Snippet -->
+    <template id="s_dynamic_doctors" name="Dynamic Doctors">
+        <t t-call="website.s_dynamic_snippet_carousel">
+            <t t-set="snippet_name" t-value="'s_dynamic_doctors'"/>
+        </t>
+    </template>
+    
+
+</odoo>

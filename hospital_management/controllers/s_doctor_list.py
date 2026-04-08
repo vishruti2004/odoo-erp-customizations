@@ -2,27 +2,28 @@ from odoo import http
 from odoo.http import request
 
 class HospitalDoctorController(http.Controller):
-    
-    @http.route('/hospital/get_filtered_doctors', 
-                type='jsonrpc', 
-                auth='public',
-                methods=['POST'],
-                csrf=False)
-    def get_filtered_doctors(self, specialization_id=None, **kw):
+
+    @http.route('/hospital/get_filtered_doctors', type='jsonrpc', auth='public', website=True)
+    def get_filtered_doctors(self, spec_id=0, **kwargs):
+        print("==========1 RECEIVED:", spec_id, kwargs)
         
         domain = [('active', '=', True)]
         
-        if specialization_id and specialization_id != '0':
-            domain.append(('specialization_id.code', '=', specialization_id))
+        if spec_id and spec_id != '0':
+            try:
+                s_id = int(spec_id)
+                domain.append(('specialization_id', '=', s_id))
+            except (ValueError, TypeError):
+                # Jo String (jem ke 'NEURO') avti hoy:
+                domain.append(('specialization_id.name', 'ilike', spec_id))
         
-        doctors = request.env['hospital.doctor'].search(domain)
-        
-        html = request.env['ir.ui.view']._render_template(
+        # Search doctors
+        doctors = request.env['hospital.doctor'].sudo().search(domain)
+        print("==========2 DOCTORS FOUND:", doctors)
+
+        html = request.env['ir.qweb'].sudo()._render(
             "hospital_management.doctor_card_template", 
             {'doctors': doctors}
         )
         
-        return {
-            'result': html,
-            'count': len(doctors)
-        }
+        return {'html': html}
