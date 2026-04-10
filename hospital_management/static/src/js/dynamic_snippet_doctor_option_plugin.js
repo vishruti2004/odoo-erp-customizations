@@ -1,52 +1,43 @@
 /** @odoo-module **/
-
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { DynamicSnippetDoctorsOption } from "./dynamic_snippet_doctor_option";
-import {withSequence} from "@html_editor/utils/resource";
-import {
-    DYNAMIC_SNIPPET,
-    setDatasetIfUndefined
-} from "@website/builder/plugins/options/dynamic_snippet_option_plugin";
+import { DynamicSnippetDoctorsOption } from "./dynamic_snippet_doctor_option"; 
+import { withSequence } from "@html_editor/utils/resource";
+import { DYNAMIC_SNIPPET_CAROUSEL } from "@website/builder/plugins/options/dynamic_snippet_carousel_option_plugin";
 
 class DynamicDoctorOptionPlugin extends Plugin {
-    static id = "dynamicDoctorOption";
-    static dependencies = ["dynamicSnippetOption"];
-    static shared = ["fetchSpecializations", "getModelNameFilter"]; 
+    static id = "dynamic_doctor_carousel_plugin";
+    static dependencies = ["dynamicSnippetOption", "dynamicSnippetCarouselOption"];
+    static shared = ["fetchSpecializations", "getModelNameFilter"];
+    
     modelNameFilter = "hospital.doctor";
 
     resources = {
-        builder_options: withSequence(DYNAMIC_SNIPPET, DynamicSnippetDoctorsOption),
+        builder_options: withSequence(DYNAMIC_SNIPPET_CAROUSEL, DynamicSnippetDoctorsOption),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
     };
+
     setup() {
-        return this.specializations = undefined;
+        this.specializations = undefined;
+    }
+    getModelNameFilter() {
+        return this.modelNameFilter;
     }
 
-
     async fetchSpecializations() {
-        if (! this.specializations) {
-            this.specializations = this.services.orm.searchRead(
-                "hospital.specialization", 
-                [], 
-                ["id", "name"]
+        if (!this.specializations) {
+            this.specializations = await this.services.orm.searchRead(
+                "hospital.specialization", [], ["id", "name"], { order: "name asc" }
             );
         }
         return this.specializations;
     }
 
-    getModelNameFilter() {
-        debugger;
-        return this.modelNameFilter;
-    }
 
-     async onSnippetDropped({ snippetEl }) {
-        debugger;
+    async onSnippetDropped({ snippetEl }) {
         if (snippetEl.matches(DynamicSnippetDoctorsOption.selector)) {
-            setDatasetIfUndefined(snippetEl, "specializationId", -1);
-            await this.dependencies.dynamicSnippetOption.setOptionsDefaultValues(
-                snippetEl,
-                this.modelNameFilter
+            await this.dependencies.dynamicSnippetCarouselOption.setOptionsDefaultValues(
+                snippetEl, this.modelNameFilter, []
             );
         }
     }

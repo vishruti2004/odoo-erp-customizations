@@ -1,11 +1,54 @@
-
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Snippet -->
     <template id="s_dynamic_doctors" name="Dynamic Doctors">
-        <t t-call="website.s_dynamic_snippet_carousel">
-            <t t-set="snippet_name" t-value="'s_dynamic_doctors'"/>
+    <t t-call="website.s_dynamic_snippet_carousel">
+        <t t-set="snippet_name" t-value="'s_dynamic_doctors'"/>
+        <!-- <t t-set="snippet_attributes">
+            data-filter-id="hospital_management.dynamic_filter_latest_doctors"
+            data-specialization-id="all"
+            data-template-key="hospital_management.dynamic_filter_template_hospital_doctor_card"
+            data-carousel-interval="5000"
+        </t> -->
+    </t>
+</template>
+
+<template id="dynamic_filter_template_hospital_doctor_card">
+        <t t-foreach="records" t-as="data">
+            <t t-set="record" t-value="data.get('_record', data)"/>
+            
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                <div class="doctor-card card h-100 shadow-sm" style="display: flex; flex-direction: column;">
+                    <div class="card-body text-center p-3" style="flex: 1 0 auto;">
+                        <h5 class="doctor-name" t-att-title="record.name" style="white-space: normal;">
+                            <t t-esc="record.name"/>
+                        </h5>
+                        
+                        <div class="doctor-specialization badge bg-primary-soft mb-2">
+                            <t t-if="record.specialization_id" t-esc="record.specialization_id.name"/>
+                        </div>
+                        
+                        <div class="doctor-fee mb-2" style="white-space: nowrap;">
+                            <span t-field="record.consultation_fee" 
+                                  t-options='{"widget": "monetary", "display_currency": record.currency_id}'/>
+                        </div>
+                        
+                        <div class="doctor-contact text-start small">
+                            <div t-if="record.phone" class="mb-1">
+                                <i class="fa fa-phone me-1 text-primary"/> <t t-esc="record.phone"/>
+                            </div>
+                            <div t-if="record.email" style="word-break: break-all;">
+                                <i class="fa fa-envelope me-1 text-primary"/> <t t-esc="record.email"/>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-white border-0 pb-3">
+                        <a t-attf-href="/doctor/#{record.id}" class="btn btn-primary w-100">
+                            Book Appointment
+                        </a>
+                    </div>
+                </div>
+            </div>
         </t>
     </template>
-    
-
 </odoo>

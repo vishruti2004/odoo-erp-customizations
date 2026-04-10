@@ -1,0 +1,102 @@
+/* ડોક્ટર કાર્ડ મુખ્ય સ્ટાઇલ */
+.doctor-card {
+    transition: all 0.3s ease;
+    border: 1px solid #eee; /* બોર્ડર ઉમેરી જેથી કાર્ડ દેખાય */
+    border-radius: 20px;
+    background: #ffffff;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    min-width: 250px; /* કાર્ડની લઘુત્તમ પહોળાઈ નક્કી કરી */
+    
+    &:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.2) !important;
+        
+        .doctor-btn {
+            background: #1b4d3e;
+            transform: translateY(-2px);
+        }
+    }
+}
+
+/* ડોક્ટર નામ - સુધારેલું */
+.doctor-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a3c34;
+    margin-bottom: 8px;
+    white-space: nowrap; /* નામ એક જ લાઈનમાં રાખવા */
+    overflow: hidden;
+    text-overflow: ellipsis; /* જો નામ બહુ મોટું હોય તો ... દેખાય */
+}
+
+/* સ્પેશિયાલિઝેશન બેજ */
+.doctor-specialization {
+    font-size: 0.8rem;
+    color: #2d6a4f;
+    background: #e8f5e9;
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 25px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+/* ફી સ્ટાઇલ - સુધારેલું */
+.doctor-fee {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #2d6a4f;
+    margin: 10px 0;
+    display: flex; /* ચિહ્ન અને રકમ બાજુ-બાજુમાં રાખવા */
+    justify-content: center;
+    align-items: baseline;
+    gap: 4px;
+    
+    small {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+}
+
+/* કોન્ટેક્ટ માહિતી - સુધારેલું */
+.doctor-contact {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: left; /* લખાણ ડાબી બાજુ રાખવું વધુ સારું લાગશે */
+}
+
+.doctor-contact-item {
+    font-size: 0.85rem;
+    color: #495057;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* ઈમેઈલ લાંબો હોય તો નીચે ન જાય */
+    
+    i {
+        width: 20px;
+        color: #2d6a4f;
+        margin-right: 8px;
+    }
+}
+
+/* એપોઇન્ટમેન્ટ બટન */
+.doctor-btn {
+    background: #2d6a4f;
+    border-radius: 10px;
+    padding: 10px;
+    color: white !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: block;
+    text-decoration: none;
+    transition: 0.3s;
+}

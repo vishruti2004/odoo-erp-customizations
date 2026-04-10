@@ -51,7 +51,7 @@
         "views/portal_appointments_add_templates.xml",
         
         # Snippets 
-        "views/snippets/s_dynamic_doctor_card.xml",     
+        "views/snippets/s_dynamic_doctor_preview.xml",     
         "views/snippets/s_dynamic_doctor_list.xml",      
         "views/snippets/snippets.xml",                
         "views/snippets/s_doctor_list.xml",
@@ -64,20 +64,23 @@
     "assets": {
         "website.website_builder_assets": [
             ('include', 'html_builder.assets'),
-            "hospital_management/static/src/js/s_doctor_list_option.js",
-            "hospital_management/static/src/xml/s_doctor_list_option.xml",
+            # "hospital_management/static/src/js/s_doctor_list_option.js",
+            # "hospital_management/static/src/xml/s_doctor_list_option.xml",
 
 
-            "hospital_management/static/src/xml/s_dynamic_option.xml",
+            "hospital_management/static/src/xml/s_dynamic_doctor_option.xml",
             "hospital_management/static/src/js/dynamic_snippet_doctor_option.js",
             "hospital_management/static/src/js/dynamic_snippet_doctor_option_plugin.js",
+
         ],
 
         "web.assets_frontend": [
-            "hospital_management/static/src/scss/doctor_list.scss",
+            # "hospital_management/static/src/scss/doctor_list.scss",
+            "hospital_management/static/src/scss/doctor_card.scss",
+
             "hospital_management/static/src/css/portal.css",
 
-            "hospital_management/static/src/js/s_doctor_list.js",
+            # "hospital_management/static/src/js/s_doctor_list.js",
             "hospital_management/static/src/js/s_dynamic_doctor.js",
         ],
 
@@ -103,3 +106,4 @@
     "application": True,
     "auto_install": False,
 }
+

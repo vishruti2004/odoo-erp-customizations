@@ -14,7 +14,6 @@ class HospitalDoctorController(http.Controller):
                 s_id = int(spec_id)
                 domain.append(('specialization_id', '=', s_id))
             except (ValueError, TypeError):
-                # Jo String (jem ke 'NEURO') avti hoy:
                 domain.append(('specialization_id.name', 'ilike', spec_id))
         
         # Search doctors
@@ -24,6 +23,35 @@ class HospitalDoctorController(http.Controller):
         html = request.env['ir.qweb'].sudo()._render(
             "hospital_management.doctor_card_template", 
             {'doctors': doctors}
+        )
+        
+        return {'html': html}
+    
+
+    @http.route('/hospital/get_filtered_doctors_carousel', type='jsonrpc', auth='public', website=True)
+    def get_filtered_doctors_carousel(self, spec_id='all', limit=8, layout='grid', **kwargs):
+        print("========== CAROUSEL RECEIVED - spec_id:", spec_id, "limit:", limit, "layout:", layout)
+        
+        domain = [('active', '=', True)]
+        
+        if spec_id and spec_id != 'all' and spec_id != '0':
+            try:
+                s_id = int(spec_id)
+                domain.append(('specialization_id', '=', s_id))
+            except (ValueError, TypeError):
+                domain.append(('specialization_id.name', 'ilike', spec_id))
+        
+        doctors = request.env['hospital.doctor'].sudo().search(domain, limit=int(limit))
+        print("========== DOCTORS FOUND:", len(doctors))
+        
+        template_name = "hospital_management.dynamic_doctor_carousel_cards"
+        
+        html = request.env['ir.qweb'].sudo()._render(
+            template_name, 
+            {
+                'doctors': doctors,
+                'layout': layout,
+            }
         )
         
         return {'html': html}

@@ -1,26 +1,33 @@
 /** @odoo-module **/
-import { BaseOptionComponent as DynamicBaseOption, useDomState } from "@html_builder/core/utils";
+import { BaseOptionComponent } from "@html_builder/core/utils";
 import { useDynamicSnippetOption } from "@website/builder/plugins/options/dynamic_snippet_hook";
 import { onWillStart, useState } from "@odoo/owl";
 
-export class DynamicSnippetDoctorsOption extends DynamicBaseOption {
-    static template = "hospital_management.DoctorDynamicSnippetOptionOwl"; 
-    static dependencies = ["dynamicDoctorOption"]; 
-    static selector = ".s_dynamic_doctors";
+export class DynamicSnippetDoctorsOption extends BaseOptionComponent {
+    static template = "hospital_management.DynamicSnippetDoctorsOption";
+    static dependencies = ["dynamic_doctor_carousel_plugin"];
+    static selector = ".s_hospital_doctor_card";
 
     setup() {
         super.setup();
-        // const { getModelNameFilter, fetchSpecializations } = this.dependencies.dynamicDoctorOption;
-        const { fetchSpecializations, getModelNameFilter } = this.dependencies.dynamicDoctorOption;
-        debugger;
+        const { fetchSpecializations, getModelNameFilter } = this.dependencies.dynamic_doctor_carousel_plugin;
+        
         this.dynamicOptionParams = useDynamicSnippetOption(getModelNameFilter());
-        this.state = useState({ specializations: [] });
+
+        this.state = useState({ 
+            specializations: [], 
+        });
 
         onWillStart(async () => {
-            // const data = await fetchSpecializations();
-            // if (data) this.state.specializations = data;
-            this.state.specializations.push(...(await fetchSpecializations()));
+            debugger
+            const data = await fetchSpecializations();
+            if (data) {
+                this.state.specializations = data;
+            }
+
+
         });
+
         this.templateKeyState = useDomState((el) => ({
             templateKey: el.dataset.templateKey,
         }));

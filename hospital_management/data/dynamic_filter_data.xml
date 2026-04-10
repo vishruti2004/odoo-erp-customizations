@@ -8,16 +8,15 @@
                 <field name="domain">[]</field>
                 <field name="sort">["name desc"]</field>
                 <field name="action_id" ref="website.action_website"/>
-
-
     </record>
 
 
-    <record id="dynamic_filter_latest_doctors" model="website.snippet.filter">
-        <field name="name">Latest Doctors</field>
-        <field name="model_name">hospital.doctor</field> 
-        <field name="filter_id" ref="doctor_filter"></field>
-        <field name="field_names">name,specialization_id,consultation_fee</field>
-        <field name="limit">10</field>
-    </record>
+<record id="dynamic_filter_latest_doctors" model="website.snippet.filter">
+    <field name="name">Latest Doctors</field>
+    <field name="model_name">hospital.doctor</field>
+    <field name="filter_id" ref="hospital_management.doctor_filter"/>
+    <field name="field_names">name,specialization_id,consultation_fee,phone,email</field>
+    <field name="limit">10</field>
+</record>
+
 </odoo>
