@@ -3,7 +3,7 @@ import { DynamicSnippetCarousel } from "@website/snippets/s_dynamic_snippet_caro
 import { registry } from "@web/core/registry";
 
 export class DynamicSnippetDoctors extends DynamicSnippetCarousel {
-    static selector = ".s_dynamic_doctors";
+    static selector = ".s_dynamic_snippet_doctor_card";
 
     getSearchDomain() {
         const searchDomain = super.getSearchDomain(...arguments);

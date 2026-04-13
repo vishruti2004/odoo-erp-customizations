@@ -52,7 +52,7 @@
         
         # Snippets 
         "views/snippets/s_dynamic_doctor_preview.xml",     
-        "views/snippets/s_dynamic_doctor_list.xml",      
+        "views/snippets/s_dynamic_doctors_list.xml",      
         "views/snippets/snippets.xml",                
         "views/snippets/s_doctor_list.xml",
         "views/snippets/s_doctor_list_preview.xml",

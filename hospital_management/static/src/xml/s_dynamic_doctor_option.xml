@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
-
-    
-    <t t-name="hospital_management.DynamicSnippetDoctorsOption" t-inherit="website.DynamicSnippetOption" t-inherit-mode="extension">
-        
-     
-        <BuilderRow label.translate="Specialization">
+<t t-name="hospital_management.DynamicSnippetDoctorsOption" t-inherit="website.DynamicSnippetOption" t-inherit-mode="extension">
+    <xpath expr="//BuilderRow[*[@id=&quot;'filter_opt'&quot;]]" position="after">
+        <BuilderRow label.translate="Specialization" t-if="isDoctorModel">
             <BuilderSelect dataAttributeAction="'specializationId'">
-                <BuilderSelectItem dataAttributeActionValue="'all'">All Specializations</BuilderSelectItem>
+                <BuilderSelectItem dataAttributeActionValue="'-1'">All Specializations</BuilderSelectItem>
                 <t t-foreach="state.specializations" t-as="spec" t-key="spec.id">
-                    <BuilderSelectItem 
-                        dataAttributeActionValue="String(spec.id)" 
-                        t-out="spec.name"/>
+                    <BuilderSelectItem dataAttributeActionValue="`${spec.id}`" t-out="spec.name"/>
                 </t>
             </BuilderSelect>
         </BuilderRow>
- 
-    </t>
+    </xpath>
+</t>
+
 </templates>

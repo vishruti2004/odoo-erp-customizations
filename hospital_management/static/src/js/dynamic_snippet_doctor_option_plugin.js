@@ -41,6 +41,19 @@ class DynamicDoctorOptionPlugin extends Plugin {
             );
         }
     }
+
+    // async onSnippetDropped({ snippetEl }) {
+    // if (snippetEl.matches(".s_hospital_doctor_card")) {
+    //     setDatasetIfUndefined(snippetEl, "previewId", "hospital_management.s_dynamic_doctors_preview_data");
+
+    //     await this.dependencies.dynamicSnippetOption.setOptionsDefaultValues(
+    //         snippetEl,
+    //         "hospital.doctor"
+    //     );
+        
+    //     delete snippetEl.dataset.filterId;
+    // }
+// }
 }
 
 registry.category("website-plugins").add(DynamicDoctorOptionPlugin.id, DynamicDoctorOptionPlugin);

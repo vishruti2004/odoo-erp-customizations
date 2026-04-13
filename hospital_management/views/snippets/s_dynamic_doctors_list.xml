@@ -3,12 +3,7 @@
     <template id="s_dynamic_doctors" name="Dynamic Doctors">
     <t t-call="website.s_dynamic_snippet_carousel">
         <t t-set="snippet_name" t-value="'s_dynamic_doctors'"/>
-        <!-- <t t-set="snippet_attributes">
-            data-filter-id="hospital_management.dynamic_filter_latest_doctors"
-            data-specialization-id="all"
-            data-template-key="hospital_management.dynamic_filter_template_hospital_doctor_card"
-            data-carousel-interval="5000"
-        </t> -->
+        <!-- <t t-set="snippet_classes" t-value="'s_dynamic_snippet_doctor_card %s' % snippet_extra_classes"/> -->
     </t>
 </template>
 
