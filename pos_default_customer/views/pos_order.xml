@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_order_tree_inherit" model="ir.ui.view">
+        <field name="name">pos.order.list.inherit</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_order']" position="after">
+                <field name="estimated_delivery_final" 
+                       widget="datetime" 
+                       options="{'timezone': 'user'}"
+                       string="Estimated Delivery Date"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

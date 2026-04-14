@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_form_inherit" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_posbox']/ancestor::setting" position="after">
+                <setting string="Delivery Configuration" help="Set the lead time for deliveries">
+                    <div class="content-group">
+                        <div class="row">
+                            <label for="delivery_type" class="col-lg-3 o_light_label" string="Type"/>
+                            <div class="col-lg-9">
+                                <field name="delivery_type" widget="radio" options="{'horizontal': true}"/>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2">
+                            <label for="estimated_delivery_date" class="col-lg-3 o_light_label" string="Duration"/>
+                            <div class="col-lg-9">
+                                <div class="o_row">
+                                    <field name="estimated_delivery_date" class="oe_inline"/>
+                                    <span invisible="delivery_type != 'hours'"> Hours</span>
+                                    <span invisible="delivery_type != 'days'"> Days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
