@@ -6,7 +6,8 @@ class PosOrder(models.Model):
 
     estimated_delivery_final = fields.Datetime(
         string="Estimated Delivery", 
-        compute="_compute_estimated_delivery"
+        compute="_compute_estimated_delivery",
+        store=True
     )
 
     @api.depends('date_order', 'session_id.config_id.delivery_type', 
@@ -22,9 +23,4 @@ class PosOrder(models.Model):
                     order.estimated_delivery_final = order.date_order + timedelta(days=duration)
             else:
                 order.estimated_delivery_final = False
-
-    # @api.model
-    # def _loader_params_pos_order(self):
-    #         result = super()._loader_params_pos_order()
-    #         result['search_params']['fields'].append('estimated_delivery_final')
-    #         return result
+                

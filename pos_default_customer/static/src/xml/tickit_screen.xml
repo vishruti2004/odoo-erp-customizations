@@ -1,30 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
         
         <xpath expr="//table/tbody/t/tr/td[3]" position="after">
             <td class="align-middle">
-                <t t-if="order.estimated_delivery_final">
-                    <div class="fw-bolder">
-                        <t t-esc="pos.getDate(order.estimated_delivery_final)"/>
-                    </div>
-                    <div class="small text-muted">
-                        <t t-esc="pos.getTime(order.estimated_delivery_final)"/>
-                    </div>
-                </t>
-                <t t-else="">
-                    <div class="fw-bolder">-</div>
-                    <div class="small text-muted">Est. Delivery</div>
-                </t>
-            </td>
-        </xpath>
-
-        <xpath expr="//div[hasclass('mobileOrderList')]/div[2]" position="after">
-            <div class="p-2">
-                <div class="small fw-bolder text-primary">
-                    <t t-esc="order.estimated_delivery_final"/>
+                <div class="small text-muted">Estimate Delivery On</div>
+                <div class="fw-bolder">
+                    <t t-if="order.estimated_delivery_final">
+                        <t t-esc="order.estimated_delivery_final.toFormat('dd/MM/yyyy')"/>
+                        <t t-esc="' '"/> 
+                        <t t-esc="order.estimated_delivery_final.toFormat('HH:mm')"/>
+                    </t>
+                    <t t-else="">-</t>
                 </div>
-            </div>
+            </td>
         </xpath>
 
     </t>

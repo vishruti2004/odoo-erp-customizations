@@ -9,6 +9,5 @@ class PosConfig(models.Model):
     ], string="Delivery Type", default='days')
     
     estimated_delivery_date = fields.Integer(
-        string="Duration", 
-        default=1
-    )
+        string="Duration"
+        )
