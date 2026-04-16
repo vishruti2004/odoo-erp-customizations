@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="point_of_sale.OrderReceipt" t-inherit-mode="replace">
-        <div class="receipt order-receipt">
-            <ReceiptHeader header="header"/>
-            <div class="cashier">
-                <t t-esc="header.cashier"/>
-            </div>
-            <div t-if="deliveryEstimate" class="delivery" style="text-align:center; margin-top:5px;">
-                <strong>Estimated Delivery:</strong> <t t-esc="deliveryEstimate"/>
-            </div>
-            <OrderDisplay order="order"/>
-            <div class="tax" t-if="order.payment_ids.length">
-                <t t-foreach="paymentLines" t-as="payment" t-key="payment.id">
-                    <div class="paymentline">
-                        <span><t t-esc="payment.payment_method_id.name"/></span>
-                        <span><t t-esc="formatCurrency(payment.amount)"/></span>
-                    </div>
-                </t>
-            </div>
-            <div class="total" t-if="order.lines.length">
-                <strong>Total:</strong> <t t-esc="formatCurrency(order.priceIncl)"/>
-            </div>
-        </div>
+    <t t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'cashier')]/div" position="after">
+            <t t-if="this.deliveryDate">
+                <div style="text-align:center; margin-top:2px; font-size:11px;">
+                    <div>Estimated Delivery On: <t t-esc="this.deliveryDate"/></div>          
+                </div>
+            </t>
+        </xpath>
     </t>
 </templates>
+<!-- 
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'cashier')]/div" position="after">
+            <t t-if="this.deliveryDate">
+                <div style="text-align:center; margin-top:2px; font-size:11px;">
+                    <div>Estimated Delivery On: <t t-esc="this.deliveryDate"/></div>          
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates> -->

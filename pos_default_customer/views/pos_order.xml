@@ -9,7 +9,8 @@
                 <field name="estimated_delivery_final" 
                        widget="datetime" 
                        options="{'timezone': 'user'}"
-                       string="Estimated Delivery Date"/>
+                       string="Estimated Delivery Date"
+                       optional="hide"/>
             </xpath>
         </field>
     </record>

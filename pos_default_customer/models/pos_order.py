@@ -24,3 +24,7 @@ class PosOrder(models.Model):
             else:
                 order.estimated_delivery_final = False
                 
+    def _loader_params_pos_order(self):
+        result = super()._loader_params_pos_order()
+        result['search_params']['fields'].append('estimated_delivery_final')
+        return result

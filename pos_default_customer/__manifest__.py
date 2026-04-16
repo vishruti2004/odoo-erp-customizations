@@ -19,10 +19,18 @@
         'pos_default_customer/static/src/js/set_login_user.js',
         'pos_default_customer/static/src/js/tickit_screen.js',
         'pos_default_customer/static/src/js/order_receipt.js',
+        'pos_default_customer/static/src/js/delivery_boy_userlist_line.js',
+        'pos_default_customer/static/src/js/delivery_boy_userlist.js',
+        'pos_default_customer/static/src/js/delivery_boy_button.js',
+        'pos_default_customer/static/src/js/product_screen.js',
+
 
 
         'pos_default_customer/static/src/xml/tickit_screen.xml',
         'pos_default_customer/static/src/xml/order_receipt.xml',
+        'pos_default_customer/static/src/xml/delivery_boy_button.xml',
+        'pos_default_customer/static/src/xml/delivery_boy_userlist.xml',
+        'pos_default_customer/static/src/xml/delivery_boy_userlist_line.xml',
 
 
     ],

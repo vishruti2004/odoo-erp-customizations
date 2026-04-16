@@ -7,6 +7,21 @@ const { DateTime } = luxon;
 patch(PosStore.prototype, {
 
     
+      setup() {
+        super.setup(...arguments);
+        if (this.selectedDeliveryBoy === undefined) {
+            this.selectedDeliveryBoy = null;
+        }
+    },
+
+    setDeliveryBoy(boy) {
+        this.selectedDeliveryBoy = boy;
+        if (this.env && this.env.services) {
+            this.env.services.ui.block();
+            this.env.services.ui.unblock();
+        }
+    },
+
 
     async afterProcessServerData() {
         const result = await super.afterProcessServerData(...arguments);

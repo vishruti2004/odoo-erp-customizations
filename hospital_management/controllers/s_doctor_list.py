@@ -44,7 +44,7 @@ class HospitalDoctorController(http.Controller):
         doctors = request.env['hospital.doctor'].sudo().search(domain, limit=int(limit))
         print("========== DOCTORS FOUND:", len(doctors))
         
-        template_name = "hospital_management.dynamic_doctor_carousel_cards"
+        template_name = "hospital_management.dynamic_filter_template_hospital_doctor_card"
         
         html = request.env['ir.qweb'].sudo()._render(
             template_name, 
