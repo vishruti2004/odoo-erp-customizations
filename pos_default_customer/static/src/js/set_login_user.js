@@ -7,38 +7,40 @@ const { DateTime } = luxon;
 patch(PosStore.prototype, {
 
     
-      setup() {
-        super.setup(...arguments);
-        if (this.selectedDeliveryBoy === undefined) {
-            this.selectedDeliveryBoy = null;
-        }
-    },
-
     setDeliveryBoy(boy) {
+        if (!boy) {
+            return;
+        }
         this.selectedDeliveryBoy = boy;
-        if (this.env && this.env.services) {
-            this.env.services.ui.block();
-            this.env.services.ui.unblock();
+        
+        window.posStore = this;
+        
+        
+        const order = this.getOrder();
+        if (order && order.setDeliveryBoy) {
+            order.setDeliveryBoy(boy);
         }
     },
-
-
+    
     async afterProcessServerData() {
         const result = await super.afterProcessServerData(...arguments);
         this._setDefaultCustomer();
         this._setDeliveryDate(); 
         return result;
     },
-
     
     addNewOrder(data = {}) {
         const order = super.addNewOrder(...arguments);
         this._setDefaultCustomer();
         this._setDeliveryDate(); 
+
+        
+        if (this.selectedDeliveryBoy && order.setDeliveryBoy) {
+            order.setDeliveryBoy(this.selectedDeliveryBoy);  
+        }
+        
         return order;
     },
-
-   
     
     _setDefaultCustomer() {
         const order = this.getOrder();
@@ -58,7 +60,6 @@ patch(PosStore.prototype, {
     _setDeliveryDate() {
         const order = this.getOrder();
         if (order && this.config && this.config.estimated_delivery_date) {
-            
             let deliveryDate = DateTime.now(); 
             let duration = this.config.estimated_delivery_date;
 
@@ -69,7 +70,6 @@ patch(PosStore.prototype, {
             }
             
             order.estimated_delivery_final = deliveryDate;
-            
         }
     }
 });

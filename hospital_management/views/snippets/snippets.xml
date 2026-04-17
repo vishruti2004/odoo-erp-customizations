@@ -3,7 +3,6 @@
     <template id="hospital_snippets_register" inherit_id="website.snippets" name="Hospital Snippets Register">
         
         <xpath expr="//snippets[@id='snippet_groups']" position="inside">
-            <!-- <t snippet-group="doctors" t-snippet="hospital_management.s_doctor_list"  -->
             <t snippet-group="doctors" t-snippet="hospital_management.s_dynamic_doctors" 
 
                t-thumbnail="/hospital_management/static/description/icon.png"/>

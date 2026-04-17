@@ -22,8 +22,7 @@
         'pos_default_customer/static/src/js/delivery_boy_userlist_line.js',
         'pos_default_customer/static/src/js/delivery_boy_userlist.js',
         'pos_default_customer/static/src/js/delivery_boy_button.js',
-        'pos_default_customer/static/src/js/product_screen.js',
-
+        'pos_default_customer/static/src/js/pos_order_data.js',
 
 
         'pos_default_customer/static/src/xml/tickit_screen.xml',
@@ -38,3 +37,4 @@
     'installable': True,
     'application': False,
 }
+

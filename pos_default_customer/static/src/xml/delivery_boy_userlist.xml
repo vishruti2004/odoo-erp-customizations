@@ -1,39 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="point_of_sale.DeliveryBoyList">
-        <Dialog bodyClass="'partner-list p-0'" modalRef="modalRef" contentClass="'h-100'">
-            <t t-set-slot="header">
-                <span class="modal-title fs-4">Choose Delivery Boy</span>
-                <Input tModel="[state, 'query']"
-                    class="'ms-auto'"
-                    isSmall="ui.isSmall"
-                    placeholder.translate="Search..."
-                    icon="{type: 'fa', value: 'fa-search'}"
-                    t-on-enter="() => this.updateDeliveryBoyList()"
-                    autofocus="true" />
-            </t>
+        <Dialog bodyClass="'partner-list p-0'" title="'Select Delivery Boy'">
             <div class="h-100">
                 <table class="table table-hover">
-                    <tbody class="h-100">
+                    <tbody>
                         <t t-foreach="state.deliveryBoys" t-as="boy" t-key="boy.id">
-                            <DeliveryBoyLine
-                                boy="boy"
-                                isSelected="props.deliveryBoy?.id === boy.id"
-                                onClickDeliveryBoy.bind="clickDeliveryBoy"/>
+                           <tr class="partner-line" t-on-click="() => this.clickDeliveryBoy(boy)">
+                                <td class="p-3">
+                                    <span class="fw-bold" t-esc="boy.name"/>
+                                </td>
+                            </tr>
                         </t>
                     </tbody>
                 </table>
-                <div class="text-center" t-if="!state.deliveryBoys.length">
-                    <div class="text-muted mt-5">
-                        <i class="fa fa-users fa-3x"></i>
-                        <p class="mt-3">No delivery boy found.</p>
-                    </div>
-                </div>
             </div>
             <t t-set-slot="footer">
-                <div class="d-flex flex-row gap-2 w-100">
-                    <button class="btn btn-secondary btn-lg lh-lg flex-fill" t-on-click="() => props.close()">Discard</button>
-                </div>
+                <button class="btn btn-secondary" t-on-click="props.close">Discard</button>
             </t>
         </Dialog>
     </t>

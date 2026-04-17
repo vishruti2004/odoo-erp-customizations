@@ -1,22 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="point_of_sale.DeliveryBoyLine">
-        <tr class="partner-line partner-info" 
-            t-att-class="{'selected': props.isSelected}" 
-            t-on-click="() => props.onClickDeliveryBoy(props.boy)">
-            <td class="text-break w-25">
-                <b t-esc="props.boy.name or ''" />
-            </td>
-            <td>
-                <div class="partner-line-email">
-                    <i class="fa fa-fw fa-envelope me-2"/><t t-esc="props.boy.email or props.boy.login" />
-                </div>
-            </td>
-            <td class="edit-partner-button-cell align-middle pe-0">
-                <button t-if="props.isSelected" class="unselect-tag d-lg-inline-block d-none btn btn-link btn-lg mt-1 float-end">
-                    <i class="fa fa-check"/>
-                </button>
-            </td>
+        <tr class="partner-line" t-att-class="{'selected': props.isSelected}" t-on-click="() => props.onClickDeliveryBoy(props.boy)">
+            <td><b t-esc="props.boy.name" /></td>
+            <td><t t-esc="props.boy.login" /></td>
         </tr>
     </t>
 </templates>
