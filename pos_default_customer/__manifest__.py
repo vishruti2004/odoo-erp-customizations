@@ -23,6 +23,7 @@
         'pos_default_customer/static/src/js/delivery_boy_userlist.js',
         'pos_default_customer/static/src/js/delivery_boy_button.js',
         'pos_default_customer/static/src/js/pos_order_data.js',
+        'pos_default_customer/static/src/js/product_card.js',
 
 
         'pos_default_customer/static/src/xml/tickit_screen.xml',
@@ -30,7 +31,7 @@
         'pos_default_customer/static/src/xml/delivery_boy_button.xml',
         'pos_default_customer/static/src/xml/delivery_boy_userlist.xml',
         'pos_default_customer/static/src/xml/delivery_boy_userlist_line.xml',
-
+        'pos_default_customer/static/src/xml/product_card.xml',
 
     ],
 },

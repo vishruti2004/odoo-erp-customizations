@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('product-name')]" position="after">
+            
+            <t t-if="props.product and props.product.attribute_line_ids and props.product.attribute_line_ids.length == 0">
+                
+             <div class="product-stock-container" style="padding: 2px 0; margin-top: 2px; border-top: 1px solid #f0f0f0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                    <span style="color: #666;">Free To Use:</span>
+                    <span t-attf-style="font-weight: bold; color: #{props.product.qty_available &gt; 0 ? '#28a745' : '#dc3545'};">
+                        <t t-esc="props.product.qty_available"/> Units
+                    </span>
+                </div>
+            </div>
+                
+            </t>
+            
+        </xpath>
+
+       <xpath expr="//div[hasclass('product-content')]" position="attributes">
+            <attribute name="style">display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 4px; min-height: 65px;</attribute>
+        </xpath>
+    </t>
+
+</templates> 

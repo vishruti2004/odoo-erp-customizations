@@ -1,7 +1,8 @@
-<templates id="template" xml:space="preserve">
-    <t t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('control-buttons')]" position="inside">
-            <button class="delivery-boy-btn btn btn-secondary btn-lg flex-shrink-0" t-on-click="openDeliveryBoyList">
+<!-- <templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+                 <xpath expr="//button[hasclass('more-btn')]" position="before">
+
+            <button class="delivery-boy-btn btn btn-secondary btn-lg flex-shrink-0 text-muted" t-on-click="openDeliveryBoyList">
                 <div>
                     <t t-if="pos.selectedDeliveryBoy">
                         <t t-esc="pos.selectedDeliveryBoy.name"/>
@@ -13,4 +14,33 @@
             </button>
         </xpath>
     </t>
-</templates> 
+</templates>  -->
+
+
+<t t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+    
+    <xpath expr="//button[hasclass('more-btn')]" position="before">
+        <t t-if="!props.showRemainingButtons"> <button class="delivery-boy-btn btn btn-secondary btn-lg flex-shrink-0 text-muted" t-on-click="openDeliveryBoyList">
+                <div>
+                    <t t-if="pos.selectedDeliveryBoy">
+                        <t t-esc="pos.selectedDeliveryBoy.name"/>
+                    </t>
+                    <t t-else="">Delivery Boy</t>
+                </div>
+            </button>
+        </t>
+    </xpath>
+
+    <xpath expr="//div[hasclass('control-buttons-modal')]" position="inside">
+        <button class="btn btn-secondary btn-lg flex-shrink-0 text-truncate" 
+                t-att-class="buttonClass"
+                t-on-click="openDeliveryBoyList">
+            <i class="fa fa-motorcycle me-2"/>
+            <t t-if="pos.selectedDeliveryBoy">
+                <t t-esc="pos.selectedDeliveryBoy.name"/>
+            </t>
+            <t t-else="">Delivery Boy</t>
+        </button>
+    </xpath>
+
+</t>
