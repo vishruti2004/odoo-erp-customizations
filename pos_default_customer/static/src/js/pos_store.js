@@ -5,33 +5,20 @@ import { patch } from "@web/core/utils/patch";
 const { DateTime } = luxon; 
 patch(PosStore.prototype, {
 
-    // async addLineToOrder(vals, order, opts = {}, configure = true) {
-        
-    //     if (vals && !vals.product_id && vals.product_tmpl_id) {
-    //         const productTemplate = typeof vals.product_tmpl_id === "number" 
-    //             ? this.models["product.template"].get(vals.product_tmpl_id)
-    //             : vals.product_tmpl_id;
+    async validateOrder(forceValidation) {
+        const result = await super.validateOrder(...arguments);
 
-    //         if (productTemplate && productTemplate.product_variant_ids.length > 0) {
-    //             vals.product_id = productTemplate.product_variant_ids[0];
-    //             console.log("Fixed: product_id set manually to prevent crash");
-    //         }
-    //     }
+        if (result) {
+            console.log("Order validated! Refreshing stock UI...");
+            try {
+                await this.reloadData(true);
+            } catch (error) {
+                console.error("Error while auto-refreshing stock:", error);
+            }
+        }
+        return result;
+    },
 
-    //     return await super.addLineToOrder(...arguments);
-    // },
-
-    // async handleConfigurableProduct(values, productTemplate, opts = {}, configure = true) {
-    //     if (!values || !values.product_id) {
-    //         if (!productTemplate.isConfigurable() && productTemplate.product_variant_ids.length > 0) {
-    //             values.product_id = productTemplate.product_variant_ids[0];
-    //         } else {
-    //             return false; 
-    //         }
-    //     }
-    //     return super.handleConfigurableProduct(...arguments);
-    // },
-    
     setDeliveryBoy(boy) {
         if (!boy) {
             return;

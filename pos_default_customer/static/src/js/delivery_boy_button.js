@@ -1,5 +1,4 @@
 //** @odoo-module **/
-// import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { patch } from "@web/core/utils/patch";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { DeliveryBoyList } from "@pos_default_customer/js/delivery_boy_userlist";
@@ -18,8 +17,7 @@ patch(ControlButtons.prototype, {
                     this.pos.setDeliveryBoy(boy);
                 } else {
                     this.pos.selectedDeliveryBoy = boy;
-                    // window.posStore = this.pos;
-                }
+                    }
                 
                 console.log("LOG 5: After setDeliveryBoy - selectedDeliveryBoy:", this.pos.selectedDeliveryBoy);
                 this.render();

@@ -12,6 +12,8 @@ class PosOrder(models.Model):
 
     delivery_boy_id = fields.Many2one('res.users', string='Delivery Boy')
 
+    
+
     @api.model
     def _order_fields(self, ui_order):
         res = super(PosOrder, self)._order_fields(ui_order)
@@ -31,15 +33,6 @@ class PosOrder(models.Model):
                     order.estimated_delivery_final = order.date_order + timedelta(days=duration)
             else:
                 order.estimated_delivery_final = False
-                
-    # def _loader_params_pos_order(self):
-    #     result = super()._loader_params_pos_order()
-    #     result['search_params']['fields'].append('estimated_delivery_final')
-    #     return result
-    
-    # @api.model
-    # def _load_pos_data_fields(self, config):
-    #     fields = super()._load_pos_data_fields(config)
-    #     if 'delivery_boy_id' not in fields:
-    #         fields.append('delivery_boy_id')
-    #     return fields
+
+
+   

@@ -19,9 +19,7 @@ patch(PosOrder.prototype, {
         if (this.pos && this.pos.selectedDeliveryBoy) {
             selectedBoy = this.pos.selectedDeliveryBoy;
         }
-        else if (window.posStore && window.posStore.selectedDeliveryBoy) {
-            selectedBoy = window.posStore.selectedDeliveryBoy;
-        }
+    
         else if (this.delivery_boy_id) {
             selectedBoy = this.delivery_boy_id;
         }
