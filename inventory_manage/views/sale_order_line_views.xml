@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_order_form_location" model="ir.ui.view">
+        <field name="name">sale.order.form.location</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+        
+
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_template_id']" position="after">
+                 
+             <field name="location_domain_ids" invisible="1" optional="hide"/>
+                <field name="location_id"
+                       string="Location"
+                       domain="[('id', 'in', location_domain_ids)]"
+                       options="{'no_create': True}"
+                       context="{'show_location_qty': True}"
+                       optional="show"/>
+
+            </xpath>
+
+            
+        </field>
+    </record>
+</odoo>

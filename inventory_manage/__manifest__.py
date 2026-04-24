@@ -4,9 +4,14 @@
     'category': 'Inventory',
     'summary': 'inventory',
     'author': 'Vishruti Malaviya',
-    'depends': ['stock'],
+    'depends': ['stock','sale'],
     'data': [
         'data/stock_location.xml',
+
+        'views/sale_order_line_views.xml',
+
+
+        
     ],
     'installable': True,
     'application': True,

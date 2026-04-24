@@ -8,7 +8,7 @@ class StockLocation(models.Model):
         # find parent stock
         parent_stock = self.env.ref('stock.stock_location_stock')
 
-        # 2. shelfq create or find
+        # 2. shelf create or find
         shelf1 = self.search([('name', '=', 'Shelf 1'), ('location_id', '=', parent_stock.id)], limit=1)
         if not shelf1:
             shelf1 = self.create({
@@ -38,3 +38,22 @@ class StockLocation(models.Model):
                             'location_id': section.id,
                             'usage': 'internal'
                         })
+
+    @api.depends('complete_name', 'usage')
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        
+        if not self.env.context.get('show_location_qty'):
+            return
+            
+        for location in self:
+            if location.usage == 'internal':
+                quants = self.env['stock.quant'].search([
+                    ('location_id', '=', location.id),
+                    ('quantity', '>', 0),
+                ])
+                # total_qty = sum(quants.mapped('quantity'))
+                # location.display_name = f"{location.display_name} ({total_qty:.1f})"
+                
+                available_qty = sum(quants.mapped('available_quantity'))
+                location.display_name = f"{location.display_name} ({available_qty:.1f})"
