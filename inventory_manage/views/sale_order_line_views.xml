@@ -9,12 +9,14 @@
 
             <xpath expr="//field[@name='order_line']/list//field[@name='product_template_id']" position="after">
                  
-             <field name="location_domain_ids" invisible="1" optional="hide"/>
-                <field name="location_id"
-                       string="Location"
+             <field name="location_id" invisible="1" optional="hide"/>
+                <field name="location_domain_ids" invisible="1" optional="hide"/>
+                <field name="location_ids"
+                       string="Locations"
                        domain="[('id', 'in', location_domain_ids)]"
+                       context="{'show_location_qty': True, 'product_id': product_id}"
                        options="{'no_create': True}"
-                       context="{'show_location_qty': True}"
+                       widget="many2many_tags"
                        optional="show"/>
 
             </xpath>

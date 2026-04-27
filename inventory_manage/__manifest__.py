@@ -9,6 +9,8 @@
         'data/stock_location.xml',
 
         'views/sale_order_line_views.xml',
+        'views/purchase_views.xml',
+        'views/menu.xml',
 
 
         

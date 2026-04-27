@@ -9,10 +9,15 @@ class SaleOrderLine(models.Model):
         string='Source Location',
     )
 
+    location_ids = fields.Many2many(
+        'stock.location',
+        string='Locations',
+    )
+
     location_domain_ids = fields.Many2many(
         'stock.location',
         compute='_compute_location_domain',
-        string='Locations',
+        string='Available Locations',
     )
 
     @api.depends('product_id')
@@ -28,17 +33,20 @@ class SaleOrderLine(models.Model):
             else:
                 line.location_domain_ids = [(5, 0, 0)]
 
-    @api.constrains('product_uom_qty', 'location_id', 'product_id')
+    @api.constrains('location_ids', 'product_uom_qty', 'product_id')
     def _check_available_qty(self):
         for line in self:
-            if line.location_id and line.product_id:
-                quant = self.env['stock.quant'].search([
+            if not line.location_ids or not line.product_id:
+                continue
+            total_available = sum(
+                self.env['stock.quant'].search([
                     ('product_id', '=', line.product_id.id),
-                    ('location_id', '=', line.location_id.id),
-                ], limit=1)
-                available = quant.quantity if quant else 0.0
-                if line.product_uom_qty > available:
-                   raise ValidationError(
-                        f"stock not available in '{line.location_id.display_name}' "
-                        f"Only {available} qty available select a different location."
-                    )
+                    ('location_id', '=', loc.id),
+                ], limit=1).available_quantity
+                for loc in line.location_ids
+            )
+            if line.product_uom_qty > total_available:
+                raise ValidationError(
+                    f"Not enough stock for '{line.product_id.name}'. "
+                    f"Only {total_available} available."
+                )

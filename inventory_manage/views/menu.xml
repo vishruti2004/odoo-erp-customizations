@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action -->
+    <record id="action_inventory_location_report" model="ir.actions.act_window">
+        <field name="name">Location Report</field>
+        <field name="res_model">stock.location</field>
+        <field name="view_mode">pivot,graph</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem
+        id="menu_inventory_reporting_location"
+        name="Location Report"
+        parent="stock.menu_warehouse_report"
+        action="action_inventory_location_report"
+        sequence="20"/>
+</odoo>

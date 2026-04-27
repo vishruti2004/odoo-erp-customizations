@@ -42,18 +42,19 @@ class StockLocation(models.Model):
     @api.depends('complete_name', 'usage')
     def _compute_display_name(self):
         super()._compute_display_name()
-        
         if not self.env.context.get('show_location_qty'):
             return
-            
+        product_id = self.env.context.get('product_id')
         for location in self:
             if location.usage == 'internal':
-                quants = self.env['stock.quant'].search([
+                domain = [
                     ('location_id', '=', location.id),
                     ('quantity', '>', 0),
-                ])
-                # total_qty = sum(quants.mapped('quantity'))
-                # location.display_name = f"{location.display_name} ({total_qty:.1f})"
-                
+                ]
+                if product_id:
+                    domain.append(('product_id', '=', product_id))
+                quants = self.env['stock.quant'].search(domain)
                 available_qty = sum(quants.mapped('available_quantity'))
-                location.display_name = f"{location.display_name} ({available_qty:.1f})"
+                location.display_name = f"[{available_qty:.1f}] {location.display_name}"
+
+  
