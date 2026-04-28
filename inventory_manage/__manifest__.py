@@ -6,11 +6,14 @@
     'author': 'Vishruti Malaviya',
     'depends': ['stock','sale'],
     'data': [
+
+        'security/ir.model.access.csv',
+
         'data/stock_location.xml',
 
         'views/sale_order_line_views.xml',
         'views/purchase_views.xml',
-        'views/menu.xml',
+        'views/inventory_location_report_views.xml',
 
 
         

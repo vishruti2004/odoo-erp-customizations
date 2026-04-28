@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_inventory_location_report_search" model="ir.ui.view">
+        <field name="name">inventory.location.report.search</field>
+        <field name="model">inventory.location.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <filter name="my_counts" string="My Counts"
+                    domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="internal_locations" string="Internal Locations"
+                    domain="[('location_id.usage', '=', 'internal')]"/>
+                <filter name="transit_locations" string="Transit Locations"
+                    domain="[('location_id.usage', '=', 'transit')]"/>
+                <separator/>
+                <filter name="to_count" string="To Count"
+                    domain="[('inventory_date', '&lt;=', 'today')]"/>
+                <filter name="to_apply" string="To Apply"
+                    domain="[('inventory_quantity_set', '=', True)]"/>
+                <separator/>
+                <filter name="conflicts" string="Conflicts"
+                    domain="[('inventory_diff_quantity', '!=', 0), ('inventory_quantity_set', '=', True)]"/>
+                <separator/>
+                <filter name="negative_stock" string="Negative Stock"
+                    domain="[('quantity', '&lt;', 0)]"/>
+                <separator/>
+                <filter string="Incoming Date" name="incoming_date" date="in_date"/>
+                <separator/>
+                <filter name="group_product" string="Product"
+                    context="{'group_by': 'product_id'}"/>
+                <filter name="group_categ" string="Product Category"
+                    context="{'group_by': 'categ_id'}"/>
+                <filter name="group_location" string="Location"
+                    context="{'group_by': 'location_id'}"/>
+                <filter name="group_storage_category" string="Storage Category"
+                    context="{'group_by': 'storage_category_id'}"/>
+                <filter name="group_lot" string="Lot/Serial Number"
+                    context="{'group_by': 'lot_id'}"/>
+                <filter name="group_company" string="Company"
+                    context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_inventory_location_report_pivot" model="ir.ui.view">
+        <field name="name">inventory.location.report.pivot</field>
+        <field name="model">inventory.location.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Inventory Location Report">
+                <field name="product_id" type="row"/>
+                <field name="location_id" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_inventory_location_report_graph" model="ir.ui.view">
+        <field name="name">inventory.location.report.graph</field>
+        <field name="model">inventory.location.report</field>
+        <field name="arch" type="xml">
+            <graph string="Inventory Location Report">
+                <field name="location_id" type="row"/>
+                <field name="quantity" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_inventory_location_report" model="ir.actions.act_window">
+        <field name="name">Location Report</field>
+        <field name="res_model">inventory.location.report</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="search_view_id" ref="view_inventory_location_report_search"/>
+        <field name="context">{'search_default_internal_locations': 1}</field>
+    </record>
+
+    <menuitem
+        id="menu_inventory_reporting_location"
+        name="Location Report"
+        parent="stock.menu_warehouse_report"
+        action="action_inventory_location_report"
+        sequence="20"/>
+</odoo>
