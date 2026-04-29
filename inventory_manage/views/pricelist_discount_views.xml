@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pricelist_item_form_inherit" model="ir.ui.view">
+        <field name="name">product.pricelist.item.form.inherit</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='pricelist_rule_related']/parent::group" position="after">
+                <group string="Sales Person Discount" name="sales_person_discount_main">
+                    <group>
+                        <field name="allow_discount"/>                
+                        <label for="discount_percentage" invisible="not allow_discount"/>
+                        <div class="o_row" invisible="not allow_discount">
+                            <field name="discount_percentage" 
+                                   style="max-width: 80px !important;"
+                                   required="allow_discount"/>
+                            <span>%</span>
+                        </div>
+                    </group>
+                    <group/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    
+</odoo>

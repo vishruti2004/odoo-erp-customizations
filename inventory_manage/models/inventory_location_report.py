@@ -58,7 +58,14 @@ class InventoryLocationReport(models.Model):
                 (sq.inventory_quantity - sq.quantity) AS inventory_diff_quantity,
                 sq.inventory_quantity AS counted,
                 sl.cyclic_inventory_frequency AS inventory_frequency,
-                (sq.quantity * COALESCE((pp.standard_price->>sq.company_id::text)::numeric, (pp.standard_price->>'0')::numeric, 0)) AS value,
+                CASE 
+                    WHEN sl.usage = 'internal' THEN 
+                        (sq.quantity * COALESCE(
+                            (pp.standard_price->>sq.company_id::text)::numeric,
+                            0
+                        ))
+                    ELSE 0
+                END AS value,                
                 sq.company_id AS company_id,
                 sq.in_date AS in_date,
                 sq.owner_id AS owner_id,

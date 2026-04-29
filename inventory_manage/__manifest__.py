@@ -14,6 +14,7 @@
         'views/sale_order_line_views.xml',
         'views/purchase_views.xml',
         'views/inventory_location_report_views.xml',
+        'views/pricelist_discount_views.xml',
 
 
         

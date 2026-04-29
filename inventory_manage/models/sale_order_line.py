@@ -20,6 +20,13 @@ class SaleOrderLine(models.Model):
         string='Available Locations',
     )
 
+    sp_commission_amount = fields.Monetary(
+        string="Sale Person Commission", 
+        compute="_compute_sp_commission", 
+        store=True,
+        currency_field='currency_id'
+    )
+
     @api.depends('product_id')
     def _compute_location_domain(self):
         for line in self:
@@ -50,3 +57,12 @@ class SaleOrderLine(models.Model):
                     f"Not enough stock for '{line.product_id.name}'. "
                     f"Only {total_available} available."
                 )
+            
+    @api.depends('price_subtotal', 'product_uom_qty', 'order_id.pricelist_id', 'product_id')    
+    def _compute_sp_commission(self):
+        for line in self:
+            if line.pricelist_item_id and line.pricelist_item_id.allow_discount:
+                percentage = line.pricelist_item_id.discount_percentage
+                line.sp_commission_amount = (line.price_subtotal * (percentage / 100.0))
+            else:
+                line.sp_commission_amount = 0.0
