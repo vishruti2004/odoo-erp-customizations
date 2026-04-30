@@ -7,6 +7,7 @@ class ProductPricelistItem(models.Model):
         string='Allow Discount',
         default=False,
     )
+    
     discount_percentage = fields.Float(
         string='Discount Percentage',
         digits=(16, 2),

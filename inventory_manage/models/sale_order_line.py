@@ -4,11 +4,6 @@ from odoo.exceptions import ValidationError
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-    location_id = fields.Many2one(
-        'stock.location',
-        string='Source Location',
-    )
-
     location_ids = fields.Many2many(
         'stock.location',
         string='Locations',

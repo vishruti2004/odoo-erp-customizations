@@ -1,5 +1,4 @@
-from odoo import models, fields, api  # ← આ line ઉમેર
-
+from odoo import models, fields, api  
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
@@ -8,6 +7,7 @@ class SaleOrder(models.Model):
         compute="_compute_total_sp_commission",
         store=True,
         currency_field='currency_id',
+        readonly=True
     )
 
     @api.depends('order_line.sp_commission_amount')

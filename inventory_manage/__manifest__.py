@@ -15,9 +15,7 @@
         'views/purchase_views.xml',
         'views/inventory_location_report_views.xml',
         'views/pricelist_discount_views.xml',
-
-
-        
+        'views/res_partner_views.xml',      
     ],
     'installable': True,
     'application': True,

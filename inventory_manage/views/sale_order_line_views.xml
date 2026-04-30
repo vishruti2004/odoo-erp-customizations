@@ -6,7 +6,6 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/list//field[@name='product_template_id']" position="after">               
-             <field name="location_id" invisible="1" optional="hide"/>
                 <field name="location_domain_ids" invisible="1" optional="hide"/>
                 <field name="location_ids"
                        string="Locations"
@@ -18,15 +17,34 @@
             </xpath>           
         </field>
     </record>
-    
-    <record id="view_order_form_inherit_commission" model="ir.ui.view">
-    <field name="name">sale.order.form.inherit.commission</field>
-    <field name="model">sale.order</field>
-    <field name="inherit_id" ref="sale.view_order_form"/>
-    <field name="arch" type="xml">
-        <xpath expr="//field[@name='order_line']/list/field[@name='price_subtotal']" position="after">
-            <field name="sp_commission_amount" sum="Total Commission"/>
-        </xpath>
-    </field>
-</record>
+
+
+    <record id="view_order_form_inherit_commission_line" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.commission.line</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_subtotal']" position="after">
+                <field name="sp_commission_amount"
+                       string="Commission"
+                       optional="show"
+                       widget="monetary"/>
+            </xpath>
+      
+            <xpath expr="//page[@name='order_lines']//group[@name='sale_total']" position="inside">
+                <div class="o_row">
+                <div class="o_td_label">
+                    <label for="total_sp_commission"/>
+                </div>
+
+                <div class="o_td_value">
+                    <field name="total_sp_commission"
+                        widget="monetary"
+                        options="{'currency_field': 'currency_id'}"
+                        class="fw-bold"/>
+                </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>

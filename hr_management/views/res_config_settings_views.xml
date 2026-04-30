@@ -1,0 +1,18 @@
+<odoo>
+    <record id="res_config_settings_view_attendance_restriction" model="ir.ui.view">
+        <field name="name">res.config.settings.view.attendance.restriction</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='kiosk_mode_setting_container']" position="inside">
+                <setting string="Check-in Restriction" help="If enabled, employees must check-in before accessing ERP.">
+                    <field name="attendance_checkin_required"/>
+                    <div class="mt16" invisible="not attendance_checkin_required">
+                        <span class="o_form_label d-block">Warning Message</span>
+                        <field name="attendance_checkin_warning_message" placeholder="e.g. Please check-in to continue..."/>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>
