@@ -3,9 +3,9 @@ import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { ActivityMenu } from "@hr_attendance/components/attendance_menu/attendance_menu";
 
-if (window.location.pathname !== '/odoo/discuss' && !window.location.pathname.includes('logout')) {
-    window.location.href = '/odoo/discuss';
-}
+// if (window.location.pathname !== '/odoo/discuss' && !window.location.pathname.includes('logout')) {
+//     window.location.href = '/odoo/discuss';
+// }
 
 patch(ActivityMenu.prototype, {
     async checking() {

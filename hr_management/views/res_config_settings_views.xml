@@ -12,7 +12,13 @@
                         <field name="attendance_checkin_warning_message" placeholder="e.g. Please check-in to continue..."/>
                     </div>
                 </setting>
+
+                <setting string="Minimum minute" help="Minutes to be subtracted from daily working hours.">
+                    <field name="min_diff_minutes"/>
+                </setting>
             </xpath>
+
+            
         </field>
     </record>
 </odoo>

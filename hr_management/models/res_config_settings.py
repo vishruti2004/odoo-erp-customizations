@@ -12,3 +12,8 @@ class ResConfigSettings(models.TransientModel):
         string='Warning Message',
         config_parameter='attendance_checkin_restriction.warning_message',
     )
+
+    min_diff_minutes = fields.Integer(
+        string="Minimum Difference (Minutes)", 
+        config_parameter='hr_attendance.min_diff_minutes',
+    )

@@ -1,16 +1,29 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
 
+class HrLeaveType(models.Model):
+    _inherit = 'hr.leave.type'
+
+    min_notice_days = fields.Integer(
+        string="Notice Days",
+        default=0,
+    )
+
+
 class HrLeave(models.Model):
     _inherit = 'hr.leave'
+    
 
     def _cron_auto_generate_leaves(self):
         _logger.info("::: Auto Leave Generation Cron Started :::")
         
-        target_date = fields.Date.today() - timedelta(days=2)
+        # target_date = fields.Date.today() - timedelta(days=2)
+        target_date = fields.Date.today() + timedelta(days=3) 
+
         employees = self.env['hr.employee'].search([('active', '=', True)])
         leave_type = self.env['hr.leave.type'].search([('name', '=', 'Auto-genrated leave')], limit=1)
 
@@ -90,3 +103,17 @@ class HrLeave(models.Model):
                         })
 
         _logger.info("::: Auto Leave Generation Cron Finished :::")
+
+    @api.constrains('date_from')
+    def _check_minimum_notice_period(self):
+        is_privileged_user = self.env.user.has_group('hr_holidays.group_hr_holidays_manager') or self.env.user.has_group('base.group_system')
+
+        for leave in self:
+            if leave.holiday_status_id.name == 'Auto-genrated leave' or is_privileged_user:
+                continue
+
+            min_days = leave.holiday_status_id.min_notice_days
+            if min_days and leave.date_from:
+                min_date = fields.Datetime.now() + timedelta(days=min_days)
+                if leave.date_from < min_date:
+                    raise ValidationError(f"Leave must be applied at least {min_days} days before.")

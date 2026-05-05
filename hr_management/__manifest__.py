@@ -8,7 +8,12 @@
     "author": "vishruti malaviya",
     "license": "LGPL-3",
     'data': [
+
+        'data/mail_template.xml',
+
         'views/res_config_settings_views.xml',
+        'views/hr_leave_type_views.xml',
+
     ],
     'assets': {
         'web.assets_backend': [
