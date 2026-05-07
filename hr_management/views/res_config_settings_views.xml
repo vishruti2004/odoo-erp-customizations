@@ -16,6 +16,11 @@
                 <setting string="Minimum minute" help="Minutes to be subtracted from daily working hours.">
                     <field name="min_diff_minutes"/>
                 </setting>
+
+                <setting string="Late Check-in" help="Tolerance minutes before showing penalty warning.">
+                    <field name="late_checkin_tolerance"/>
+                    <span> Minutes</span>
+                </setting>
             </xpath>
 
             

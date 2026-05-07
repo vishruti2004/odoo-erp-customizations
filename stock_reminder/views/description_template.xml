@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <template id="stock_alert_description_template">
+            <div style="font-family: Arial, sans-serif; padding: 10px;" contenteditable="false">
+                <div style="background:#fff5f5; border-left:4px solid #e74c3c; border-radius:6px; padding:15px; margin-bottom:15px;">
+                    <h2 style="color:#e74c3c; margin:0 0 5px 0;">Product Details: <t t-esc="product.name"/></h2>
+                    <p style="color:#666; font-size:13px; margin-bottom:10px;">
+                        <b>Alert:</b> Minimum quantity according to config must be <b><t t-esc="min_qty"/> <t t-esc="product.uom_id.name"/></b>.
+                    </p>
+                    <table style="width:100%; border-collapse:collapse; background:#fff; border-radius:4px;">
+                        <tr style="background:#eee; font-weight:bold;">
+                            <td style="padding:8px 12px; border-bottom:2px solid #ddd;">Location Name</td>
+                            <td style="padding:8px 12px; border-bottom:2px solid #ddd;">Current Stock</td>
+                        </tr>
+                        <t t-foreach="location_data" t-as="loc">
+                            <tr>
+                                <td style="padding:8px 12px; border-bottom:1px solid #f0f0f0;"><t t-esc="loc['name']"/></td>
+                                <td t-attf-style="padding:8px 12px; font-weight:bold; border-bottom:1px solid #f0f0f0; color: {{ '#e74c3c' if loc['qty'] &lt; min_qty else '#27ae60' }};">
+                                    <t t-esc="loc['qty']"/> <t t-esc="product.uom_id.name"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </table>
+                </div>
+
+                <div style="background:#f5f8ff; border-left:4px solid #3498db; border-radius:6px; padding:15px; margin-bottom:15px;">
+                    <h3 style="color:#3498db; margin:0 0 10px 0;">Vendor Pricing</h3>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead style="background:#3498db; color:#fff; text-align:left;">
+                            <tr>
+                                <th style="padding:8px 12px;">Vendor Name</th>
+                                <th style="padding:8px 12px;">Unit Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="product.seller_ids">
+                                <t t-foreach="product.seller_ids" t-as="seller">
+                                    <tr>
+                                        <td style="padding:8px 12px; border-bottom:1px solid #f0f0f0;"><t t-esc="seller.partner_id.name"/></td>
+                                        <td style="padding:8px 12px; border-bottom:1px solid #f0f0f0;">
+                                            <t t-esc="seller.currency_id.symbol or seller.currency_id.name"/> <t t-esc="seller.price"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr><td colspan="2" style="text-align:center; padding:10px; color:#999;">No vendors available</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+
+                <t t-if="po_data">
+                    <div style="background:#f5fff8; border-left:4px solid #27ae60; border-radius:6px; padding:15px;">
+                        <h3 style="color:#27ae60; margin:0 0 10px 0;">Last Purchase Order</h3>
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr><td style="padding:6px; font-weight:bold;">Order Reference</td><td><t t-esc="po_data['name']"/></td></tr>
+                            <tr><td style="padding:6px; font-weight:bold;">Vendor</td><td><t t-esc="po_data['vendor']"/></td></tr>
+                            <tr><td style="padding:6px; font-weight:bold;">Confirmation Date</td><td><t t-esc="po_data['date']"/></td></tr>
+                            <tr><td style="padding:6px; font-weight:bold;">Quantity</td><td><t t-esc="po_data['qty']"/></td></tr>
+                            <tr><td style="padding:6px; font-weight:bold;">Unit Price</td><td><t t-esc="po_data['price_unit']"/></td></tr>
+                            <tr><td style="padding:6px; font-weight:bold;">Total Untaxed</td><td><t t-esc="po_data['total']"/></td></tr>
+                        </table>
+                    </div>
+                </t>
+            </div>
+        </template>
+
+        <record id="mail_template_stock_alert" model="mail.template">
+            <field name="name">Stock: Low Stock Notification</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="subject">Stock Alert: {{ object.name }} is Low!</field>
+            <field name="body_html" type="html">
+                <div style="max-width:600px; margin:20px auto; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); border:1px solid #eee;">
+                    <div style="background-color:#e74c3c; padding:20px; text-align:center; color:#ffffff;">
+                        <h2>Low Stock Alert</h2>
+                    </div>
+                    <div style="padding:20px;">
+                        <p>Product <strong><t t-out="object.name"/></strong> is below the limit.</p>
+                        <table style="width:100%; border-collapse:collapse;">
+                            <t t-foreach="ctx.get('location_data', [])" t-as="loc">
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid #eee;"><t t-esc="loc['name']"/></td>
+                                    <td t-attf-style="padding:8px; border-bottom:1px solid #eee; font-weight:bold; color: {{ '#e74c3c' if loc['qty'] &lt; ctx.get('min_qty') else '#27ae60' }};">
+                                        <t t-esc="loc['qty']"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </table>
+                        <div style="text-align:center; margin-top:20px;">
+                            <a t-att-href="ctx.get('task_url')" style="background:#e74c3c; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;">View Task</a>
+                        </div>
+                    </div>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

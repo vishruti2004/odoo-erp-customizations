@@ -1,4 +1,5 @@
-from odoo import models, fields
+from odoo import models, fields,api
+from odoo.exceptions import ValidationError
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
@@ -17,3 +18,14 @@ class ResConfigSettings(models.TransientModel):
         string="Minimum Difference (Minutes)", 
         config_parameter='hr_attendance.min_diff_minutes',
     )
+
+    late_checkin_tolerance = fields.Integer(
+        string="Late Check-in Tolerance (Minutes)",
+        config_parameter='attendance_restriction.late_tolerance',
+    )
+
+    @api.constrains('min_diff_minutes')
+    def _check_min_diff_minutes(self):
+        for record in self:
+            if record.min_diff_minutes < 0:
+                raise ValidationError("minutes cannot be negative.enter a value of 0 or more.")

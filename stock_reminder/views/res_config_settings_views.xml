@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_stock_alert" model="ir.ui.view">
+        <field name="name">res.config.settings.view.stock.alert</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//setting[@id='annual_inventory_date']" position="after">
+                <setting id="stock_alert_min_qty" string="Minimum Stock Alert Quantity" help="When product stock falls below this quantity, a task and alert will be triggered automatically.">
+                    <field name="stock_alert_min_qty"/>
+                </setting>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

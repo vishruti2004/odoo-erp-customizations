@@ -8,3 +8,4 @@ class AttendanceHome(Home):
     def logout(self, redirect='/odoo/discuss', **kw):
         request.session.logout(keep_db=True)
         return request.redirect('/odoo/discuss')
+    

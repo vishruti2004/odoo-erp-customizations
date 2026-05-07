@@ -2,9 +2,10 @@
 import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { ActivityMenu } from "@hr_attendance/components/attendance_menu/attendance_menu";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog"; // Dialog માટે ઉમેર્યું
 
 // if (window.location.pathname !== '/odoo/discuss' && !window.location.pathname.includes('logout')) {
-//     window.location.href = '/odoo/discuss';
+//    window.location.href = '/odoo/discuss';
 // }
 
 patch(ActivityMenu.prototype, {
@@ -16,20 +17,59 @@ patch(ActivityMenu.prototype, {
 });
 
 registry.category("services").add("attendance_restriction", {
-    dependencies: ["orm"],
-    async start(env, { orm }) {
-        const check = async () => {
+    dependencies: ["orm", "dialog"],
+    async start(env, { orm, dialog }) {
+        
+        let isDialogOpen = false;
+
+        const validateAttendance = async () => {
             if (window.location.pathname.includes('logout')) return;
+
             try {
-                const res = await orm.call("ir.http", "get_attendance_restriction_info", []);
-                res.enabled && !res.checked_in ? showOverlay(res.message) : removeOverlay();
-            } catch (e) { console.error(e); }
+                const result = await orm.call("ir.http", "get_attendance_restriction_info", []);
+                
+                //  Access Restriction Overlay Logic
+                if (result.enabled && !result.checked_in) {
+                    showOverlay(result.message);
+                } else {
+                    removeOverlay();
+                }
+
+                //  Late Check-in Notification Logic
+                const isAlertShown = sessionStorage.getItem('late_alert_shown');
+
+                if (result.checked_in && result.is_late && !isAlertShown && !isDialogOpen) {
+                    
+                    isDialogOpen = true; 
+
+                    dialog.add(ConfirmationDialog, {
+                        title: "Late Check-in Detected",
+                        body: `You checked in ${result.late_formatted} late. Please note that a late penalty may be applied as per company policy.`,
+                        confirmLabel: "ok",
+                        confirm: () => {
+                            sessionStorage.setItem('late_alert_shown', 'true');
+                            isDialogOpen = false;
+                        },
+                        cancel: () => {
+                            isDialogOpen = false;
+                        },
+                    });
+                }
+                
+                // Reset State on Check-out
+                if (!result.checked_in) {
+                    sessionStorage.removeItem('late_alert_shown');
+                }
+
+            } catch (error) {
+                console.error("Attendance Service Error:", error);
+            }
         };
-        check(); 
-        setInterval(check, 2000);
+
+        validateAttendance(); 
+        setInterval(validateAttendance, 5000);
     },
 });
-
 const BLOCKED_ITEMS = ['My Preferences','Shortcuts', 'Online', 'Away', 'Do Not Disturb', 'Invisible', 'Offline'];
 
 document.addEventListener('click', (e) => {
