@@ -13,7 +13,9 @@
                 'data/mail_template.xml',
 
                 'views/res_config_settings_views.xml',
-                # 'views/description_template.xml',
+                'views/description_template.xml',
+                'views/project_task_views.xml',
+
     ],
     'installable': True,
     'application': False,

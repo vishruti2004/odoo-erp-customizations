@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_contact_announcement_list" model="ir.ui.view">
+        <field name="name">contact.announcement.list</field>
+        <field name="model">contact.announcement</field>
+        <field name="arch" type="xml">
+            <list string="Announcements">
+                <field name="name"/>
+                <field name="announcement_type"/>
+                <field name="priority"/>
+                <field name="start_date"/>
+                <field name="expiry_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_contact_announcement_form" model="ir.ui.view">
+        <field name="name">contact.announcement.form</field>
+        <field name="model">contact.announcement</field>
+        <field name="arch" type="xml">
+            <form string="Announcement">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Announcement Title"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Diwali Celebration"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Basic Info">
+                            <field name="announcement_type" widget="radio" options="{'horizontal': True}"/>
+                            <field name="priority" widget="radio" options="{'horizontal': True}"/>
+                        </group>
+                        <group string="Schedule">
+                            <field name="start_date"/>
+                            <field name="expiry_date"/>
+                        </group>
+                    </group>
+
+                    <group string="Schedule">
+                        <label for="recurrency_interval" string="Repeat Every"/>
+                        <div class="o_row">
+                            <field name="recurrency_interval" nolabel="1"/>
+                            <field name="recurrency_unit"     nolabel="1"/>
+                        </div>
+                    </group>
+
+                    <group>
+                    <field name="content" widget="html" placeholder="Write your announcement message here..."/>
+
+                    </group>
+
+                    <group string="Target Contacts">
+                        <field name="partner_ids"
+                            widget="many2many_tags"
+                            string="Contacts"
+                            colspan="2"
+                            placeholder="Select contacts..."/>
+                    </group>
+                    <notebook>
+                        <page string="Internal Notes" name="internal_notes">
+                            <field name="internal_notes" placeholder="Write internal notes here..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_contact_announcement" model="ir.actions.act_window">
+        <field name="name">Announcements</field>
+        <field name="res_model">contact.announcement</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_contact_announcement_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_contact_announcement_form')})]"/>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_contact_announcement_root"
+              name="Announcements"
+              parent="contacts.menu_contacts"
+              action="action_contact_announcement"
+              sequence="10"/>
+
+</odoo>

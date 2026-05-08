@@ -14,7 +14,7 @@
 
                         <!-- Header -->
                         <div style="background-color:#e74c3c; padding:30px; text-align:center;">
-                            <h2 style="color:#ffffff; margin:0; font-size:22px; font-family:Arial, sans-serif;">
+                           <h2 style="color:#ffffff; margin:0; font-size:22px; font-family:Arial, sans-serif;">
                                 <i class="fa fa-exclamation-triangle" style="margin-right:8px;"></i> Low Stock Alert
                             </h2>
                             <p style="color:#fde8e8; margin:8px 0 0 0; font-size:14px; font-family:Arial, sans-serif;">
@@ -32,19 +32,19 @@
                                 Please review the task and create a Purchase Order immediately.
                             </p>
 
-                            <!-- Product - Location Box -->
+                            <!-- Product + Location Box -->
                             <div style="background:#fff5f5; border-left:4px solid #e74c3c; border-radius:6px; padding:20px; margin:20px 0;">
-                                <h3 style="color:#e74c3c; margin:0 0 5px 0; font-size:16px;">
+                               <h3 style="color:#e74c3c; margin:0 0 5px 0; font-size:16px;">
                                     <i class="fa fa-cube" style="margin-right:8px;"></i> Product Details
                                 </h3>
                                 <p style="color:#888; font-size:12px; margin:0 0 10px 0;">
-                                    Minimum stock required across all locations:
+                                    Minimum stock required:
                                     <strong><t t-out="ctx.get('min_qty')"/> <t t-out="object.product_id.uom_id.name"/></strong>
                                 </p>
                                 <table style="width:100%; border-collapse:collapse;">
                                     <tr style="background:#fff;">
                                         <td style="padding:10px 15px; font-size:14px; color:#555; width:50%;">
-                                            <i class="fa fa-tag" style="margin-right:6px; color:#e74c3c;"></i> <strong>Product Name</strong>
+                                            <strong>Product Name</strong>
                                         </td>
                                         <td style="padding:10px 15px; font-size:14px; color:#333;">
                                             <t t-out="object.product_id.name"/>
@@ -52,13 +52,23 @@
                                     </tr>
                                     <tr style="background:#fafafa;">
                                         <td style="padding:10px 15px; font-size:14px; color:#555;">
-                                            <i class="fa fa-archive" style="margin-right:6px; color:#e74c3c;"></i> <strong>Total Stock</strong>
+                                            <strong>Total Stock</strong>
                                         </td>
                                         <td style="padding:10px 15px; font-size:14px; color:#e74c3c; font-weight:bold;">
                                             <t t-out="ctx.get('total_stock')"/> <t t-out="object.product_id.uom_id.name"/>
                                         </td>
                                     </tr>
-                                    <t t-raw="ctx.get('location_rows_html', '')"/>
+                                    <!-- Location rows -->
+                                    <t t-foreach="ctx.get('location_data', [])" t-as="loc">
+                                        <tr>
+                                            <td style="padding:10px 15px; font-size:14px; color:#555;">
+                                                 <t t-esc="loc['name']"/>
+                                            </td>
+                                            <td t-attf-style="padding:10px 15px; font-size:14px; font-weight:bold; color: {{ '#e74c3c' if loc['qty'] &lt; ctx.get('min_qty', 0) else '#27ae60' }};">
+                                                <t t-esc="loc['qty']"/> <t t-esc="object.product_id.uom_id.name"/>
+                                            </td>
+                                        </tr>
+                                    </t>
                                 </table>
                             </div>
 
@@ -66,7 +76,7 @@
                             <div style="text-align:center; margin:30px 0;">
                                 <a t-att-href="ctx.get('task_url')"
                                    style="background-color:#e74c3c; color:#ffffff; padding:14px 35px; text-decoration:none; border-radius:25px; font-size:15px; font-weight:bold; display:inline-block;">
-                                    <i class="fa fa-tasks" style="margin-right:8px;"></i> View Task
+                                     View Task
                                 </a>
                             </div>
 
@@ -86,6 +96,5 @@
                 </div>
             </field>
         </record>
-
     </data>
 </odoo>
