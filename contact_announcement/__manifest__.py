@@ -10,10 +10,14 @@
         'security/ir.model.access.csv',
 
          'data/cron.xml',
+         'data/mail_template.xml',
 
         'views/contact_announcement_views.xml',
         'views/res_partner_views.xml',
+
+
     ],
+
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

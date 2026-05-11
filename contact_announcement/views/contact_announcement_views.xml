@@ -41,6 +41,7 @@
                     </group>
 
                     <group string="Schedule">
+                    
                         <label for="recurrency_interval" string="Repeat Every"/>
                         <div class="o_row">
                             <field name="recurrency_interval" nolabel="1"/>
