@@ -8,6 +8,7 @@
     'depends': ['base', 'contacts', 'mail'],
     'data': [
         'security/ir.model.access.csv',
+        'security/security.xml',
 
          'data/cron.xml',
          'data/mail_template.xml',
@@ -16,6 +17,10 @@
         'views/res_partner_views.xml',
 
 
+    ],
+
+    'web.assets_backend': [
+        'contact_announcement/static/src/js/notification.js',
     ],
 
     'installable': True,

@@ -205,72 +205,7 @@
     </record>
 
 
-    <!-- search view -->
-    <record id="view_hospital_appointment_search" model="ir.ui.view">
-        <field name="name">hospital.appointment.search</field>
-        <field name="model">hospital.appointment</field>
-        <field name="arch" type="xml">
-            <search>
-                <field name="name" string="Search"  filter_domain="['|','|','|','|',
-                    ('name','ilike',self),
-                    ('patient_id.partner_id','ilike',self),
-                    ('patient_id.patient_code','ilike',self),
-                    ('doctor_id.partner_id','ilike',self),
-                    ('doctor_id.doctor_code','ilike',self)
-                ]" />
-                <field name="specialization_id" />
-                <field name="state" />
-                <separator />
 
-                <filter name="draft"
-                    string="Draft"
-                    domain="[('state','=','draft')]" />
-
-                <filter name="request"
-                    string="Requested"
-                    domain="[('state','=','request')]" />
-
-                <filter name="confirm"
-                    string="Confirmed"
-                    domain="[('state','=','confirm')]" />
-
-                <filter name="consult"
-                    string="In Consultation"
-                    domain="[('state','=','consult')]" />
-
-                <filter name="done"
-                    string="Done"
-                    domain="[('state','=','done')]" />
-
-                <filter name="cancel"
-                    string="Cancelled"
-                    domain="[('state','=','cancel')]" />
-
-                <separator />
-
-
-                <filter name="group_doctor"
-                    string="Doctor"
-                    context="{'group_by':'doctor_id'}" />
-
-                <filter name="group_patient"
-                    string="Patient"
-                    context="{'group_by':'patient_id'}" />
-
-                <filter name="group_specialization"
-                    string="Specialization"
-                    context="{'group_by':'specialization_id'}" />
-
-                <filter name="group_state"
-                    string="Status"
-                    context="{'group_by':'state'}" />
-
-                <filter name="group_date"
-                    string="Appointment Date"
-                    context="{'group_by':'start_datetime'}" />
-            </search>
-        </field>
-    </record>
 
     <!-- action -->
     <record id="action_hospital_appointment" model="ir.actions.act_window">

@@ -29,6 +29,7 @@
                             <field name="name" placeholder="e.g. Diwali Celebration"/>
                         </h1>
                     </div>
+
                     <group>
                         <group string="Basic Info">
                             <field name="announcement_type" widget="radio" options="{'horizontal': True}"/>
@@ -41,26 +42,32 @@
                     </group>
 
                     <group string="Schedule">
-                    
                         <label for="recurrency_interval" string="Repeat Every"/>
                         <div class="o_row">
                             <field name="recurrency_interval" nolabel="1"/>
-                            <field name="recurrency_unit"     nolabel="1"/>
+                            <field name="recurrency_unit" nolabel="1"/>
                         </div>
                     </group>
 
                     <group>
-                    <field name="content" widget="html" placeholder="Write your announcement message here..."/>
-
+                        <field name="content" widget="html" placeholder="Write your announcement message here..."/>
                     </group>
 
                     <group string="Target Contacts">
+                        <field name="partner_domain"
+                            widget="domain"
+                            options="{'model': 'res.partner'}"
+                            string="Contact Filter"
+                            colspan="2"
+                            nolabel="1"/>
+
                         <field name="partner_ids"
                             widget="many2many_tags"
                             string="Contacts"
                             colspan="2"
-                            placeholder="Select contacts..."/>
+                            placeholder="Select contacts or use filter above..."/>
                     </group>
+
                     <notebook>
                         <page string="Internal Notes" name="internal_notes">
                             <field name="internal_notes" placeholder="Write internal notes here..."/>
@@ -71,14 +78,92 @@
         </field>
     </record>
 
+    <!--search view-->
+<record id="view_contact_announcement_search" model="ir.ui.view">
+    <field name="name">contact.announcement.search</field>
+    <field name="model">contact.announcement</field>
+
+    <field name="arch" type="xml">
+
+        <search>
+
+            <!-- Search -->
+            <field name="name"/>
+            <field name="priority"/>
+            <field name="announcement_type"/>
+            <field name="partner_ids"/>
+
+            <separator/>
+
+            <!-- Status Filters -->
+            <filter name="active"
+                string="Active"
+                domain="[
+                    ('start_date', '&lt;=', context_today()),
+                    '|',
+                    ('expiry_date', '=', False),
+                    ('expiry_date', '&gt;=', context_today())
+                ]"/>
+
+            <filter name="expired"
+                string="Expired"
+                domain="[('expiry_date', '&lt;', context_today())]"/>
+
+            <filter name="upcoming"
+                string="Upcoming"
+                domain="[('start_date', '&gt;', context_today())]"/>
+
+            <separator/>
+
+            <!-- Priority -->
+            <filter name="important"
+                string="Important"
+                domain="[('priority','=','important')]"/>
+
+            <filter name="warning"
+                string="Warning"
+                domain="[('priority','=','warning')]"/>
+
+            <filter name="info"
+                string="Info"
+                domain="[('priority','=','info')]"/>
+
+            <separator/>
+
+            <!-- Type -->
+            <filter name="alert"
+                string="Alerts"
+                domain="[('announcement_type','=','alert')]"/>
+
+            <filter name="email"
+                string="Emails"
+                domain="[('announcement_type','=','email')]"/>
+
+            <separator/>
+
+            <!-- Group By -->
+            <filter name="group_priority"
+                string="Priority"
+                context="{'group_by':'priority'}"/>
+
+            <filter name="group_type"
+                string="Type"
+                context="{'group_by':'announcement_type'}"/>
+
+            <filter name="group_start_date"
+                string="Start Date"
+                context="{'group_by':'start_date'}"/>
+
+        </search>
+
+    </field>
+</record>
     <!-- Action -->
     <record id="action_contact_announcement" model="ir.actions.act_window">
         <field name="name">Announcements</field>
         <field name="res_model">contact.announcement</field>
         <field name="view_mode">list,form</field>
-        <field name="view_ids" eval="[(5, 0, 0),
-            (0, 0, {'view_mode': 'list', 'view_id': ref('view_contact_announcement_list')}),
-            (0, 0, {'view_mode': 'form', 'view_id': ref('view_contact_announcement_form')})]"/>
+       
     </record>
 
     <!-- Menu -->
@@ -86,6 +171,5 @@
               name="Announcements"
               parent="contacts.menu_contacts"
               action="action_contact_announcement"
-              sequence="10"/>
-
+              groups="base.group_system"/>
 </odoo>
