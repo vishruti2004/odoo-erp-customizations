@@ -8,7 +8,7 @@ registry.category("services").add("contact_announcement_browser_notification", {
 
     async start(env, { bus_service }) {
 
-        // Request browser notification permission if not already granted
+        // Request browser notification permission if not  granted
         if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
