@@ -1,34 +1,36 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { rpc } from "@web/core/network/rpc";
 
 registry.category("services").add("contact_announcement_browser_notification", {
     dependencies: ["bus_service"],
 
-    start(env, { bus_service }) {
+    async start(env, { bus_service }) {
 
-        // Ask permission browser
+        // Request browser notification permission if not already granted
         if ("Notification" in window && Notification.permission !== "granted") {
             Notification.requestPermission();
         }
 
-        //backend notification listen
-        bus_service.addEventListener("notification", ({ detail }) => {
+        // Fetch current session to get partner ID
+        const session = await rpc("/web/session/get_session_info");
+        const partnerId = session?.partner_id;
 
-            for (const notif of detail) {
+        if (!partnerId) {
+            return;
+        }
 
-                const type = notif.type || notif.message?.type;
-                const payload = notif.payload || notif.message?.payload;
+        // Subscribe to partner-specific announcement channel
+        const channel = `contact_announcement_${partnerId}`;
+        bus_service.addChannel(channel);
 
-                if (type === "contact_announcement") {
-
-                    if ("Notification" in window && Notification.permission === "granted") {
-
-                        new Notification(payload.title || "Announcement", {
-                            body: payload.message || "",
-                        });
-                    }
-                }
+        // Listen for incoming real-time announcements
+        bus_service.subscribe("contact_announcement", (payload) => {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(payload?.title || "Announcement", {
+                    body: payload?.message || "",
+                });
             }
         });
     },

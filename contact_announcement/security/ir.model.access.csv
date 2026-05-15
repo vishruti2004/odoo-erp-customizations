@@ -1,3 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_contact_announcement,contact.announcement,model_contact_announcement,base.group_user,1,1,1,1
 access_res_partner_user,res.partner.user,model_res_partner,base.group_user,1,1,0,0
+access_contact_announcement_portal,contact.announcement.portal,model_contact_announcement,base.group_portal,1,0,0,0
+access_portal_notification_user,portal.notification.user,model_portal_notification,base.group_user,1,1,1,1
+access_portal_notification_portal,portal.notification.portal,model_portal_notification,base.group_portal,1,0,0,0
