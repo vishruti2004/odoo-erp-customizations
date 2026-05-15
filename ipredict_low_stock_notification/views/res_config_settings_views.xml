@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_low_stock" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.low.stock</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='operations_setting_container']" position="before">
+                <block title="Low Stock Management" name="low_stock_manage_container">
+                    <!-- Global Minimum Quantity Setting -->
+                    <setting string="Global Minimum Quantity" 
+                             help="Set default minimum quantity for products if no reordering rule exists.">
+                        <field name="low_stock_min_qty"/>
+                    </setting>
+
+                    <!-- Stock Managers Setting -->
+                    <setting string="Stock Managers" 
+                             help="Selected users will receive low stock notifications and emails.">
+                        <field name="low_stock_manager_ids" widget="many2many_tags"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
