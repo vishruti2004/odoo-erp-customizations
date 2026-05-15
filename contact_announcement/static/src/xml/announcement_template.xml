@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="contact_announcement.NotificationItem">
+        <div class="p-3 border-bottom notification-wrapper">
+            <div class="notification-item">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div class="fw-bold" style="font-size:14px; color:#374151;">
+                        <t t-esc="notif.title || 'Update'"/>
+                    </div>
+                    <small style="font-size:11px; color:#9ca3af; white-space:nowrap;">
+                        <t t-if="notif.date" t-esc="notif.date.split(',')[0]"/>
+                    </small>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted small">
+                        <t t-esc="notif.message || ''"/>
+                    </div>
+                    
+                    <i t-attf-class="fa fa-check text-success #{notif.is_read ? '' : 'mark-read-btn'}" 
+                       t-attf-style="#{notif.is_read ? 'display:block;' : 'display:none;'} cursor:pointer;">
+                    </i>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

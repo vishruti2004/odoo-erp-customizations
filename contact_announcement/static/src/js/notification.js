@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { rpc } from "@web/core/network/rpc";
+import { session } from "@web/session";
 
 registry.category("services").add("contact_announcement_browser_notification", {
     dependencies: ["bus_service"],
@@ -14,7 +14,6 @@ registry.category("services").add("contact_announcement_browser_notification", {
         }
 
         // Fetch current session to get partner ID
-        const session = await rpc("/web/session/get_session_info");
         const partnerId = session?.partner_id;
 
         if (!partnerId) {

@@ -33,6 +33,7 @@
         ],
         'web.assets_frontend': [
             'contact_announcement/static/src/js/portal_bus_service.js',
+            'contact_announcement/static/src/xml/announcement_template.xml',
         ],
    
 },

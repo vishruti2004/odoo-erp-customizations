@@ -8,7 +8,6 @@ class ProjectTask(models.Model):
     alert_product_id = fields.Many2one('product.product', string="Alert Product")
 
     def action_create_purchase_order(self):
-        """Purchase Order form પર redirect કરો - product pre-filled"""
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
