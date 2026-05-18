@@ -8,8 +8,10 @@
     "author": "vishruti malaviya",
     "license": "LGPL-3",
     'data': [
-                # 'data/cron_data.xml',
-                # 'data/mail_template.xml',
+
+               
+                'data/cron_data.xml',
+                'data/mail_template.xml',
 
                 'views/res_config_settings_views.xml',
                 

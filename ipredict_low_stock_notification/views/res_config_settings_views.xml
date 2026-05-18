@@ -16,7 +16,8 @@
                     <!-- Stock Managers Setting -->
                     <setting string="Stock Managers" 
                              help="Selected users will receive low stock notifications and emails.">
-                        <field name="low_stock_manager_ids" widget="many2many_tags"/>
+                        <field name="low_stock_manager_ids" widget="many2many_tags"
+                        />
                     </setting>
                 </block>
             </xpath>
