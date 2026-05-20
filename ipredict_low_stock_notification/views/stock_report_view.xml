@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_search_form_view_inherit_below_stock" model="ir.ui.view">
+        <field name="name">product.product.search.inherit.below.stock</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="stock.stock_product_search_form_view"/>
+        <field name="arch" type="xml">
+            <filter name="real_stock_negative" position="after">
+                <separator/>
+                <filter name="below_stock_product" string="Low Stock" domain="[('is_low_stock', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+    <record id="stock.stock_product_normal_action" model="ir.actions.act_window">
+        <field name="context">{'search_default_below_stock_product': 1}</field>
+    </record>
+</odoo>

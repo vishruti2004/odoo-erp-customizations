@@ -7,17 +7,11 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@name='operations_setting_container']" position="before">
                 <block title="Low Stock Management" name="low_stock_manage_container">
-                    <!-- Global Minimum Quantity Setting -->
-                    <setting string="Global Minimum Quantity" 
-                             help="Set default minimum quantity for products if no reordering rule exists.">
+                    <setting string="Global Minimum Quantity">
                         <field name="low_stock_min_qty"/>
                     </setting>
-
-                    <!-- Stock Managers Setting -->
-                    <setting string="Stock Managers" 
-                             help="Selected users will receive low stock notifications and emails.">
-                        <field name="low_stock_manager_ids" widget="many2many_tags"
-                        />
+                    <setting string="Stock Managers">
+                        <field name="low_stock_manager_ids" widget="many2many_tags" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
                     </setting>
                 </block>
             </xpath>
