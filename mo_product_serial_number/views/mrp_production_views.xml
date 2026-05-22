@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_template_custom_serial_mfg" model="ir.ui.view">
+        <field name="name">product.template.form.custom.serial.mfg</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('o_row')][field[@name='tracking']]" position="after">
+                <label for="use_custom_serial"
+                       string="Use Custom?"
+                       invisible="tracking not in ('lot', 'serial')"/>
+                <div class="o_row" invisible="tracking not in ('lot', 'serial')">
+                    <field name="use_custom_serial" nolabel="1"/>
+                    <field name="custom_serial_prefix"
+                           nolabel="1"
+                           invisible="not use_custom_serial"
+                           required="use_custom_serial and tracking in ('lot', 'serial')"
+                           placeholder="e.g. ABC"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
