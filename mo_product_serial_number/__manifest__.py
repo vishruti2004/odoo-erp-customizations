@@ -15,11 +15,11 @@
 
     "category": "Manufacturing",
     "version": "19.0.1.0.0",
-    "depends": ["mrp", "stock"],
+    "depends": ["mrp", "stock","product"],
 
     "data": [
-        "views/mrp_production_views.xml",
-        "views/product_product.xml",
+        "views/product_template_views.xml",
+        "views/product_product_views.xml",
     ],
 
     "assets": {},
