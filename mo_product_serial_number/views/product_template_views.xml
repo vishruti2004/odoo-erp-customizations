@@ -9,7 +9,7 @@
                 <label for="use_custom_serial" string="Use Custom?" invisible="tracking not in ('lot', 'serial')"/>
                 <div class="o_row" invisible="tracking not in ('lot', 'serial')">
                     <field name="use_custom_serial" nolabel="1"/>
-                    <field name="custom_sequence_id" domain="[('code','=','product.product')]" context="{'default_code': 'product.product','default_company_id': company_id,},"/>
+                    <field name="custom_sequence_id" domain="[('code','=','product.product')]" context="{'default_code': 'product.product'}"/>
                 </div>
             </xpath>
         </field>
