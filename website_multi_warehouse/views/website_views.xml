@@ -1,0 +1,14 @@
+<odoo>
+    <record id="website_form_inherit_multi_warehouse" model="ir.ui.view">
+        <field name="name">website.form.multi.warehouse</field>
+        <field name="model">website</field>
+        <field name="inherit_id" ref="website.view_website_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='company_id']" position="after">
+                <field name="warehouse_id"/>
+                <field name="pricelist_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

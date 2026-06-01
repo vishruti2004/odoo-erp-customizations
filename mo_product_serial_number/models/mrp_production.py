@@ -3,15 +3,11 @@ from odoo import models
 class MrpProduction(models.Model):
     _inherit = 'mrp.production'
 
-    def action_generate_serial(self):
+    def _prepare_stock_lot_values(self):
         self.ensure_one()
-        product = self.product_id.product_tmpl_id
-        if product.use_custom_serial and product.custom_sequence_id:
-            product.sudo().lot_sequence_id = product.custom_sequence_id
+        tmpl = self.product_id.product_tmpl_id
+        if tmpl.use_custom_serial and tmpl.custom_sequence_id:
+            self.product_id.sudo().lot_sequence_id = tmpl.custom_sequence_id
         else:
-            default_sequence = self.env['ir.sequence'].search([
-                ('code', '=', 'stock.lot.serial')
-            ], limit=1)
-            product.sudo().lot_sequence_id = default_sequence
-
-        return super().action_generate_serial()
+            self.product_id.sudo().lot_sequence_id = False
+        return super()._prepare_stock_lot_values()
