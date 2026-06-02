@@ -29,10 +29,14 @@
         "stock",
         "sale_management",
         "product",
+        "stock_account",
     ],
 
     "data": [
+        'security/ir.model.access.csv',
+
         "views/website_views.xml",
+        "views/product_template_views.xml",
     ],
 
     "assets": {},

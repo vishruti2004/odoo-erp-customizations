@@ -1,0 +1,42 @@
+<!-- <odoo>
+    <record id="product_template_inherit_warehouse_cost" model="ir.ui.view">
+        <field name="name">product.template.warehouse.cost</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='purchase']" position="after">
+                <page string="Warehouse Cost" name="warehouse_cost">
+                    <field name="warehouse_price_ids">
+                        <list editable="bottom">
+                            <field name="warehouse_id"/>
+                            
+                            <field name="currency_id" column_invisible="True"/>
+                            
+                            <field name="cost" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo> -->
+<odoo>
+    <record id="product_template_inherit_warehouse_cost" model="ir.ui.view">
+        <field name="name">product.template.warehouse.cost</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='purchase']" position="after">
+                <page string="Warehouse Cost" name="warehouse_cost">
+                    <field name="warehouse_price_ids">
+                        <list create="0">
+                            <field name="warehouse_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="currency_id" column_invisible="True"/>
+                            <field name="cost" widget="monetary" readonly="1" options="{'currency_field': 'currency_id'}"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
