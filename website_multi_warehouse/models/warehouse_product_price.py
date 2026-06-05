@@ -1,137 +1,110 @@
-from odoo import fields, models
-
+from odoo import models, fields, api
 
 class WarehouseProductPrice(models.Model):
     _name = 'warehouse.product.price'
     _description = 'Warehouse Product Cost'
 
-    product_id = fields.Many2one('product.template', string='Product')
-    warehouse_id = fields.Many2one('stock.warehouse', string='Warehouse')
+    product_id = fields.Many2one('product.product', string='Product', required=True)
+    warehouse_id = fields.Many2one('stock.warehouse', string='Warehouse', required=True)
     cost = fields.Float(string='Cost')
-    currency_id = fields.Many2one(
-        'res.currency',
-        string='Currency',
-        default=lambda self: self.env.company.currency_id
-    )
+    currency_id = fields.Many2one('res.currency', string='Currency', default=lambda self: self.env.company.currency_id)
 
+    def _get_price_record(self, product_variant, warehouse):
+        return self.search([
+            ('product_id', '=', product_variant.id),
+            ('warehouse_id', '=', warehouse.id),
+        ], limit=1)
 
-class ProductTemplate(models.Model):
-    _inherit = 'product.template'
+    def _get_fifo_unit_cost(self, product_variant, warehouse, sale_qty=None):
+        incoming_moves = self.env['stock.move'].search([
+            ('product_id', '=', product_variant.id),
+            ('picking_type_id.warehouse_id', '=', warehouse.id),
+            ('is_in', '=', True),
+            ('state', '=', 'done'),
+        ], order='date asc, id asc')
 
-    warehouse_price_ids = fields.One2many(
-        'warehouse.product.price',
-        'product_id',
-        string='Warehouse Cost'
-    )
+        if not sale_qty:
+            for move in incoming_moves:
+                if move.remaining_qty > 0:
+                    return move.value / move.quantity if move.quantity else 0.0
+            return 0.0
 
+        remaining_qty = sale_qty
+        total_cost = 0.0
+        for move in incoming_moves:
+            if remaining_qty <= 0:
+                break
+            if move.remaining_qty <= 0:
+                continue
+            consumed_qty = min(move.remaining_qty, remaining_qty)
+            total_cost += consumed_qty * (move.value / move.quantity if move.quantity else 0.0)
+            remaining_qty -= consumed_qty
 
-# class StockLandedCost(models.Model):
-#     _inherit = 'stock.landed.cost'
+        if remaining_qty > 0 and incoming_moves:
+            last_move = incoming_moves[-1]
+            total_cost += remaining_qty * (last_move.value / last_move.quantity if last_move.quantity else 0.0)
 
-#     def button_validate(self):
-#         result = super().button_validate()
+        return total_cost / sale_qty if sale_qty else 0.0
 
-#         for landed_cost in self:
-#             #  all transfers linked to this landed cost
-#             for stock_picking in landed_cost.picking_ids:
-#                 # Get the warehouse from the destination location
-#                 warehouse = stock_picking.location_dest_id.warehouse_id
-#                 if not warehouse:
-#                     continue
+    @api.model
+    def _update_warehouse_cost(self, stock_move, warehouse, move_type):
+        product_variant = stock_move.product_id
+        cost_method = product_variant.categ_id.property_cost_method
+        unit_cost = stock_move.price_unit or product_variant.standard_price
+        move_qty = stock_move.quantity
 
-#                 # all product movements in the transfer
-#                 for stock_move in stock_picking.move_ids:
-#                     product_template = stock_move.product_id.product_tmpl_id
-#                     # Get updated standard price after landed cost validation
-#                     warehouse_cost = stock_move.product_id.standard_price
+        if move_type == 'incoming':
+            if cost_method == 'fifo':
+                self._process_fifo_incoming(product_variant, warehouse, unit_cost)
+            elif cost_method == 'average':
+                self._process_avco_incoming(product_variant, warehouse, unit_cost, move_qty)
+            else:
+                self._process_std_incoming(product_variant, warehouse, unit_cost)
+        elif move_type == 'outgoing' and cost_method == 'fifo':
+            self._process_fifo_outgoing(product_variant, warehouse)
 
-#                     # Check if a record already exists for this product and warehouse
-#                     price_record = self.env['warehouse.product.price'].search([
-#                         ('product_id', '=', product_template.id),
-#                         ('warehouse_id', '=', warehouse.id),
-#                     ], limit=1)
+    def _process_fifo_incoming(self, product_variant, warehouse, unit_cost):
+        fifo_cost = self._get_fifo_unit_cost(product_variant, warehouse) or unit_cost
+        price_record = self._get_price_record(product_variant, warehouse)
+        if price_record:
+            price_record.cost = fifo_cost
+        else:
+            self.create({
+                'product_id': product_variant.id,
+                'warehouse_id': warehouse.id,
+                'cost': fifo_cost,
+            })
 
-#                     if price_record:
-#                         # Update existing record
-#                         price_record.cost = warehouse_cost
-#                     else:
-#                         # Create new record
-#                         self.env['warehouse.product.price'].create({
-#                             'product_id': product_template.id,
-#                             'warehouse_id': warehouse.id,
-#                             'cost': warehouse_cost,
-#                         })
+    def _process_fifo_outgoing(self, product_variant, warehouse):
+        price_record = self._get_price_record(product_variant, warehouse)
+        if price_record:
+            price_record.cost = self._get_fifo_unit_cost(product_variant, warehouse)
 
-#         return result
+    def _process_avco_incoming(self, product_variant, warehouse, new_unit_cost, new_qty):
+        price_record = self._get_price_record(product_variant, warehouse)
+        if price_record:
+            stock_quants = self.env['stock.quant'].search([
+                ('product_id', '=', product_variant.id),
+                ('location_id', 'child_of', warehouse.lot_stock_id.id),
+            ])
+            total_qty = sum(stock_quants.mapped('quantity'))
+            old_qty = max(total_qty - new_qty, 0)
+            if total_qty > 0:
+                price_record.cost = ((price_record.cost * old_qty) + (new_unit_cost * new_qty)) / total_qty
+        else:
+            self.create({
+                'product_id': product_variant.id,
+                'warehouse_id': warehouse.id,
+                'cost': new_unit_cost,
+            })
 
-# class StockLandedCost(models.Model):
-#     _inherit = 'stock.landed.cost'
-
-#     def button_validate(self):
-#         result = super().button_validate()
-
-#         for landed_cost in self:
-#             # all transfers linked to this landed cost
-#             for stock_picking in landed_cost.picking_ids:
-                
-#                 #  Destination location mathi warehouse tracking
-#                 warehouse = stock_picking.location_dest_id.warehouse_id
-                
-#                 # Jo na male to Operation Type (Receipts) par thi warehouse pick karo
-#                 if not warehouse and stock_picking.picking_type_id.warehouse_id:
-#                     warehouse = stock_picking.picking_type_id.warehouse_id
-
-#                 # Still safety checkpoint
-#                 if not warehouse:
-#                     continue
-
-#                 # all product movements in the transfer
-#                 for stock_move in stock_picking.move_ids:
-#                     product_template = stock_move.product_id.product_tmpl_id
-                    
-#                     warehouse_cost = stock_move.product_id.standard_price
-
-                  
-#                     self.env['warehouse.product.price'].create({
-#                         'product_id': product_template.id,
-#                         'warehouse_id': warehouse.id,
-#                         'cost': warehouse_cost,
-#                     })
-
-#         return result
-
-
-class StockLandedCost(models.Model):
-    _inherit = 'stock.landed.cost'
-
-    def button_validate(self):
-        result = super().button_validate()
-
-        for landed_cost in self:
-            for stock_picking in landed_cost.picking_ids:
-                warehouse = stock_picking.location_dest_id.warehouse_id
-                if not warehouse and stock_picking.picking_type_id.warehouse_id:
-                    warehouse = stock_picking.picking_type_id.warehouse_id
-
-                if not warehouse:
-                    continue
-
-                for stock_move in stock_picking.move_ids:
-                    product_template = stock_move.product_id.product_tmpl_id
-                    warehouse_cost = stock_move.product_id.standard_price
-
-                    price_record = self.env['warehouse.product.price'].search([
-                        ('product_id', '=', product_template.id),
-                        ('warehouse_id', '=', warehouse.id),
-                    ], limit=1)
-
-                    if price_record:
-                        price_record.cost = warehouse_cost
-                    else:
-                        self.env['warehouse.product.price'].create({
-                            'product_id': product_template.id,
-                            'warehouse_id': warehouse.id,
-                            'cost': warehouse_cost,
-                        })
-
-        return result
+    def _process_std_incoming(self, product_variant, warehouse, unit_cost):
+        price_record = self._get_price_record(product_variant, warehouse)
+        if price_record:
+            price_record.cost = unit_cost
+        else:
+            self.create({
+                'product_id': product_variant.id,
+                'warehouse_id': warehouse.id,
+                'cost': unit_cost,
+            })

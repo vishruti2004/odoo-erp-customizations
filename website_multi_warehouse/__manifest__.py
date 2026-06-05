@@ -22,26 +22,20 @@
 
     "category": "Website",
     "version": "19.0.1.0.0",
-
     "depends": [
-        "website",
         "website_sale",
-        "stock",
         "sale_management",
-        "product",
         "stock_account",
+        "stock_landed_costs",
     ],
 
     "data": [
         'security/ir.model.access.csv',
-
         "views/website_views.xml",
         "views/product_template_views.xml",
     ],
 
-    "assets": {},
     "license": "LGPL-3",
-    "sequence": 100,
 
     "installable": True,
     "application": False,
