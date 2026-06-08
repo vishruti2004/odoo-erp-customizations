@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_pos_guest_queue" model="ir.sequence">
+        <field name="name">POS Guest Queue</field>
+        <field name="code">pos.guest.queue</field>
+        <field name="prefix">WL</field>
+        <field name="padding">4</field>
+        <field name="number_increment">1</field>
+    </record>
+</odoo>

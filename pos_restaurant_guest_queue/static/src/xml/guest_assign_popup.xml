@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_restaurant_guest_queue.GuestAssignPopup">
+        <Dialog title="'Assign Guest'" size="'lg'">
+            <div class="p-4">
+                <label class="form-label fw-bold fs-5 mb-3">Select Guest from Waiting List</label>
+                <select t-ref="guestSelect" class="form-select form-select-lg">
+                    <t t-foreach="props.guests" t-as="guest" t-key="guest.id">
+                        <option t-att-value="guest.id">
+                            <t t-esc="guest.waiting_list_id"/> - <t t-esc="guest.guest_name"/> (<t t-esc="guest.party_size"/> Guests)
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg px-5" t-on-click="assignGuest">Assign Table</button>
+                <button class="btn btn-danger btn-lg px-4" t-on-click="() => props.close()">Close</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>
