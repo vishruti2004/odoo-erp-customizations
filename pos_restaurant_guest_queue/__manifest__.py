@@ -41,6 +41,7 @@
         'point_of_sale._assets_pos': [
             'pos_restaurant_guest_queue/static/src/js/*.js',
             'pos_restaurant_guest_queue/static/src/xml/*.xml',
+            'pos_restaurant_guest_queue/static/src/css/guest_queue.css',
         ],
 },
 

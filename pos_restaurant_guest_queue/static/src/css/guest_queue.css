@@ -1,0 +1,24 @@
+.pos .guest-list-table td {
+    font-weight: bold !important;
+}
+
+.pos .guest-list-table th.col-status, 
+.pos .guest-list-table td.col-status {
+    text-align: center !important;
+}
+
+
+.pos .badge-status {
+    display: inline-block;
+    min-width: 110px;      
+    padding: 8px 16px;       
+    font-size: 14px;         
+    font-weight: 600;      
+    text-align: center;
+    border-radius: 6px;      
+    margin: 0 auto;          
+}
+
+.pos .guest-list-table td {
+    padding: 18px 10px !important; 
+}

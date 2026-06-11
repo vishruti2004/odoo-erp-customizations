@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_restaurant_guest_queue.GuestListButton" owl="1">
+        <button class="btn btn-lg btn-light lh-lg ms-1"
+                t-att-class="{'active': pos.router.state.current === 'GuestListScreen'}"
+                t-on-click="onClick">
+            <span>Guest List</span>
+        </button>
+    </t>
+
+    <t t-name="pos_restaurant_guest_queue.GuestListScreen" owl="1">
+        <div class="ticket-screen screen h-100 bg-100">
+            <div class="screen-full-width d-flex w-100 h-100">
+                <div class="rightpane pane-border d-flex flex-column flex-grow-1 w-100 h-100 pe-lg-0 bg-view border-end overflow-y-auto">
+                    
+                    <div class="controls d-grid d-sm-flex align-items-center justify-content-between gap-2 gap-sm-3 p-2 border-bottom bg-view">
+                        <div class="d-flex align-items-center gap-2 flex-grow-1">
+                            <button class="btn btn-primary btn-lg text-nowrap" t-on-click="onNew">
+                                <i class="fa fa-plus me-1"/> New
+                            </button>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-search"/></span>
+                                <input type="text"
+                                       class="form-control form-control-lg"
+                                       placeholder="Search Guest List..."
+                                       t-model="state.searchTerm"
+                                       t-on-input="onSearch"/>
+                            </div>
+                        </div>
+
+                        <div class="buttons d-flex gap-1">
+                            <div class="dropdown" t-att-class="{'show': state.showDropdown}">
+                                <button class="btn btn-lg btn-secondary dropdown-toggle text-nowrap"
+                                        t-on-click="() => state.showDropdown = !state.showDropdown">
+                                    <t t-esc="getFilterLabel()"/>
+                                </button>
+                                <ul class="dropdown-menu" t-att-class="{'show': state.showDropdown}">
+                                    <li><a class="dropdown-item" t-on-click="() => this.onFilter('all')">All</a></li>
+                                    <li><a class="dropdown-item" t-on-click="() => this.onFilter('waiting')">Waiting</a></li>
+                                    <li><a class="dropdown-item" t-on-click="() => this.onFilter('notified')">Notified</a></li>
+                                    <li><a class="dropdown-item" t-on-click="() => this.onFilter('seated')">Seated</a></li>
+                                    <li><a class="dropdown-item" t-on-click="() => this.onFilter('cancelled')">Cancelled</a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="item d-none d-xl-flex align-items-center justify-content-end">
+                            <span class="page me-2">
+                                <t t-esc="(state.currentPage - 1) * state.pageSize + 1"/> -
+                                <t t-esc="Math.min(state.currentPage * state.pageSize, filteredGuests.length)"/>
+                                of <t t-esc="filteredGuests.length"/>
+                            </span>
+                            <div class="page-controls d-flex align-items-center gap-1">
+                                <button class="previous btn btn-secondary"
+                                        t-on-click="prevPage"
+                                        t-att-disabled="state.currentPage === 1">
+                                    <i class="fa fa-fw fa-caret-left"/>
+                                </button>
+                                <button class="next btn btn-secondary"
+                                        t-on-click="nextPage"
+                                        t-att-disabled="state.currentPage === totalPages">
+                                    <i class="fa fa-fw fa-caret-right"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orders overflow-y-auto flex-grow-1 rounded-bottom-3 bg-view">
+                        <t t-if="state.loading">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <i class="fa fa-spinner fa-spin fa-3x text-primary"/>
+                            </div>
+                        </t>
+                        <t t-elif="pagedGuests.length === 0">
+                            <div class="d-flex h-100 flex-column align-items-center justify-content-center">
+                                <i class="fa fa-users fa-4x text-muted mb-3"/>
+                                <span class="text-muted fs-5">No guests found</span>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <table class="table table-striped table-hover guest-list-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Guest Name</th>
+                                        <th>Phone No</th>
+                                        <th>Party Size</th>
+                                        <th>Arrival Time</th>
+                                        <th class="col-status">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="pagedGuests" t-as="guest" t-key="guest.id">
+                                        <tr role="button" class="order-row">
+                                            <td><t t-esc="guest.name"/></td>
+                                            <td><t t-esc="guest.guest_name"/></td>
+                                            <td><t t-esc="guest.phone"/></td>
+                                            <td><t t-esc="guest.party_size"/></td>
+                                            <td><t t-esc="guest.arrival_time"/></td>
+                                            <td class="col-status align-middle">
+                                                <span t-attf-class="badge badge-status {{ getStateBadge(guest.state) }}">
+                                                    <t t-esc="guest.state"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="pos_restaurant_guest_queue.GuestFormScreen" owl="1">
+        <div class="ticket-screen screen h-100 bg-100">
+            <div class="screen-full-width d-flex w-100 h-100">
+                <div class="d-flex flex-column flex-grow-1 w-100 h-100 bg-view overflow-y-auto">
+                    <div class="controls d-flex align-items-center gap-3 p-2 border-bottom bg-view">
+                        <button class="btn btn-secondary btn-lg" t-on-click="onBack">
+                            <i class="fa fa-arrow-left me-1"/> Back
+                        </button>
+                        <h5 class="m-0 fw-bold">New Guest</h5>
+                    </div>
+
+                    <div class="d-flex justify-content-center align-items-start flex-grow-1 p-4">
+                        <div class="bg-white rounded-3 shadow-sm" style="width: 100%; max-width: 600px;">
+                            <table class="table table-bordered m-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3" style="width:40%">
+                                            <i class="fa fa-id-card me-2 text-primary"/>Waiting List ID
+                                        </td>
+                                        <td class="px-4 py-3 text-muted fst-italic">Auto Generated</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3">
+                                            <i class="fa fa-user me-2 text-primary"/>Guest Name
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <input type="text" class="form-control" placeholder="Enter guest name" t-model="state.form.guest_name"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3">
+                                            <i class="fa fa-phone me-2 text-primary"/>Phone Number
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <input type="number" class="form-control" placeholder="10 digit phone number" t-model="state.form.phone"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3">
+                                            <i class="fa fa-users me-2 text-primary"/>Party Size
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <input type="number" class="form-control" placeholder="Enter size" t-model.number="state.form.party_size"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3">
+                                            <i class="fa fa-clock-o me-2 text-primary"/>Arrival Time
+                                        </td>
+                                        <td class="px-4 py-3"><t t-esc="state.arrivalDisplay"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="p-3 border-top text-center">
+                                <button class="btn btn-success px-5 py-2 fw-bold" t-on-click="onSave" t-att-disabled="state.saving">
+                                    Book Guest
+                                </button>
+                            </div>
+                            <t t-if="state.error">
+                                <div class="alert alert-danger m-3">
+                                    <t t-esc="state.error"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="point_of_sale.Navbar"
+       t-inherit="point_of_sale.Navbar"
+       t-inherit-mode="extension" owl="1">
+        
+        <xpath expr="//button[hasclass('orders-button')]" position="after">
+            <GuestListButton/>
+        </xpath>
+
+        <xpath expr="//button[hasclass('orders-button')]" position="attributes">
+            <attribute name="t-att-class">{'active': false}</attribute>
+        </xpath>
+    </t>
+
+</templates>
