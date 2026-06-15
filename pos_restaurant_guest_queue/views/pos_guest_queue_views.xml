@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <record id="view_pos_guest_queue_list" model="ir.ui.view">
         <field name="name">pos.guest.queue.list</field>
         <field name="model">pos.guest.queue</field>
@@ -11,7 +10,11 @@
                 <field name="phone"/>
                 <field name="party_size"/>
                 <field name="arrival_time"/>
-                <field name="state" widget="badge" decoration-warning="state == 'waiting'" decoration-success="state == 'seated'" decoration-danger="state == 'cancelled'"/>
+                <field name="state" widget="badge"
+                    decoration-warning="state == 'waiting'"
+                    decoration-info="state == 'notified'"
+                    decoration-success="state == 'seated'"
+                    decoration-danger="state == 'cancelled'"/>
             </list>
         </field>
     </record>
@@ -22,7 +25,8 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <field name="state" widget="statusbar" statusbar_visible="waiting,seated,cancelled"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="waiting,notified,seated,cancelled"/>
                 </header>
                 <sheet>
                     <group>
@@ -31,7 +35,9 @@
                         <field name="phone" required="1"/>
                         <field name="party_size" required="1"/>
                         <field name="arrival_time" readonly="1"/>
-                        <field name="table_id" readonly="1" invisible="not table_id"/>
+                    </group>
+                    <group string="Assigned Tables" invisible="state == 'waiting'">
+                        <field name="table_ids" widget="many2many_tags" readonly="1"/>
                     </group>
                 </sheet>
             </form>
@@ -48,6 +54,7 @@
                 <field name="state" string="Status"/>
                 <separator/>
                 <filter string="Waiting" name="waiting" domain="[('state','=','waiting')]"/>
+                <filter string="Notified" name="notified" domain="[('state','=','notified')]"/>
                 <filter string="Seated" name="seated" domain="[('state','=','seated')]"/>
                 <filter string="Cancelled" name="cancelled" domain="[('state','=','cancelled')]"/>
             </search>
