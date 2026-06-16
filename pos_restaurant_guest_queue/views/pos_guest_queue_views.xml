@@ -9,6 +9,7 @@
                 <field name="guest_name"/>
                 <field name="phone"/>
                 <field name="party_size"/>
+                <field name="pos_session_id" string="Restaurant"/>
                 <field name="arrival_time"/>
                 <field name="state" widget="badge"
                     decoration-warning="state == 'waiting'"
@@ -35,6 +36,12 @@
                         <field name="phone" required="1"/>
                         <field name="party_size" required="1"/>
                         <field name="arrival_time" readonly="1"/>
+                        <field name="pos_session_id" 
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   readonly="has_multiple_sessions == False"
+                                   domain="[('state', '=', 'opened')]"/>
+                            <field name="has_multiple_sessions" invisible="1"/>
+                     
                     </group>
                     <group string="Assigned Tables" invisible="state == 'waiting'">
                         <field name="table_ids" widget="many2many_tags" readonly="1"/>
@@ -52,6 +59,7 @@
                 <field name="guest_name" string="Guest Name"/>
                 <field name="party_size" string="Party Size"/>
                 <field name="state" string="Status"/>
+                <field name="pos_session_id" string="Restaurant"/>
                 <separator/>
                 <filter string="Waiting" name="waiting" domain="[('state','=','waiting')]"/>
                 <filter string="Notified" name="notified" domain="[('state','=','notified')]"/>

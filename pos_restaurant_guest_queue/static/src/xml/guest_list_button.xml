@@ -21,8 +21,7 @@
                             </button>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fa fa-search"/></span>
-                                <input type="text"
-                                       class="form-control form-control-lg"
+                                <input type="text" class="form-control form-control-lg"
                                        placeholder="Search Guest List..."
                                        t-model="state.searchTerm"
                                        t-on-input="onSearch"/>
@@ -52,14 +51,10 @@
                                 of <t t-esc="filteredGuests.length"/>
                             </span>
                             <div class="page-controls d-flex align-items-center gap-1">
-                                <button class="previous btn btn-secondary"
-                                        t-on-click="prevPage"
-                                        t-att-disabled="state.currentPage === 1">
+                                <button class="previous btn btn-secondary" t-on-click="prevPage" t-att-disabled="state.currentPage === 1">
                                     <i class="fa fa-fw fa-caret-left"/>
                                 </button>
-                                <button class="next btn btn-secondary"
-                                        t-on-click="nextPage"
-                                        t-att-disabled="state.currentPage === totalPages">
+                                <button class="next btn btn-secondary" t-on-click="nextPage" t-att-disabled="state.currentPage === totalPages">
                                     <i class="fa fa-fw fa-caret-right"/>
                                 </button>
                             </div>
@@ -136,46 +131,28 @@
                                         <td class="px-4 py-3 text-muted fst-italic">Auto Generated</td>
                                     </tr>
                                     <tr>
-                                        <td class="fw-bold bg-light align-middle px-4 py-3">
-                                            <i class="fa fa-user me-2 text-primary"/>Guest Name
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="text" class="form-control" placeholder="Enter guest name" t-model="state.form.guest_name"/>
-                                        </td>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3"><i class="fa fa-user me-2 text-primary"/>Guest Name</td>
+                                        <td class="px-4 py-3"><input type="text" class="form-control" placeholder="Enter guest name" t-model="state.form.guest_name"/></td>
                                     </tr>
                                     <tr>
-                                        <td class="fw-bold bg-light align-middle px-4 py-3">
-                                            <i class="fa fa-phone me-2 text-primary"/>Phone Number
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="number" class="form-control" placeholder="10 digit phone number" t-model="state.form.phone"/>
-                                        </td>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3"><i class="fa fa-phone me-2 text-primary"/>Phone Number</td>
+                                        <td class="px-4 py-3"><input type="number" class="form-control" placeholder="10 digit phone number" t-model="state.form.phone"/></td>
                                     </tr>
                                     <tr>
-                                        <td class="fw-bold bg-light align-middle px-4 py-3">
-                                            <i class="fa fa-users me-2 text-primary"/>Party Size
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <input type="number" class="form-control" placeholder="Enter size" t-model.number="state.form.party_size"/>
-                                        </td>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3"><i class="fa fa-users me-2 text-primary"/>Party Size</td>
+                                        <td class="px-4 py-3"><input type="number" class="form-control" placeholder="Enter size" t-model.number="state.form.party_size"/></td>
                                     </tr>
                                     <tr>
-                                        <td class="fw-bold bg-light align-middle px-4 py-3">
-                                            <i class="fa fa-clock-o me-2 text-primary"/>Arrival Time
-                                        </td>
+                                        <td class="fw-bold bg-light align-middle px-4 py-3"><i class="fa fa-clock-o me-2 text-primary"/>Arrival Time</td>
                                         <td class="px-4 py-3"><t t-esc="state.arrivalDisplay"/></td>
                                     </tr>
                                 </tbody>
                             </table>
                             <div class="p-3 border-top text-center">
-                                <button class="btn btn-success px-5 py-2 fw-bold" t-on-click="onSave" t-att-disabled="state.saving">
-                                    Book Guest
-                                </button>
+                                <button class="btn btn-success px-5 py-2 fw-bold" t-on-click="onSave" t-att-disabled="state.saving">Book Guest</button>
                             </div>
                             <t t-if="state.error">
-                                <div class="alert alert-danger m-3">
-                                    <t t-esc="state.error"/>
-                                </div>
+                                <div class="alert alert-danger m-3"><t t-esc="state.error"/></div>
                             </t>
                         </div>
                     </div>
@@ -184,14 +161,10 @@
         </div>
     </t>
 
-    <t t-name="point_of_sale.Navbar"
-       t-inherit="point_of_sale.Navbar"
-       t-inherit-mode="extension" owl="1">
-        
+    <t t-name="point_of_sale.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension" owl="1">
         <xpath expr="//button[hasclass('orders-button')]" position="after">
             <GuestListButton/>
         </xpath>
-
         <xpath expr="//button[hasclass('orders-button')]" position="attributes">
             <attribute name="t-att-class">{'active': false}</attribute>
         </xpath>

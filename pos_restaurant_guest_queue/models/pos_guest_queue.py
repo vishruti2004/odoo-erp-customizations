@@ -6,6 +6,9 @@ import re
 import threading
 import time
 from itertools import combinations
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class PosGuestQueue(models.Model):
     _name = "pos.guest.queue"
@@ -23,9 +26,33 @@ class PosGuestQueue(models.Model):
         ("seated", "Seated"),
         ("cancelled", "Cancelled")
     ], string="Status", default="waiting", readonly=True)
-    table_id = fields.Many2one("restaurant.table", string="Assigned Table", readonly=True)
-    table_ids = fields.Many2many("restaurant.table", "pos_guest_queue_table_rel", "guest_id", "table_id", string="Assigned Tables")
+    
+    pos_session_id = fields.Many2one(
+        'pos.session', string="Restaurant", 
+        domain=[('state', '=', 'opened')], 
+        compute="_compute_pos_session_id", 
+        store=True, readonly=False
+    )
+    table_ids = fields.Many2many(
+        "restaurant.table", "pos_guest_queue_table_rel", 
+        "guest_id", "table_id", string="Assigned Tables"
+    )
     partner_id = fields.Many2one('res.partner', string="Partner", readonly=True)
+    has_multiple_sessions = fields.Boolean(string="Multiple Sessions Open", compute="_compute_has_multiple_sessions")
+
+    @api.depends('pos_session_id')
+    def _compute_has_multiple_sessions(self):
+        opened_count = self.env['pos.session'].search_count([('state', '=', 'opened')])
+        for record in self:
+            record.has_multiple_sessions = opened_count > 1
+
+    @api.depends('has_multiple_sessions')
+    def _compute_pos_session_id(self):
+        for record in self:
+            if not record.pos_session_id:
+                opened_sessions = self.env['pos.session'].search([('state', '=', 'opened')])
+                if len(opened_sessions) == 1:
+                    record.pos_session_id = opened_sessions[0].id
 
     @api.constrains('phone')
     def _check_phone_number(self):
@@ -41,209 +68,169 @@ class PosGuestQueue(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        opened_sessions = self.env['pos.session'].search([('state', '=', 'opened')])
         for vals in vals_list:
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("pos.guest.queue") or "New"
+            if not vals.get('pos_session_id') and len(opened_sessions) == 1:
+                vals['pos_session_id'] = opened_sessions[0].id
+        
         records = super().create(vals_list)
-        config = self.env['pos.config'].search([('module_pos_restaurant', '=', True)], limit=1)
-        if config and config.auto_assign_waiting_guest:
-            records.auto_assign_all_waiting_guests()
+        for record in records:
+            if record.pos_session_id and record.pos_session_id.config_id.auto_assign_waiting_guest:
+                self.auto_assign_all_waiting_guests(session_id=record.pos_session_id.id)
         return records
 
-    def _get_available_tables(self):
-        session = self.env['pos.session'].search([('state', '=', 'opened')], limit=1)
-        if not session:
+    def _get_available_tables(self, session_id):
+        session = self.env['pos.session'].browse(session_id)
+        if not session.exists() or session.state != 'opened':
             return []
-        floor_ids = session.config_id.floor_ids.ids
-        all_tables = self.env["restaurant.table"].search([('floor_id', 'in', floor_ids)])
+        
+        all_tables = self.env["restaurant.table"].search([('floor_id', 'in', session.config_id.floor_ids.ids)])
         available = []
         for table in all_tables:
-            active_orders = self.env["pos.order"].search([("table_id", "=", table.id), ("state", "=", "draft")], limit=1)
-            if not active_orders:
-                available.append({
-                    "id": table.id,
-                    "seats": table.seats or 0,
-                    "table_number": table.table_number,
-                    "floor_id": table.floor_id.id,
-                })
+            active = self.env["pos.order"].search([("table_id", "=", table.id), ("state", "=", "draft"), ("session_id", "=", session_id)], limit=1)
+            if not active:
+                available.append({"id": table.id, "seats": table.seats or 0, "table_number": table.table_number, "floor_id": table.floor_id.id})
         return available
 
-    def _select_best_tables(self, available_tables, party_size, current_floor_id=None):
-        if not current_floor_id:
-            session = self.env['pos.session'].search([('state', '=', 'opened')], limit=1)
-            if session and session.config_id.floor_ids:
-                current_floor_id = session.config_id.floor_ids[0].id
+    def _select_best_tables(self, available_tables, party_size, session_id):
+        session = self.env['pos.session'].browse(session_id)
+        current_floor_id = session.config_id.floor_ids[0].id if session.config_id.floor_ids else None
+        
         floor_tables = {}
         for table in available_tables:
-            floor_id = table.get("floor_id")
-            if not floor_id:
-                floor_id = self.env["restaurant.table"].browse(table["id"]).floor_id.id
-            floor_tables.setdefault(floor_id, []).append(table)
-        floor_order = []
-        if current_floor_id:
-            floor_order.append(current_floor_id)
+            f_id = table.get("floor_id") or self.env["restaurant.table"].browse(table["id"]).floor_id.id
+            floor_tables.setdefault(f_id, []).append(table)
+            
+        floor_order = [current_floor_id] if current_floor_id else []
         floor_order.extend([f for f in floor_tables.keys() if f != current_floor_id])
-        for floor_id in floor_order:
-            tables = floor_tables.get(floor_id)
+        
+        for f_id in floor_order:
+            tables = floor_tables.get(f_id)
             if not tables or sum(t["seats"] for t in tables) < party_size:
                 continue
-            exact_match = [t for t in tables if t["seats"] == party_size]
-            if exact_match:
-                return [exact_match[0]]
-            best_combination = None
-            minimal_waste = float("inf")
-            minimal_table_count = float("inf")
+            
+            exact = [t for t in tables if t["seats"] == party_size]
+            if exact: return [exact[0]]
+            
+            best, min_waste, min_count = None, float("inf"), float("inf")
             for r in range(1, len(tables) + 1):
-                for combination in combinations(tables, r):
-                    total_seats = sum(t["seats"] for t in combination)
-                    if total_seats < party_size:
-                        continue
-                    waste = total_seats - party_size
-                    if waste < minimal_waste or (waste == minimal_waste and len(combination) < minimal_table_count):
-                        best_combination = list(combination)
-                        minimal_waste = waste
-                        minimal_table_count = len(combination)
-            if best_combination:
-                return best_combination
+                for combo in combinations(tables, r):
+                    total = sum(t["seats"] for t in combo)
+                    if total < party_size: continue
+                    waste = total - party_size
+                    if waste < min_waste or (waste == min_waste and len(combo) < min_count):
+                        best, min_waste, min_count = list(combo), waste, len(combo)
+            if best: return best
         return []
 
     @api.model
-    def check_table_has_notified_guest(self, table_ids):
-        if not table_ids:
-            return False
-        guest = self.search([('state', '=', 'notified'), ('table_ids', 'in', table_ids)], limit=1)
-        return bool(guest)
-
-    @api.model
-    def start_timer_for_guest(self, guest_id, table_ids, duration_minutes):
+    def start_timer_for_guest(self, guest_id, table_ids, duration_minutes, session_id):
         def _timer_function():
             time.sleep(duration_minutes * 60)
             try:
-                db_name = self.env.cr.dbname
-                with Registry(db_name).cursor() as cr:
+                with Registry(self.env.cr.dbname).cursor() as cr:
                     env = api.Environment(cr, SUPERUSER_ID, {})
                     guest = env['pos.guest.queue'].browse(guest_id)
-                    if not guest.exists() or guest.state != 'notified':
-                        return
-                    has_order = False
-                    for table in guest.table_ids:
-                        orders = env['pos.order'].search([('table_id', '=', table.id), ('state', '=', 'draft'), ('partner_id', '=', guest.partner_id.id)])
-                        if any(order.lines for order in orders):
-                            has_order = True
-                            break
+                    if not guest.exists() or guest.state != 'notified': return
+                    
+                    has_order = any(order.lines for table in guest.table_ids 
+                                    for order in env['pos.order'].search([('table_id', '=', table.id), 
+                                    ('state', '=', 'draft'), ('partner_id', '=', guest.partner_id.id)]))
+                    
                     if has_order:
                         guest.write({'state': 'seated'})
                     else:
-                        guest.write({'state': 'cancelled', 'table_id': False, 'table_ids': [(5, 0, 0)]})
-                        for table_id in table_ids:
-                            env['pos.order'].search([('table_id', '=', table_id), ('state', '=', 'draft'), ('lines', '=', False)]).unlink()
-            except Exception:
-                pass
+                        guest.write({'state': 'cancelled', 'table_ids': [(5, 0, 0)]})
+                        env['pos.order'].search([('table_id', 'in', table_ids), ('state', '=', 'draft'), 
+                                                 ('lines', '=', False)]).unlink()
+                        session = env['pos.session'].browse(session_id)
+                        if session.state == 'opened':
+                            env['pos.guest.queue'].auto_assign_all_waiting_guests(session_id=session_id)
+            except Exception as e: _logger.error(str(e))
         threading.Thread(target=_timer_function, daemon=True).start()
         return True
 
     @api.model
-    def auto_assign_all_waiting_guests(self):
-        session = self.env['pos.session'].search([('state', '=', 'opened')], limit=1)
-        if not session:
-            return []
-        config = self.env['pos.config'].search([('module_pos_restaurant', '=', True)], limit=1)
-        waiting_duration = config.waiting_duration or 5
-        current_floor_id = session.config_id.floor_ids[0].id if session.config_id.floor_ids else None
-        assigned_guests = []
+    def auto_assign_all_waiting_guests(self, session_id=None):
+        if not session_id:
+            return [res for session in self.env['pos.session'].search([('state', '=', 'opened')]) 
+                    for res in self.auto_assign_all_waiting_guests(session_id=session.id)]
+        
+        session = self.env['pos.session'].browse(session_id)
+        if session.state != 'opened': return []
+        
         while True:
-            available_tables = self._get_available_tables()
-            if not available_tables:
-                break
-            total_available_seats = sum(t["seats"] for t in available_tables)
-            guest = self.search([("state", "=", "waiting"), ("party_size", "<=", total_available_seats)], order="arrival_time asc", limit=1)
-            if not guest:
-                break
-            selected_tables = self._select_best_tables(available_tables, guest.party_size, current_floor_id)
-            if not selected_tables:
-                break
-            table_ids = [t["id"] for t in selected_tables]
-            partner = guest.partner_id
-            if not partner:
-                partner = self.env['res.partner'].create({'name': guest.guest_name, 'phone': guest.phone})
-                guest.write({'partner_id': partner.id})
-            guest.write({"state": "notified", "table_id": table_ids[0], "table_ids": [(6, 0, table_ids)]})
-            for table_id in table_ids:
-                self.env['pos.order'].create({'session_id': session.id, 'table_id': table_id, 'state': 'draft', 'partner_id': partner.id})
-            self.start_timer_for_guest(guest.id, table_ids, waiting_duration)
-            assigned_guests.append({"guest_id": guest.id, "guest_name": guest.guest_name, "waiting_list_id": guest.name, "party_size": guest.party_size, "table_ids": table_ids, "table_numbers": [t["table_number"] for t in selected_tables], "partner_id": partner.id, "waiting_duration": waiting_duration})
-        return assigned_guests
+            avail = self._get_available_tables(session_id=session_id)
+            if not avail: break
+            guest = self.search([("state", "=", "waiting"), ("party_size", "<=", sum(t["seats"] for t in avail)), 
+                                 ("pos_session_id", "=", session_id)], order="arrival_time asc", limit=1)
+            if not guest: break
+            
+            selected = self._select_best_tables(avail, guest.party_size, session_id)
+            if not selected: break
+            
+            t_ids = [t["id"] for t in selected]
+            partner = guest.partner_id or self.env['res.partner'].create({'name': guest.guest_name, 'phone': guest.phone})
+            if not guest.partner_id: guest.write({'partner_id': partner.id})
+            
+            guest.write({"state": "notified", "table_ids": [(6, 0, t_ids)]})
+            for t_id in t_ids:
+                self.env['pos.order'].create({'session_id': session_id, 'table_id': t_id, 'state': 'draft', 
+                                              'partner_id': partner.id, 'is_guest_queue_auto_assigned': True})
+            self.start_timer_for_guest(guest.id, t_ids, session.config_id.waiting_duration or 5, session_id=session_id)
+        return True
 
     @api.model
-    def get_available_tables_for_guest(self, party_size):
-        party_size = int(party_size or 0)
-        all_tables = self.env["restaurant.table"].search([])
-        available_tables = []
-        for table in all_tables:
-            active_orders = self.env["pos.order"].search([("table_id", "=", table.id), ("state", "=", "draft")], limit=1)
-            if not active_orders:
-                available_tables.append({"id": table.id, "seats": table.seats or 0, "table_number": table.table_number, "floor_name": table.floor_id.name})
-        if not available_tables:
-            return {"type": "none", "tables": []}
-        if party_size == 0:
-            return {"type": "single", "tables": available_tables}
-        exact_fit = [t for t in available_tables if t["seats"] == party_size]
-        if exact_fit:
-            return {"type": "single", "tables": exact_fit}
-        larger_tables = [t for t in available_tables if (t["seats"] or 0) > party_size]
-        if larger_tables:
-            min_seats = min(t["seats"] for t in larger_tables)
-            next_size_up = [t for t in larger_tables if t["seats"] == min_seats]
-            return {"type": "single", "tables": next_size_up}
-        total_available = sum(t["seats"] or 0 for t in available_tables)
-        if total_available >= party_size:
-            return {"type": "combination", "tables": available_tables}
-        return {"type": "none", "tables": []}
+    def get_available_tables_for_guest(self, party_size, session_id):
+        session = self.env['pos.session'].browse(session_id)
+        if session.state != 'opened': return {"type": "none", "tables": []}
+        
+        tables = self.env["restaurant.table"].search([('floor_id', 'in', session.config_id.floor_ids.ids)])
+        avail = [{"id": t.id, "seats": t.seats or 0, "table_number": t.table_number, "floor_name": t.floor_id.name} 
+                 for t in tables if not self.env["pos.order"].search([("table_id", "=", t.id), 
+                 ("state", "=", "draft"), ("session_id", "=", session_id)], limit=1)]
+        
+        if not avail: return {"type": "none", "tables": []}
+        if int(party_size or 0) == 0: return {"type": "single", "tables": avail}
+        
+        exact = [t for t in avail if t["seats"] == int(party_size)]
+        if exact: return {"type": "single", "tables": exact}
+        
+        larger = [t for t in avail if t["seats"] > int(party_size)]
+        if larger: return {"type": "single", "tables": [min(larger, key=lambda x: x['seats'])]}
+        
+        return {"type": "combination", "tables": avail} if sum(t["seats"] for t in avail) >= int(party_size) else {"type": "none", "tables": []}
 
     @api.model
-    def find_best_guest_for_tables(self, available_table_ids):
-        tables = self.env["restaurant.table"].browse(available_table_ids)
-        total_seats = sum(t.seats or 0 for t in tables)
-        guests = self.search([("state", "=", "waiting"), ("party_size", "<=", total_seats)], order="arrival_time asc", limit=1)
-        if not guests:
-            return None
-        return {"id": guests.id, "waiting_list_id": guests.name, "guest_name": guests.guest_name, "party_size": guests.party_size}
+    def find_best_guest_for_tables(self, available_table_ids, session_id):
+        total = sum(t.seats or 0 for t in self.env["restaurant.table"].browse(available_table_ids))
+        guest = self.search([("state", "=", "waiting"), ("party_size", "<=", total), ("pos_session_id", "=", session_id)], order="arrival_time asc", limit=1)
+        return {"id": guest.id, "waiting_list_id": guest.name, "guest_name": guest.guest_name, "party_size": guest.party_size} if guest else None
 
     @api.model
-    def assign_guest_to_table(self, guest_id, table_ids):
-        if isinstance(table_ids, int):
-            table_ids = [table_ids]
+    def assign_guest_to_table(self, guest_id, table_ids, session_id):
+        if isinstance(table_ids, int): table_ids = [table_ids]
         guest = self.browse(guest_id)
-        partner = guest.partner_id
-        if not partner:
-            partner = self.env['res.partner'].create({'name': guest.guest_name, 'phone': guest.phone})
-            guest.write({'partner_id': partner.id})
-        guest.write({"state": "notified", "table_id": table_ids[0], "table_ids": [(6, 0, table_ids)]})
+        partner = guest.partner_id or self.env['res.partner'].create({'name': guest.guest_name, 'phone': guest.phone})
+        guest.write({"state": "notified", "table_ids": [(6, 0, table_ids)], "pos_session_id": session_id, "partner_id": partner.id})
         return partner.id
 
     @api.model
     def mark_guest_seated(self, guest_id):
-        guest = self.browse(guest_id)
-        if guest.state == "notified":
-            guest.write({"state": "seated"})
+        self.browse(guest_id).filtered(lambda g: g.state == "notified").write({"state": "seated"})
         return True
 
     @api.model
-    def cancel_guest_notification(self, guest_id):
-        guest = self.browse(guest_id)
-        guest.write({"state": "cancelled", "table_id": False, "table_ids": [(5, 0, 0)]})
-        return True
-
-    @api.model
-    def check_guest_status(self, guest_id):
-        return self.browse(guest_id).state
-
-    @api.model
-    def find_notified_guest_by_partner(self, partner_id):
-        guest = self.search([("state", "=", "notified"), ("partner_id", "=", partner_id)], limit=1)
+    def find_notified_guest_by_partner(self, partner_id, session_id):
+        guest = self.search([("state", "=", "notified"), ("partner_id", "=", partner_id), ("pos_session_id", "=", session_id)], limit=1)
         return {"id": guest.id, "guest_name": guest.guest_name} if guest else None
 
     @api.model
     def get_pos_config(self):
-        config = self.env['pos.config'].search([('module_pos_restaurant', '=', True)], limit=1)
-        return {"auto_assign": config.auto_assign_waiting_guest, "waiting_duration": config.waiting_duration or 5}
+        sessions = self.env['pos.session'].search([('state', '=', 'opened')])
+        data = [{"id": s.id, "name": s.config_id.name, "config_id": s.config_id.id, 
+                 "auto_assign": s.config_id.auto_assign_waiting_guest, 
+                 "waiting_duration": s.config_id.waiting_duration or 5} for s in sessions]
+        return {"opened_sessions": data, "default_session_id": sessions[0].id if len(sessions) == 1 else None}

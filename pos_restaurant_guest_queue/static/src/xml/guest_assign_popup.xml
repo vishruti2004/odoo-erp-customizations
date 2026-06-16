@@ -3,7 +3,6 @@
     <t t-name="pos_restaurant_guest_queue.GuestAssignPopup">
         <Dialog title="'Assign Guest'" size="'lg'">
             <div class="p-4">
-
                 <div class="alert alert-info mb-4">
                     <h5 class="mb-1">Next Guest</h5>
                     <p class="mb-0 fs-5">
@@ -15,7 +14,7 @@
                 <t t-if="!isCombination">
                     <label class="form-label fw-bold fs-5 mb-2">Available Tables</label>
                     <select t-ref="tableSelect" class="form-select form-select-lg">
-                        <t t-foreach="props.availableTables" t-as="table" t-key="table.id">
+                        <t t-foreach="allTables" t-as="table" t-key="table.id">
                             <option t-att-value="table.id">
                                 Table <t t-esc="table.table_number"/> (<t t-esc="table.seats"/> seats) — <t t-esc="table.floor_name"/>
                             </option>
@@ -27,7 +26,7 @@
                     <div class="alert alert-warning mb-3">
                         <strong>Multiple tables needed!</strong>
                         <p class="mb-0">
-                            Guest party: <strong t-esc="props.bestGuest.party_size"/> — Select tables
+                            Guest party: <strong t-esc="props.bestGuest.party_size"/> — Click to select/deselect tables
                         </p>
                     </div>
                     <select t-ref="tableSelect"
@@ -35,7 +34,7 @@
                             multiple="multiple"
                             style="height: 200px;"
                             t-on-mousedown="handleSelection">
-                        <t t-foreach="props.availableTables" t-as="table" t-key="table.id">
+                        <t t-foreach="allTables" t-as="table" t-key="table.id">
                             <option t-att-value="table.id">
                                 Table <t t-esc="table.table_number"/> (<t t-esc="table.seats"/> seats) — <t t-esc="table.floor_name"/>
                             </option>
@@ -43,6 +42,14 @@
                     </select>
                 </t>
 
+                <div class="mt-2 text-muted" t-if="isCombination">
+                    <span t-if="selectedTableIds.length > 0">
+                        Selected: <strong><t t-esc="selectedTableIds.length"/></strong> table(s)
+                    </span>
+                    <span t-else="">
+                        Click on tables to select them
+                    </span>
+                </div>
             </div>
 
             <t t-set-slot="footer">
