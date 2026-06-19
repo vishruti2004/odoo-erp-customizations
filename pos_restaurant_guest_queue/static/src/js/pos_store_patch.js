@@ -1,12 +1,18 @@
 import { patch } from "@web/core/utils/patch";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 
+/**
+ * _mergedSourceTables — Merge tracking
+ * Key   → sourceTable.id
+ * Value → destOrder uuid/id
+ */
 const _mergedSourceTables = new Map();
 
 patch(PosStore.prototype, {
     async mergeOrders(sourceOrder, destOrder) {
         const sourceTable = sourceOrder?.table_id;
 
+        // Backend field check — check if either source or destination is auto-assigned
         const isAutoAssigned =
             destOrder?.is_guest_queue_auto_assigned === true ||
             sourceOrder?.is_guest_queue_auto_assigned === true;

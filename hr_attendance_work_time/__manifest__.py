@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-     "name": "HR Attendance Work Hours Without Break",
+    "name": "HR Attendance Work Hours Without Break",
     "summary": "Adds Work Hours Without Break field and updates Worked Time to reflect raw attendance duration",
  
     "description": """
@@ -25,15 +25,11 @@
         "pos_restaurant",
     ],
 
-    "data": [
-       
-        "views/hr_attandance_views.xml",
-      
+    "data": [  
+        "views/hr_attandance_views.xml",   
     ],
 
-
     "license": "LGPL-3",
-
     "installable": True,
     "application": False,
     "auto_install": False,
