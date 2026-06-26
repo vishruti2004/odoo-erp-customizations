@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_phase_material" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.phase.material</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mrp.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//block[@name='process_operations_setting_container']"
+                   position="after">
+
+                <block title="Phase-Wise Material Planning"
+                       name="phase_wise_material_planning">
+
+                    <setting string="Enable Phase-Wise Material Check"
+                             help="Reserve and consume materials only for the current Work Order operation.">
+                        <field name="phase_wise_material_check"/>
+                    </setting>
+
+                    <setting string="Automatically Create RFQ"
+                             invisible="not phase_wise_material_check"
+                             help="Create or update an RFQ when a phase material shortage is found.">
+                        <field name="auto_create_phase_rfq"/>
+                    </setting>
+
+                    <setting string="Purchase Managers"
+                             invisible="not phase_wise_material_check"
+                             help="Users who receive phase material shortage notifications.">
+                        <field name="phase_purchase_manager_ids"
+                               widget="many2many_tags"/>
+                    </setting>
+
+                    <setting string="Material Availability Check Lead Time"
+                             invisible="not phase_wise_material_check"
+                             help="Number of days before the operation start date when Odoo checks material availability.">
+
+                        <field name="material_availability_check_lead_days"/>
+                        <span class="ms-2">Days</span>
+
+                    </setting>
+
+                    <!-- Email Settings -->
+
+                    <setting string="Send Material Shortage Email"
+                             invisible="not phase_wise_material_check"
+                             help="Send email notifications when material shortage is detected.">
+
+                        <field name="send_phase_shortage_email"/>
+
+                    </setting>
+
+                    <setting string="Email Notification Mode"
+                             invisible="not phase_wise_material_check or not send_phase_shortage_email"
+                             help="Choose whether emails should be sent only once or repeatedly until stock arrives.">
+
+                        <field name="shortage_email_mode" widget="radio"/>
+
+                    </setting>
+
+                </block>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
