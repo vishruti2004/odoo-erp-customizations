@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_product_selection_combo_form" model="ir.ui.view">
+        <field name="name">product.selection.combo.form</field>
+        <field name="model">product.selection.combo</field>
+        <field name="arch" type="xml">
+            <form string="Selection Configuration">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="product_public_category_id"/>
+                            <field name="selection_method"/>
+                            <field name="product_ids" 
+                                   widget="many2many_tags" 
+                                   readonly="selection_method == 'all_products'" 
+                                   force_save="1" 
+                                   domain="[('product_tmpl_id.public_categ_ids', 'in', product_public_category_id)]"/>
+                        </group>
+                        <group>
+                            <field name="allow_multiple_selection"/>
+                            <field name="minimum_selection"/>
+                            <field name="maximum_selection"/>
+                            <field name="include_selected_product_price"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
