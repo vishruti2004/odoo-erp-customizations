@@ -5,3 +5,4 @@ from . import mrp_phase_material_shortage
 from . import res_company
 from . import res_config_settings
 from . import stock_move
+from . import mrp_consumption_warning

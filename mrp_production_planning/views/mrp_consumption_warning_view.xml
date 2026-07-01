@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mrp_consumption_warning_form_inherit" model="ir.ui.view">
+        <field name="name">mrp.consumption.warning.form.inherit</field>
+        <field name="model">mrp.consumption.warning</field>
+        <field name="inherit_id" ref="mrp.view_mrp_consumption_warning_form"/>
+        <field name="arch" type="xml">
+            <!-- Add workorder_id field (hidden) -->
+            <xpath expr="//field[@name='mrp_production_ids']" position="after">
+                <field name="workorder_id" invisible="1"/>
+            </xpath>
+
+            <!--  Add custom button in footer -->
+            <xpath expr="//footer" position="inside">
+                <button name="action_start_phase" 
+                        string="Start Current Phase" 
+                        type="object" 
+                        class="btn-primary"
+                        attrs="{'invisible': [('workorder_id', '=', False)]}"
+                        help="Start only the current Work Order / Phase"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

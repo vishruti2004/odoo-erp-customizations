@@ -32,6 +32,7 @@
 ],
 
     "data": [
+         'security/ir.model.access.csv',
 
         "data/cron_data.xml",
         "data/mail_template.xml",

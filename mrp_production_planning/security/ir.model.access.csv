@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mrp_phase_material_shortage_user,mrp.phase.material.shortage.user,model_mrp_phase_material_shortage,base.group_user,1,1,1,1
