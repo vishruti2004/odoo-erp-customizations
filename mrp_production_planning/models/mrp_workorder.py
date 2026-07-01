@@ -6,7 +6,6 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-
 class MrpWorkorder(models.Model):
     _inherit = "mrp.workorder"
 
@@ -15,15 +14,14 @@ class MrpWorkorder(models.Model):
         ('blocked', 'Blocked'),
         ('partial', 'Partial Available'),
     ], compute='_compute_phase_material_status', default='available')
-    
+
     phase_component_move_ids = fields.One2many(
         'stock.move', compute='_compute_phase_component_moves'
     )
-    
+
     phase_shortage_line_ids = fields.One2many(
         'mrp.phase.material.shortage', 'workorder_id'
     )
-    
 
     @api.depends('operation_id', 'production_id.move_raw_ids')
     def _compute_phase_component_moves(self):
@@ -51,9 +49,7 @@ class MrpWorkorder(models.Model):
             blocked, partial = False, False
             for move in moves:
                 available = self.env['stock.quant']._get_available_quantity(
-                    move.product_id,
-                    workorder.production_id.location_src_id,
-                    strict=False,
+                    move.product_id, workorder.production_id.location_src_id, strict=False
                 )
                 available = move.product_id.uom_id._compute_quantity(available, move.product_uom)
                 
@@ -64,7 +60,6 @@ class MrpWorkorder(models.Model):
             
             workorder.phase_material_status = 'blocked' if blocked else 'partial' if partial else 'available'
 
-    # ========== HELPERS ==========
     def _set_phase_components(self):
         for workorder in self:
             if not workorder.company_id.phase_wise_material_check:
@@ -82,28 +77,25 @@ class MrpWorkorder(models.Model):
             and m.state not in ('done', 'cancel')
         )
 
-    # ========== CRON ==========
     @api.model
     def _cron_check_phase_material_availability(self):
         _logger.info("Cron: Checking phase material availability...")
-        now = fields.Datetime.now()
-        
         for workorder in self.search([
             ("state", "not in", ("done", "cancel")),
             ("date_start", "!=", False),
         ]):
             if not workorder.company_id.phase_wise_material_check:
                 continue
+            
             lead_days = workorder.company_id.material_availability_check_lead_days or 1
             check_date = fields.Datetime.subtract(workorder.date_start, days=lead_days)
+            
             if fields.Datetime.now() >= check_date:
                 workorder._check_phase_material_shortage()
         _logger.info("Cron: Finished.")
 
-    # ========== MAIN LOGIC ==========
     def _check_phase_material_shortage(self):
         self.ensure_one()
-        
         moves = self._get_phase_moves()
         if not moves:
             return True
@@ -117,8 +109,7 @@ class MrpWorkorder(models.Model):
             )
             available = move.product_id.uom_id._compute_quantity(available, move.product_uom)
             
-            if float_compare(available, move.product_uom_qty, 
-                           precision_rounding=move.product_uom.rounding) < 0:
+            if float_compare(available, move.product_uom_qty, precision_rounding=move.product_uom.rounding) < 0:
                 shortage_data.append({
                     'product_id': move.product_id.id,
                     'shortage_qty': move.product_uom_qty - max(available, 0.0),
@@ -134,36 +125,20 @@ class MrpWorkorder(models.Model):
             return True
         
         Shortage = self.env['mrp.phase.material.shortage']
-        email_sent = False
-        
         for data in shortage_data:
             shortage = Shortage.search([
-                ('workorder_id', '=', self.id),
-                ('product_id', '=', data['product_id'])
+                ('workorder_id', '=', self.id), ('product_id', '=', data['product_id'])
             ], limit=1)
             
             if shortage:
-                shortage.write({
-                    'shortage_qty': data['shortage_qty'],
-                    'uom_id': data['uom_id'],
-                    'state': 'shortage'
-                })
+                shortage.write({'shortage_qty': data['shortage_qty'], 'uom_id': data['uom_id'], 'state': 'shortage'})
             else:
-                shortage = Shortage.create({
-                    'workorder_id': self.id,
-                    'product_id': data['product_id'],
-                    'shortage_qty': data['shortage_qty'],
-                    'uom_id': data['uom_id'],
-                    'state': 'shortage'
-                })
-            
-            shortage.action_create_or_update_rfq()
+                Shortage.create({
+                    'workorder_id': self.id, 'product_id': data['product_id'],
+                    'shortage_qty': data['shortage_qty'], 'uom_id': data['uom_id'], 'state': 'shortage'
+                }).action_create_or_update_rfq()
         
-        all_shortages = Shortage.search([
-            ('workorder_id', '=', self.id),
-            ('state', 'in', ('shortage', 'rfq_created'))
-        ])
-        
+        all_shortages = Shortage.search([('workorder_id', '=', self.id), ('state', 'in', ('shortage', 'rfq_created'))])
         for shortage in all_shortages:
             if shortage._should_send_email():
                 shortage._send_purchase_notification()
@@ -172,12 +147,10 @@ class MrpWorkorder(models.Model):
         self.phase_material_status = 'blocked'
         return True
 
-    # ========== BUTTONS ==========
     def button_start(self, raise_on_invalid_state=False):
         for workorder in self:
             if not workorder.company_id.phase_wise_material_check:
                 continue
-            
             if workorder.working_state == 'blocked':
                 raise UserError(_("Work Center '%s' is blocked.") % workorder.workcenter_id.name)
             
@@ -185,25 +158,13 @@ class MrpWorkorder(models.Model):
             phase_moves = workorder._get_phase_moves()
             
             all_moves = production.move_raw_ids.filtered(lambda m: m.state not in ('done', 'cancel'))
-            other_moves = all_moves - phase_moves
-            other_moves._do_unreserve()
+            (all_moves - phase_moves)._do_unreserve()
             phase_moves._action_assign()
             
-            missing = []
-            for move in phase_moves:
-                available = self.env['stock.quant']._get_available_quantity(
-                    move.product_id, production.location_src_id, strict=False
-                )
-                available = move.product_id.uom_id._compute_quantity(available, move.product_uom)
-                if float_compare(available, move.product_uom_qty, 
-                               precision_rounding=move.product_uom.rounding) < 0:
-                    missing.append(f"{move.product_id.display_name} (Need: {move.product_uom_qty}, Have: {available})")
-       
             issues = []
             if production.consumption != 'flexible':
                 for move in phase_moves:
-                    if float_compare(move.quantity, move.product_uom_qty,
-                                   precision_rounding=move.product_uom.rounding) < 0:
+                    if float_compare(move.quantity, move.product_uom_qty, precision_rounding=move.product_uom.rounding) < 0:
                         issues.append((production, move.product_id, move.quantity, move.product_uom_qty))
             
             if issues:
@@ -227,8 +188,7 @@ class MrpWorkorder(models.Model):
                 move.picked = False
             
             if self.env.context.get('skip_quantity_calculation'):
-                for move in phase_moves:
-                    move.picked = True
+                phase_moves.picked = True
             else:
                 qty = production.qty_producing or production.product_qty
                 for move in phase_moves:

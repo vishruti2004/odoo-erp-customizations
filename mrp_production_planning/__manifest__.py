@@ -24,21 +24,28 @@
     "version": "19.0.1.0.0",
 
     "depends": [
-    "mrp",
-    "stock",
-    "purchase",
-    "mail",
-    "product",
-],
+        "mrp",
+        "stock",
+        "purchase",
+        "mail",
+        "product",
+    ],
 
     "data": [
-         'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
 
         "data/cron_data.xml",
         "data/mail_template.xml",
 
         "views/res_config_settings_views.xml",
+    
     ],
+
+    "assets": {
+        "web.assets_common": [
+            "mrp_production_planning/static/src/css/email_template.css",
+        ],
+    },
 
     "license": "LGPL-3",
 

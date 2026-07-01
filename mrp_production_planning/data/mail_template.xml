@@ -8,75 +8,74 @@
             <field name="email_from">{{ object.company_id.email_formatted }}</field>
             <field name="email_to"></field>
             <field name="body_html" type="html">
-                <div style="margin:0;padding:0;background-color:#f4f6f9;">
-                    <div style="max-width:650px;margin:30px auto;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                        <div style="background-color:#e74c3c;padding:30px;text-align:center;">
-                            <h2 style="color:#ffffff;margin:0;font-size:24px;font-family:Arial,sans-serif;font-weight:600;">
-                                <span class="fa fa-exclamation-triangle" style="margin-right:10px;color:#ffffff;"></span>
+                <div class="email-container">
+                    <div class="email-wrapper">
+                        <!-- Header -->
+                        <div class="email-header">
+                            <h2>
+                                <span class="fa fa-exclamation-triangle icon"></span>
                                 Material Shortage Alert
                             </h2>
-                            <p style="color:#fde8e8;margin-top:8px;font-size:14px;margin-bottom:0;">Action Required Before Planned Operation Date</p>
+                            <p>Action Required Before Planned Operation Date</p>
                         </div>
-                        <div style="padding:30px;font-family:Arial,sans-serif;">
-                            <p style="font-size:16px;color:#333;margin-top:0;">Dear Purchase Manager,</p>
-                            <p style="font-size:14px;color:#555;line-height:1.8;">Component shortages have been detected for a planned manufacturing operation.</p>
 
-                            <div style="margin:20px 0;padding:15px;background:#f0f8ff;border-left:4px solid #2196F3;border-radius:4px;">
-                                <p style="margin:0;font-size:13px;color:#0c5460;">
-                                    <strong>Work Order:</strong> <t t-out="object.workorder_id.name"/> <span style="padding:0 5px;">|</span>
+                        <!-- Body -->
+                        <div class="email-body">
+                            <p class="greeting">Dear Purchase Manager,</p>
+                            <p class="message">Component shortages have been detected for a planned manufacturing operation.</p>
+
+                            <!-- Info Box -->
+                            <div class="email-info-box">
+                                <p>
+                                    <strong>Work Order:</strong> <t t-out="object.workorder_id.name"/>
+                                    <span class="separator">|</span>
                                     <strong>Manufacturing Order:</strong> <t t-out="object.production_id.name"/>
                                 </p>
                             </div>
 
-                            <div style="margin:25px 0;border:1px solid #eee;border-radius:6px;overflow:hidden;">
-                                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left;">
+                            <!-- Table -->
+                            <div class="email-table-wrapper">
+                                <table class="email-table">
                                     <thead>
-                                        <tr style="background:#f8f9fa;border-bottom:2px solid #eee;">
-                                            <th style="padding:12px 15px;color:#555;font-weight:bold;">No</th>
-                                            <th style="padding:12px 15px;color:#555;font-weight:bold;">Component</th>
-                                            <th style="padding:12px 15px;color:#555;font-weight:bold;">Shortage</th>
-                                            <th style="padding:12px 15px;color:#555;font-weight:bold;">RFQ</th>
-                                            <th style="padding:12px 15px;color:#555;font-weight:bold;">Expected</th>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Component</th>
+                                            <th>Shortage</th>
+                                            <th>RFQ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-set="shortages" t-value="object.workorder_id.phase_shortage_line_ids"/>
-                                        <tr t-foreach="shortages" t-as="s" t-attf-class="#{s_index % 2 == 0 and 'bg-light' or ''}" style="border-bottom:1px solid #eee;">
-                                            <td style="padding:10px 15px;color:#999;" t-esc="s_index + 1"/>
-                                            <td style="padding:10px 15px;color:#333;font-weight:500;"><t t-out="s.product_id.display_name"/></td>
-                                            <td style="padding:10px 15px;color:#e74c3c;font-weight:bold;"><t t-out="s.shortage_qty"/> <t t-out="s.uom_id.name"/></td>
-                                            <td style="padding:10px 15px;color:#555;">
+                                        <tr t-foreach="shortages" t-as="s" t-attf-class="#{s_index % 2 == 0 and 'bg-light' or ''}">
+                                            <td class="col-no" t-esc="s_index + 1"/>
+                                            <td class="col-product"><t t-out="s.product_id.display_name"/></td>
+                                            <td class="col-shortage"><t t-out="s.shortage_qty"/> <t t-out="s.uom_id.name"/></td>
+                                            <td class="col-rfq">
                                                 <t t-if="s.purchase_order_id">
                                                     <t t-out="s.purchase_order_id.name"/>
                                                 </t>
                                                 <t t-else="">
-                                                    <span style="color:#999;">Not Created</span>
+                                                    <span class="not-created">Not Created</span>
                                                 </t>
                                             </td>
-                                            <!-- <td style="padding:10px 15px;color:#555;">
-                                                <t t-if="s.expected_arrival_date">
-                                                    <t t-out="s.expected_arrival_date"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <span style="color:#999;">N/A</span>
-                                                </t>
-                                            </td> -->
                                         </tr>
                                     </tbody>
                                     <tfoot>
-                                        <tr style="background:#f8f9fa;border-top:2px solid #eee;">
-                                            <td colspan="2" style="padding:12px 15px;color:#555;font-weight:bold;">Total Components</td>
-                                            <td colspan="3" style="padding:12px 15px;color:#e74c3c;font-weight:bold;" t-esc="len(shortages)"/>
+                                        <tr>
+                                            <td colspan="2">Total Components</td>
+                                            <td colspan="2" class="total-value" t-esc="len(shortages)"/>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
 
-                            <p style="font-size:14px;color:#555;line-height:1.8;margin-bottom:0;">Please arrange the required materials before the planned operation date.</p>
+                            <p class="email-closing">Please arrange the required materials before the planned operation date.</p>
                         </div>
-                        <div style="background:#f8f9fa;padding:20px;text-align:center;border-top:1px solid #eee;">
-                            <p style="margin:0;font-size:12px;color:#999;font-family:Arial,sans-serif;">This is an automated notification generated by Odoo.</p>
-                            <p style="margin-top:6px;font-size:13px;color:#e74c3c;font-weight:bold;margin-bottom:0;"><t t-out="object.company_id.name"/></p>
+
+                        <!-- Footer -->
+                        <div class="email-footer">
+                            <p class="footer-text">This is an automated notification generated by Odoo.</p>
+                            <p class="company-name"><t t-out="object.company_id.name"/></p>
                         </div>
                     </div>
                 </div>
