@@ -1,32 +1,33 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-import json
+
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    combo_details = fields.Text(
-        string="Combo Details",
-        copy=False,
+    combo_selection_ids = fields.One2many(
+        "sale.combo.selection",
+        "order_line_id",
+        string="Combo Selections",
+        copy=True,
     )
+
     is_combo_line = fields.Boolean(
         string="Is Combo Line",
         compute="_compute_is_combo_line",
         store=True,
     )
 
-    @api.depends('combo_details')
+    @api.depends('combo_selection_ids')
     def _compute_is_combo_line(self):
         for line in self:
-            line.is_combo_line = bool(line.combo_details)
+            line.is_combo_line = bool(line.combo_selection_ids)
 
     def get_combo_items(self):
-        if not self.combo_details:
-            return []
-        try:
-            return json.loads(self.combo_details)
-        except:
-            return []
-
-    def set_combo_items(self, items):
-        self.combo_details = json.dumps(items) if items else False
+        return [{
+            'product_id': sel.product_id.id,
+            'product_name': sel.product_id.name,
+            'quantity': sel.quantity,
+            'extra_price': sel.extra_price,
+            'image_url': f'/web/image/product.product/{sel.product_id.id}/image_128',
+        } for sel in self.combo_selection_ids]

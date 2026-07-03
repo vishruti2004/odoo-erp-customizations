@@ -19,22 +19,18 @@
     "data": [
         "security/ir.model.access.csv",
         "views/product_template_views.xml",
-        "views/product_selection_combo_views.xml",
+        "views/cart_templates.xml",
     ],
-   "assets": {
-    "web.assets_frontend": [
-        "website_selection_combo/static/src/js/product_card.js",
-        "website_selection_combo/static/src/js/combo_configurator_dialog.js",
-        "website_selection_combo/static/src/js/cart_service.js",       
-        # "website_selection_combo/static/src/js/cart_page_display.js",
-
-
-        "website_selection_combo/static/src/xml/product_card.xml",
-        "website_selection_combo/static/src/xml/combo_configurator_dialog.xml",        "website_selection_combo/static/src/xml/combo_configurator_dialog.xml",
-        # "website_selection_combo/static/src/xml/cart_summary.xml",
-
-    ],
-},
+    "assets": {
+        "web.assets_frontend": [
+            "website_selection_combo/static/src/js/product_card.js",
+            "website_selection_combo/static/src/js/combo_configurator_dialog.js",
+            "website_selection_combo/static/src/js/cart_service.js",
+            "website_selection_combo/static/src/js/cart_edit_combo.js",
+            "website_selection_combo/static/src/xml/product_card.xml",
+            "website_selection_combo/static/src/xml/combo_configurator_dialog.xml",
+        ],
+    },
     "license": "LGPL-3",
     "installable": True,
     "application": False,

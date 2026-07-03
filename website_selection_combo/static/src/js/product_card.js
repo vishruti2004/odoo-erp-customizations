@@ -12,6 +12,7 @@ export class ProductCard extends Component {
         onIncrease: Function,
         onDecrease: Function,
         maxQty: Number,
+        isPlusDisabled: { type: Boolean, optional: true },
     };
 
     get isSelected() {

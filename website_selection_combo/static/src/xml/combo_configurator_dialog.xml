@@ -17,12 +17,7 @@
                         </span>
                     </div>
                     <div class="text-muted small mb-2">
-                        <t t-if="combo.minimum_selection > 0 and combo.maximum_selection > 0">
-                            Select <t t-esc="combo.minimum_selection"/> - <t t-esc="combo.maximum_selection"/> products
-                        </t>
-                        <t t-elif="combo.maximum_selection > 0">
-                            Maximum <t t-esc="combo.maximum_selection"/> products
-                        </t>
+                        Select <t t-esc="combo.minimum_selection"/> - <t t-esc="combo.maximum_selection"/> products
                     </div>
                     <div class="row g-2 mt-2">
                         <t t-foreach="combo.combo_items" t-as="item" t-key="item.id">
@@ -34,6 +29,7 @@
                                     onIncrease.bind="() => this.increaseQty(combo.id, item.id, combo.maximum_selection)"
                                     onDecrease.bind="() => this.decreaseQty(combo.id, item.id)"
                                     maxQty="combo.maximum_selection"
+                                    isPlusDisabled="getPlusDisabled(combo.id, item.id)"
                                 />
                             </div>
                         </t>

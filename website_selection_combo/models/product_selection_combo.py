@@ -19,6 +19,7 @@ class ProductSelectionCombo(models.Model):
         ("all_products", "All Products"),
         ("selected_products", "Selected Products"),
     ], string="Product Selection Method", default="all_products", required=True)
+    
     product_ids = fields.Many2many(
         "product.product", "product_selection_combo_product_rel",
         "selection_combo_id", "product_id", string="Products"

@@ -25,7 +25,7 @@
                 </span>
                 <button class="btn btn-outline-secondary btn-sm"
                         t-on-click="props.onIncrease"
-                        t-att-disabled="props.quantity &gt;= props.maxQty">
+                        t-att-disabled="props.isPlusDisabled">
                     <i class="fa fa-plus"/>
                 </button>
             </div>

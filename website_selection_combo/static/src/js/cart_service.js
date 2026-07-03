@@ -12,6 +12,7 @@ patch(CartService.prototype, {
         if (!productData.productTemplateId) {
             return super.add(productData, options);
         }
+
         try {
             const checkResult = await this.rpc('/website_selection_combo/check_combo', {
                 product_tmpl_id: productData.productTemplateId,
@@ -19,7 +20,10 @@ patch(CartService.prototype, {
             if (checkResult && checkResult.is_combo === true) {
                 return this._handleSelectionCombo(productData, options);
             }
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error checking combo:", error);
+        }
+
         return super.add(productData, options);
     },
 
@@ -28,9 +32,11 @@ patch(CartService.prototype, {
             const comboData = await this.rpc('/website_selection_combo/get_combo_data', {
                 product_tmpl_id: productData.productTemplateId,
             });
+
             if (comboData.error || !comboData.combos || comboData.combos.length === 0) {
                 return super.add(productData, options);
             }
+
             return new Promise((resolve) => {
                 this.dialog.add(ComboConfiguratorDialog, {
                     productId: productData.productId,
@@ -41,26 +47,25 @@ patch(CartService.prototype, {
                     price: comboData.base_price || 0,
                     quantity: productData.quantity || 1,
                     save: async (selectedItems) => {
-                        const result = await this._makeRequest({
+                        const qty = await this._makeRequest({
                             productTemplateId: productData.productTemplateId,
                             productId: productData.productId,
                             quantity: productData.quantity || 1,
-                            combo_details: selectedItems.map((item) => ({
+                            user_selection: selectedItems.map((item) => ({
                                 product_id: item.product_id,
                                 product_name: item.product_name,
                                 quantity: item.quantity,
                                 extra_price: item.extra_price || 0,
                             })),
-                            shouldRedirectToCart: options.redirectToCart || false,
+                            shouldRedirectToCart: false,
                         });
-                        resolve(result);
+                        resolve(qty);
                     },
-                    close: () => {
-                        resolve(0);
-                    },
+                    close: () => resolve(0),
                 });
             });
         } catch (error) {
+            console.error("Error handling selection combo:", error);
             return super.add(productData, options);
         }
     },
