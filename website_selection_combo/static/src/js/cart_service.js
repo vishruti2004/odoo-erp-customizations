@@ -46,7 +46,15 @@ patch(CartService.prototype, {
                     currencyId: comboData.currency_id,
                     price: comboData.base_price || 0,
                     quantity: productData.quantity || 1,
+                    includeComboItemsPrice: comboData.include_combo_items_price,
                     save: async (selectedItems) => {
+                        let totalPrice = comboData.base_price || 0;
+                        if (comboData.include_combo_items_price) {
+                            for (const item of selectedItems) {
+                                totalPrice += item.quantity * item.extra_price;
+                            }
+                        }
+
                         const qty = await this._makeRequest({
                             productTemplateId: productData.productTemplateId,
                             productId: productData.productId,
@@ -57,6 +65,7 @@ patch(CartService.prototype, {
                                 quantity: item.quantity,
                                 extra_price: item.extra_price || 0,
                             })),
+                            price: totalPrice,
                             shouldRedirectToCart: false,
                         });
                         resolve(qty);

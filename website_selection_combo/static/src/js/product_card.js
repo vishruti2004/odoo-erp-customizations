@@ -13,6 +13,8 @@ export class ProductCard extends Component {
         onDecrease: Function,
         maxQty: Number,
         isPlusDisabled: { type: Boolean, optional: true },
+        isOutOfStock: { type: Boolean, optional: true, default: false },
+        stockMessage: { type: String, optional: true, default: '' },
     };
 
     get isSelected() {

@@ -30,6 +30,8 @@
                                     onDecrease.bind="() => this.decreaseQty(combo.id, item.id)"
                                     maxQty="combo.maximum_selection"
                                     isPlusDisabled="getPlusDisabled(combo.id, item.id)"
+                                    isOutOfStock="isOutOfStock(item.product_id)"
+                                    stockMessage="getStockMessage(item.product_id)"
                                 />
                             </div>
                         </t>

@@ -3,6 +3,7 @@
 import { Component, useState } from '@odoo/owl';
 import { Dialog } from '@web/core/dialog/dialog';
 import { ProductCard } from './product_card';
+import { rpc } from '@web/core/network/rpc';
 
 export class ComboConfiguratorDialog extends Component {
     static template = 'website_selection_combo.ComboConfiguratorDialog';
@@ -19,6 +20,7 @@ export class ComboConfiguratorDialog extends Component {
         editMode: { type: Boolean, optional: true },
         selectedItems: { type: Array, optional: true },
         orderLineId: { type: Number, optional: true },
+        includeComboItemsPrice: { type: Boolean, optional: true },
         save: Function,
         close: Function,
     };
@@ -29,6 +31,8 @@ export class ComboConfiguratorDialog extends Component {
             isAdding: false,
             totalPrice: this.props.price || 0,
             plusDisabled: new Map(),
+            outOfStockItems: new Set(),
+            stockData: new Map(),
         });
 
         const existingMap = {};
@@ -49,14 +53,86 @@ export class ComboConfiguratorDialog extends Component {
 
         this._updateTotalPrice();
         this._updatePlusDisabled();
+        this._checkStock();
+    }
+
+    async _checkStock() {
+        try {
+            const productIds = [];
+            for (const combo of this.props.combos || []) {
+                for (const item of combo.combo_items || []) {
+                    if (!productIds.includes(item.product_id)) {
+                        productIds.push(item.product_id);
+                    }
+                }
+            }
+
+            if (productIds.length === 0) return;
+
+            const result = await rpc('/website_selection_combo/check_stock', {
+                product_ids: productIds,
+            });
+
+            if (result.success) {
+                const outOfStockItems = new Set();
+                const stockData = new Map();
+
+                for (const [productId, data] of Object.entries(result.stock_data)) {
+                    const pid = parseInt(productId);
+                    stockData.set(pid, data);
+                    if (!data.is_available) {
+                        outOfStockItems.add(pid);
+                    }
+                }
+
+                this.state.outOfStockItems = outOfStockItems;
+                this.state.stockData = stockData;
+                this._updatePlusDisabled();
+            }
+        } catch (error) {
+            console.error("Error checking stock:", error);
+        }
+    }
+
+    isOutOfStock(productId) {
+        return this.state.outOfStockItems.has(productId);
+    }
+
+    getStockMessage(productId) {
+        const stock = this.state.stockData.get(productId);
+        if (!stock) return '';
+        if (stock.available <= 0) {
+            return 'Out of Stock';
+        }
+        if (stock.available < 5) {
+            return `Only ${Math.round(stock.available)} left!`;
+        }
+        return '';
     }
 
     increaseQty(comboId, itemId, maxQty) {
+        const combo = this.props.combos.find(c => c.id === comboId);
         const comboQuantities = this.state.selectedQuantities.get(comboId);
-        if (!comboQuantities) return;
-        if (this.getComboTotalQty(comboId) >= maxQty) return;
+        if (!comboQuantities || !combo) return;
 
-        comboQuantities[itemId] = (comboQuantities[itemId] || 0) + 1;
+        const item = combo.combo_items.find(i => i.id === itemId);
+        if (item && this.isOutOfStock(item.product_id)) {
+            return;
+        }
+
+        if (!combo.allow_multiple_selection) {
+            for (const key of Object.keys(comboQuantities)) {
+                if (parseInt(key) !== itemId) {
+                    comboQuantities[key] = 0;
+                }
+            }
+            if ((comboQuantities[itemId] || 0) >= maxQty) return;
+            comboQuantities[itemId] = (comboQuantities[itemId] || 0) + 1;
+        } else {
+            if (this.getComboTotalQty(comboId) >= maxQty) return;
+            comboQuantities[itemId] = (comboQuantities[itemId] || 0) + 1;
+        }
+
         this.state.selectedQuantities.set(comboId, { ...comboQuantities });
         this._updateTotalPrice();
         this._updatePlusDisabled();
@@ -77,14 +153,23 @@ export class ComboConfiguratorDialog extends Component {
 
     _updatePlusDisabled() {
         for (const combo of this.props.combos || []) {
-            const isDisabled = this.getComboTotalQty(combo.id) >= combo.maximum_selection;
+            const comboQuantities = this.state.selectedQuantities.get(combo.id) || {};
             const comboDisabled = this.state.plusDisabled.get(combo.id);
-            if (comboDisabled) {
-                for (const item of combo.combo_items || []) {
-                    comboDisabled[item.id] = isDisabled;
+            if (!comboDisabled) continue;
+
+            for (const item of combo.combo_items || []) {
+                if (this.isOutOfStock(item.product_id)) {
+                    comboDisabled[item.id] = true;
+                    continue;
                 }
-                this.state.plusDisabled.set(combo.id, { ...comboDisabled });
+
+                if (combo.allow_multiple_selection) {
+                    comboDisabled[item.id] = this.getComboTotalQty(combo.id) >= combo.maximum_selection;
+                } else {
+                    comboDisabled[item.id] = (comboQuantities[item.id] || 0) >= combo.maximum_selection;
+                }
             }
+            this.state.plusDisabled.set(combo.id, { ...comboDisabled });
         }
     }
 
@@ -94,12 +179,13 @@ export class ComboConfiguratorDialog extends Component {
 
     _updateTotalPrice() {
         let total = this.props.price || 0;
-        for (const item of this._getSelectedItems()) {
-            const combo = this.props.combos.find(c => c.id === item.combo_id);
-            if (combo && combo.include_selected_product_price === 'yes') {
+
+        if (this.props.includeComboItemsPrice) {
+            for (const item of this._getSelectedItems()) {
                 total += item.quantity * item.extra_price;
             }
         }
+
         this.state.totalPrice = total;
     }
 

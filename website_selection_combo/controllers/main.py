@@ -4,7 +4,6 @@ from odoo.http import request
 import logging
 
 _logger = logging.getLogger(__name__)
-
 class WebsiteSelectionComboController(http.Controller):
 
     @http.route('/website_selection_combo/check_combo', type='json', auth='public', methods=['POST'], csrf=False)
@@ -56,7 +55,6 @@ class WebsiteSelectionComboController(http.Controller):
                 'minimum_selection': line.minimum_selection,
                 'maximum_selection': line.maximum_selection,
                 'allow_multiple_selection': line.allow_multiple_selection,
-                'include_selected_product_price': line.include_selected_product_price,
             } for line in product.selection_combo_line_ids]
 
             return {
@@ -64,10 +62,80 @@ class WebsiteSelectionComboController(http.Controller):
                 'combos': combos,
                 'currency_id': request.env.company.currency_id.id,
                 'base_price': float(product.list_price or 0.0),
+                'include_combo_items_price': product.include_combo_items_price,
             }
         except Exception as e:
             _logger.error("get_combo_data ERROR: %s", str(e), exc_info=True)
             return {'error': str(e)}
+
+    @http.route('/website_selection_combo/check_stock', type='json', auth='public', methods=['POST'], csrf=False)
+    def check_stock(self, **kwargs):
+        try:
+            product_ids = kwargs.get('product_ids', [])
+            if not product_ids:
+                return {'success': True, 'stock_data': {}}
+
+            stock_data = {}
+            for product_id in product_ids:
+                product = request.env['product.product'].sudo().browse(int(product_id))
+                if product.exists() and product.is_storable:
+                    available_qty = product.qty_available or 0.0
+                    stock_data[product_id] = {
+                        'available': available_qty,
+                        'is_available': available_qty > 0,
+                        'name': product.name,
+                    }
+                else:
+                    stock_data[product_id] = {
+                        'available': 999,
+                        'is_available': True,
+                        'name': product.name if product.exists() else 'Unknown',
+                    }
+
+            return {
+                'success': True,
+                'stock_data': stock_data,
+            }
+        except Exception as e:
+            _logger.error("check_stock ERROR: %s", str(e), exc_info=True)
+            return {'success': False, 'error': str(e)}
+
+    @http.route('/shop/cart/add', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    def add_to_cart(self, **kwargs):
+        _logger.info(" add_to_cart called with kwargs: %s", kwargs)
+
+        from odoo.addons.website_sale.controllers.main import WebsiteSale
+        website_sale = WebsiteSale()
+
+        result = website_sale.add_to_cart(
+            product_template_id=kwargs.get('product_template_id'),
+            product_id=kwargs.get('product_id'),
+            quantity=kwargs.get('quantity', 1.0),
+            uom_id=kwargs.get('uom_id'),
+            product_custom_attribute_values=kwargs.get('product_custom_attribute_values'),
+            no_variant_attribute_value_ids=kwargs.get('no_variant_attribute_value_ids'),
+            linked_products=kwargs.get('linked_products'),
+            **kwargs
+        )
+
+        user_selection = kwargs.get("user_selection")
+
+        if user_selection and result.get('tracking_info'):
+            if result['tracking_info']:
+                line_id = result['tracking_info'][0].get('item_id')
+                if line_id:
+                    line = request.env["sale.order.line"].sudo().browse(line_id)
+                    if line.exists():
+                        line.combo_selection_ids.unlink()
+                        for item in user_selection:
+                            request.env['sale.combo.selection'].sudo().create({
+                                "order_line_id": line.id,
+                                "product_id": item["product_id"],
+                                "quantity": item.get("quantity", 1),
+                                "extra_price": item.get("extra_price", 0),
+                            })
+
+        return result
 
     @http.route('/website_selection_combo/get_order_line_data', type='json', auth='public', methods=['POST'], csrf=False)
     def get_order_line_data(self, **kwargs):
@@ -94,7 +162,6 @@ class WebsiteSelectionComboController(http.Controller):
                 'minimum_selection': line.minimum_selection,
                 'maximum_selection': line.maximum_selection,
                 'allow_multiple_selection': line.allow_multiple_selection,
-                'include_selected_product_price': line.include_selected_product_price,
             } for line in product.selection_combo_line_ids]
 
             selected_items = [{
@@ -114,6 +181,7 @@ class WebsiteSelectionComboController(http.Controller):
                 'base_price': order_line.product_id.list_price or 0.0,
                 'quantity': order_line.product_uom_qty,
                 'is_combo_line': bool(order_line.combo_selection_ids),
+                'include_combo_items_price': product.include_combo_items_price,
             }
         except Exception as e:
             _logger.error("get_order_line_data ERROR: %s", str(e), exc_info=True)
@@ -143,12 +211,18 @@ class WebsiteSelectionComboController(http.Controller):
                     'quantity': item.get('quantity', 1),
                     'extra_price': item.get('extra_price', 0.0),
                 })
+            order_line._update_combo_name()
 
             order_line.order_id._update_cart()
 
             return {
                 'success': True,
                 'line_id': order_line.id,
+                'price_unit': order_line.price_unit,
+                'price_subtotal': order_line.price_subtotal,
+                'amount_total': order_line.order_id.amount_total,
+                'amount_untaxed': order_line.order_id.amount_untaxed,
+                'cart_quantity': order_line.order_id.cart_quantity,
                 'message': 'Combo updated successfully',
             }
         except Exception as e:

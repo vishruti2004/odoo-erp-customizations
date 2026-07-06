@@ -3,6 +3,21 @@
     <t t-name="website_selection_combo.ProductCard">
         <div class="product-card combo-item p-2 border rounded h-100"
              t-attf-class="{{isSelected ? 'border-primary bg-light' : ''}}">
+            
+            <!--  Out of Stock Badge -->
+            <div t-if="props.isOutOfStock" class="text-center mb-1">
+                <span class="badge bg-danger">
+                    <i class="fa fa-exclamation-circle me-1"/> Out of Stock
+                </span>
+            </div>
+            
+            <!--  Low Stock Warning -->
+            <div t-if="!props.isOutOfStock &amp;&amp; props.stockMessage" class="text-center mb-1">
+                <span class="badge bg-warning text-dark">
+                    <i class="fa fa-clock-o me-1"/> <t t-esc="props.stockMessage"/>
+                </span>
+            </div>
+            
             <div class="product-image text-center">
                 <img t-att-src="productImage"
                      class="img-fluid" style="max-height: 80px; width: auto;"
@@ -17,7 +32,7 @@
             <div class="quantity-selector d-flex justify-content-center align-items-center gap-2 mt-2">
                 <button class="btn btn-outline-secondary btn-sm"
                         t-on-click="props.onDecrease"
-                        t-att-disabled="props.quantity &lt;= 0">
+                        t-att-disabled="props.quantity &lt;= 0 || props.isOutOfStock">
                     <i class="fa fa-minus"/>
                 </button>
                 <span class="badge bg-primary rounded-pill" style="min-width: 30px; font-size: 14px;">
@@ -25,7 +40,7 @@
                 </span>
                 <button class="btn btn-outline-secondary btn-sm"
                         t-on-click="props.onIncrease"
-                        t-att-disabled="props.isPlusDisabled">
+                        t-att-disabled="props.isPlusDisabled || props.isOutOfStock">
                     <i class="fa fa-plus"/>
                 </button>
             </div>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <template id="cart_lines_override" inherit_id="website_sale.cart_lines" name="Cart Lines with Combo Edit" priority="50">
-        
+
         <xpath expr="//div[hasclass('d-md-flex')]" position="replace">
             <div class="d-md-flex flex-md-wrap column-gap-md-1 align-items-md-center">
                 <t t-if="line.is_combo_line">
@@ -25,8 +25,8 @@
                 </div>
             </div>
         </xpath>
-        
-        <xpath expr="//div[@name='o_wsale_cart_line_button_container']" position="before">
+
+        <!-- <xpath expr="//div[@name='o_wsale_cart_line_button_container']" position="before">
             <div t-if="line.is_combo_line" class="o_cart_combo_items mt-2 w-100">
                 <div class="text-muted small">
                     <strong>Contains:</strong>
@@ -43,6 +43,6 @@
                     </t>
                 </ul>
             </div>
-        </xpath>
+        </xpath> -->
     </template>
 </odoo>

@@ -5,7 +5,7 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//span[@name='sale_option']" position="after">
+            <xpath expr="//label[@for='purchase_ok']" position="after">
                 <span class="d-inline-flex ms-3">
                     <field name="selection_combo"/>
                     <label for="selection_combo"/>
@@ -14,20 +14,24 @@
 
             <xpath expr="//notebook" position="inside">
                 <page string="Selection Configuration" invisible="not selection_combo">
+                    <div class="d-flex align-items-center mb-3">
+                        <field name="include_combo_items_price"/>
+                        <label for="include_combo_items_price" class="ms-2"/>
+                    </div>
+
                     <field name="selection_combo_line_ids">
                         <list editable="bottom">
                             <field name="sequence" widget="handle"/>
                             <field name="product_public_category_id"/>
                             <field name="selection_method"/>
-                            <field name="product_ids" 
-                                   widget="many2many_tags" 
-                                   readonly="selection_method == 'all_products'" 
-                                   force_save="1" 
+                            <field name="product_ids"
+                                   widget="many2many_tags"
+                                   readonly="selection_method == 'all_products'"
+                                   force_save="1"
                                    domain="[('product_tmpl_id.public_categ_ids', 'in', product_public_category_id)]"/>
                             <field name="allow_multiple_selection"/>
                             <field name="minimum_selection"/>
                             <field name="maximum_selection"/>
-                            <field name="include_selected_product_price"/>
                         </list>
                     </field>
                 </page>

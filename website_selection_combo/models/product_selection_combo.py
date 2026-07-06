@@ -19,7 +19,7 @@ class ProductSelectionCombo(models.Model):
         ("all_products", "All Products"),
         ("selected_products", "Selected Products"),
     ], string="Product Selection Method", default="all_products", required=True)
-    
+
     product_ids = fields.Many2many(
         "product.product", "product_selection_combo_product_rel",
         "selection_combo_id", "product_id", string="Products"
@@ -27,10 +27,6 @@ class ProductSelectionCombo(models.Model):
     allow_multiple_selection = fields.Boolean(string="Allow Multiple Selection")
     minimum_selection = fields.Integer(string="Minimum Selection", default=1)
     maximum_selection = fields.Integer(string="Maximum Selection", default=1)
-    include_selected_product_price = fields.Selection([
-        ("yes", "Yes"),
-        ("no", "No"),
-    ], string="Include Selected Product Price in Base Product Price", default="yes", required=True)
     company_id = fields.Many2one(
         "res.company", string="Company", default=lambda self: self.env.company, required=True
     )

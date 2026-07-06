@@ -6,9 +6,9 @@ import { rpc } from '@web/core/network/rpc';
 import { ComboConfiguratorDialog } from './combo_configurator_dialog';
 
 publicWidget.registry.CartComboEdit = publicWidget.Widget.extend({
-    selector: '.combo-edit-link',
+    selector: '#cart_products',   
     events: {
-        'click': '_onEditClick',
+        'click .combo-edit-link': '_onEditClick',  
     },
 
     init() {
@@ -20,7 +20,7 @@ publicWidget.registry.CartComboEdit = publicWidget.Widget.extend({
         ev.preventDefault();
         ev.stopPropagation();
 
-        const lineId = this.el.dataset.lineId;
+        const lineId = ev.currentTarget.dataset.lineId;
         if (lineId) {
             this._openEditDialog(lineId);
         }
@@ -47,6 +47,7 @@ publicWidget.registry.CartComboEdit = publicWidget.Widget.extend({
                 editMode: true,
                 selectedItems: lineData.selected_items,
                 orderLineId: lineId,
+                includeComboItemsPrice: lineData.include_combo_items_price,
                 save: async (selectedItems, comboProductData) => {
                     await rpc('/website_selection_combo/update_order_line', {
                         line_id: lineId,
@@ -54,7 +55,32 @@ publicWidget.registry.CartComboEdit = publicWidget.Widget.extend({
                         quantity: comboProductData?.quantity || 1,
                     });
 
-                    window.location.reload();
+                    const response = await fetch('/shop/cart', {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const htmlText = await response.text();
+                    const parser = new DOMParser();
+                    const newDoc = parser.parseFromString(htmlText, 'text/html');
+
+                    const newCartProducts = newDoc.getElementById('cart_products');
+                    const currentCartProducts = document.getElementById('cart_products');
+                    if (newCartProducts && currentCartProducts) {
+                        currentCartProducts.innerHTML = newCartProducts.innerHTML;
+                    }
+
+                    const newTotal = newDoc.querySelector('.o_total_card');
+                    const currentTotal = document.querySelector('.o_total_card');
+                    if (newTotal && currentTotal) {
+                        currentTotal.innerHTML = newTotal.innerHTML;
+                    }
+
+                    const newBadge = newDoc.querySelector('.my_cart_quantity');
+                    const currentBadge = document.querySelector('.my_cart_quantity');
+                    if (newBadge && currentBadge) {
+                        currentBadge.textContent = newBadge.textContent;
+                        currentBadge.classList.toggle('d-none', newBadge.classList.contains('d-none'));
+                    }
                 },
                 close: () => {},
             });
