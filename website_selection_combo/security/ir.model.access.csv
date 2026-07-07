@@ -1,3 +1,14 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_product_selection_combo_user,product.selection.combo.user,model_product_selection_combo,base.group_user,1,1,1,1
 access_sale_combo_selection_user,sale.combo.selection.user,model_sale_combo_selection,base.group_user,1,1,1,1
+access_portal_product_template,portal.product.template.read,product.model_product_template,base.group_portal,1,0,0,0
+access_portal_product_product,portal.product.product.read,product.model_product_product,base.group_portal,1,0,0,0
+access_portal_sale_order,portal.sale.order.write,sale.model_sale_order,base.group_portal,1,1,0,0
+access_portal_res_partner,portal.res.partner.read,base.model_res_partner,base.group_portal,1,0,0,0
+access_portal_product_selection_combo,portal.product.selection.combo.read,model_product_selection_combo,base.group_portal,1,0,0,0
+access_portal_sale_combo_selection,portal.sale.combo.selection.read,model_sale_combo_selection,base.group_portal,1,0,1,1
+access_portal_stock_warehouse,portal.stock.warehouse.read,stock.model_stock_warehouse,base.group_portal,1,0,0,0
+access_portal_stock_move,portal.stock.move.read,stock.model_stock_move,base.group_portal,1,0,0,0
+access_portal_stock_quant,portal.stock.quant.read,stock.model_stock_quant,base.group_portal,1,0,0,0
+access_portal_sale_order_line,portal.sale.order.line.read,sale.model_sale_order_line,base.group_portal,1,1,0,0
+access_portal_account_tax,portal.account.tax.read,account.model_account_tax,base.group_portal,1,0,0,0

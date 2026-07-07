@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import fields, models
 
-
 class SaleComboSelection(models.Model):
     _name = "sale.combo.selection"
     _description = "Combo Selection"

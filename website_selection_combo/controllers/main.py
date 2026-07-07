@@ -4,6 +4,7 @@ from odoo.http import request
 import logging
 
 _logger = logging.getLogger(__name__)
+
 class WebsiteSelectionComboController(http.Controller):
 
     @http.route('/website_selection_combo/check_combo', type='json', auth='public', methods=['POST'], csrf=False)
@@ -13,7 +14,7 @@ class WebsiteSelectionComboController(http.Controller):
             if not product_tmpl_id:
                 return {'is_combo': False, 'error': 'product_tmpl_id required'}
 
-            product = request.env['product.template'].sudo().browse(int(product_tmpl_id))
+            product = request.env['product.template'].browse(int(product_tmpl_id))
             if not product.exists():
                 return {'is_combo': False, 'error': 'Product not found'}
 
@@ -35,7 +36,7 @@ class WebsiteSelectionComboController(http.Controller):
             if not product_tmpl_id:
                 return {'error': 'product_tmpl_id required'}
 
-            product = request.env['product.template'].sudo().browse(int(product_tmpl_id))
+            product = request.env['product.template'].browse(int(product_tmpl_id))
             if not product.exists():
                 return {'error': 'Product not found'}
             if not product.selection_combo:
@@ -77,7 +78,7 @@ class WebsiteSelectionComboController(http.Controller):
 
             stock_data = {}
             for product_id in product_ids:
-                product = request.env['product.product'].sudo().browse(int(product_id))
+                product = request.env['product.product'].browse(int(product_id))
                 if product.exists() and product.is_storable:
                     available_qty = product.qty_available or 0.0
                     stock_data[product_id] = {
@@ -87,7 +88,6 @@ class WebsiteSelectionComboController(http.Controller):
                     }
                 else:
                     stock_data[product_id] = {
-                        'available': 999,
                         'is_available': True,
                         'name': product.name if product.exists() else 'Unknown',
                     }
@@ -124,17 +124,18 @@ class WebsiteSelectionComboController(http.Controller):
             if result['tracking_info']:
                 line_id = result['tracking_info'][0].get('item_id')
                 if line_id:
-                    line = request.env["sale.order.line"].sudo().browse(line_id)
+                    line = request.env["sale.order.line"].browse(line_id)
                     if line.exists():
-                        line.combo_selection_ids.unlink()
-                        for item in user_selection:
-                            request.env['sale.combo.selection'].sudo().create({
-                                "order_line_id": line.id,
-                                "product_id": item["product_id"],
-                                "quantity": item.get("quantity", 1),
-                                "extra_price": item.get("extra_price", 0),
-                            })
-
+                        current_order = request.website.sale_get_order()
+                        if current_order and line.order_id.id == current_order.id:
+                            line.combo_selection_ids.unlink()
+                            for item in user_selection:
+                                request.env['sale.combo.selection'].create({
+                                    "order_line_id": line.id,
+                                    "product_id": item["product_id"],
+                                    "quantity": item.get("quantity", 1),
+                                    "extra_price": item.get("extra_price", 0),
+                                })
         return result
 
     @http.route('/website_selection_combo/get_order_line_data', type='json', auth='public', methods=['POST'], csrf=False)
@@ -144,9 +145,13 @@ class WebsiteSelectionComboController(http.Controller):
             if not line_id:
                 return {'error': 'line_id required'}
 
-            order_line = request.env['sale.order.line'].sudo().browse(int(line_id))
+            order_line = request.env['sale.order.line'].browse(int(line_id))
             if not order_line.exists():
                 return {'error': 'Order line not found'}
+
+            current_order = request.website.sale_get_order()
+            if not current_order or order_line.order_id.id != current_order.id:
+                return {'error': 'Access denied'}
 
             product = order_line.product_id.product_tmpl_id
             combos = [{
@@ -197,23 +202,27 @@ class WebsiteSelectionComboController(http.Controller):
             if not line_id:
                 return {'error': 'line_id required'}
 
-            order_line = request.env['sale.order.line'].sudo().browse(int(line_id))
+            order_line = request.env['sale.order.line'].browse(int(line_id))
             if not order_line.exists():
                 return {'error': 'Order line not found'}
+
+            current_order = request.website.sale_get_order()
+            if not current_order or order_line.order_id.id != current_order.id:
+                return {'error': 'Access denied'}
 
             order_line.write({'product_uom_qty': quantity})
             order_line.combo_selection_ids.unlink()
 
             for item in selected_items:
-                request.env['sale.combo.selection'].sudo().create({
+                request.env['sale.combo.selection'].create({
                     'order_line_id': order_line.id,
-                    'product_id': item.get('product_id'),
+                    'product_id': item['product_id'],
                     'quantity': item.get('quantity', 1),
                     'extra_price': item.get('extra_price', 0.0),
                 })
             order_line._update_combo_name()
 
-            order_line.order_id._update_cart()
+            order_line.order_id._compute_amounts()
 
             return {
                 'success': True,

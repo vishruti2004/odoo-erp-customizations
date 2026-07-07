@@ -2,6 +2,7 @@
 
 import { CartService } from '@website_sale/js/cart_service';
 import { patch } from '@web/core/utils/patch';
+import { rpc } from '@web/core/network/rpc';
 import { ComboConfiguratorDialog } from './combo_configurator_dialog';
 
 patch(CartService.prototype, {
@@ -14,7 +15,7 @@ patch(CartService.prototype, {
         }
 
         try {
-            const checkResult = await this.rpc('/website_selection_combo/check_combo', {
+            const checkResult = await rpc('/website_selection_combo/check_combo', {
                 product_tmpl_id: productData.productTemplateId,
             });
             if (checkResult && checkResult.is_combo === true) {
@@ -29,7 +30,7 @@ patch(CartService.prototype, {
 
     async _handleSelectionCombo(productData, options) {
         try {
-            const comboData = await this.rpc('/website_selection_combo/get_combo_data', {
+            const comboData = await rpc('/website_selection_combo/get_combo_data', {
                 product_tmpl_id: productData.productTemplateId,
             });
 

@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
@@ -52,6 +48,7 @@ class SaleOrderLine(models.Model):
             'image_url': f'/web/image/product.product/{selection.product_id.id}/image_128',
         } for selection in self.combo_selection_ids]
 
+    # Update description field with combo items (bullet points)
     def _update_combo_name(self):
         for line in self:
             base_lines = [
@@ -64,18 +61,21 @@ class SaleOrderLine(models.Model):
             ]
             line.name = '\n'.join(base_lines + combo_lines)
 
+    # Pass combo items to procurement for stock moves
     def _prepare_procurement_values(self):
         values = super()._prepare_procurement_values()
         if self.is_combo_line:
             values.update({'combo_items': self.get_combo_items()})
         return values
 
+    # Launch stock rules and create combo item moves
     def _action_launch_stock_rule(self, *, previous_product_uom_qty=False):
         result = super()._action_launch_stock_rule(previous_product_uom_qty=previous_product_uom_qty)
         for line in self.filtered('combo_selection_ids'):
             line._create_combo_item_moves()
         return result
 
+    # Create individual stock moves for each combo item
     def _create_combo_item_moves(self):
         parent_move = self.move_ids.filtered(lambda move: move.state != 'cancel')[:1]
         if not parent_move:
