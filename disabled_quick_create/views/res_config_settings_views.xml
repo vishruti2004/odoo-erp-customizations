@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_disabled_create_edit" model="ir.ui.view">
+        <field name="name">disabled.quick.create.settings</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='users_setting_container']" position="after">
+                <block title="Hide Create/Edit Option">
+                    <setting string="Enable Restriction">
+                        <field name="enable_restriction"/>
+                        <div class="mt16" invisible="not enable_restriction">
+                            <field name="restricted_model_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   placeholder="Select Models..."/>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>
