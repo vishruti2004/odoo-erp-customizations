@@ -7,11 +7,15 @@ class ResConfigSettings(models.TransientModel):
 
     enable_restriction = fields.Boolean(string="Enable Restriction", related="company_id.enable_restriction", readonly=False)
     restricted_model_ids = fields.Many2many(comodel_name="ir.model", string="Restricted Models", related="company_id.restricted_model_ids", readonly=False)
-
+    allowed_group_ids = fields.Many2many(
+    "res.groups",
+    string="Allowed Groups",
+    related="company_id.allowed_group_ids",
+    readonly=False,
+)
     @api.model
     def get_restriction_config(self):
         company = self.env.company
-
         return {
             "enable_restriction": company.enable_restriction,
             "restricted_model_ids": company.restricted_model_ids.mapped("model"),

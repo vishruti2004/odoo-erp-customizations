@@ -14,6 +14,10 @@
                                    widget="many2many_tags"
                                    options="{'no_create': True}"
                                    placeholder="Select Models..."/>
+                            <field name="allowed_group_ids"
+                                   widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   placeholder="Select Groups..."/>
                         </div>
                     </setting>
                 </block>
