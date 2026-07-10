@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Partner Tree View -->
+    <record id="view_partner_timesheet_tree" model="ir.ui.view">
+        <field name="name">account.analytic.line.partner.tree</field>
+        <field name="model">account.analytic.line</field>
+        <field name="arch" type="xml">
+            <list string="Partners" create="0" edit="0" delete="0">
+                <field name="partner_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Inherit Project Task Form -->
+    <record id="project_task_form_partner_timesheet" model="ir.ui.view">
+        <field name="name">project.task.form.partner.timesheet</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="hr_timesheet.project_task_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='timesheet_ids']" position="after">
+
+                <separator string="Partners"/>
+
+                <field name="partner_timesheet_ids"
+                       mode="list"
+                       context="{'tree_view_ref':'YOUR_MODULE.view_partner_timesheet_tree'}"/>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

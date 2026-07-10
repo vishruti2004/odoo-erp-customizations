@@ -5,6 +5,7 @@ import { session } from "@web/session";
 import { Many2One } from "@web/views/fields/many2one/many2one";
 import { Many2ManyTagsField } from "@web/views/fields/many2many_tags/many2many_tags_field";
 import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog";
+import { X2ManyField } from "@web/views/fields/x2many/x2many_field";
 
 function isCreationRestricted(resModel) {
     const config = session.quick_create_restriction || {};
@@ -27,7 +28,6 @@ function isCreationRestricted(resModel) {
     return true;
 }
 
-// ─── Many2One 
 patch(Many2One.prototype, {
     get activeActions() {
         if (isCreationRestricted(this.props.relation)) {
@@ -49,7 +49,6 @@ patch(Many2One.prototype, {
     },
 });
 
-// ─── Many2Many Tags 
 patch(Many2ManyTagsField.prototype, {
     setup() {
         super.setup();
@@ -69,6 +68,22 @@ patch(SelectCreateDialog.prototype, {
         super.setup();
         if (isCreationRestricted(this.props.resModel)) {
             Object.assign(this.props, { noCreate: true });
+        }
+    },
+});
+
+patch(X2ManyField.prototype, {
+    setup() {
+        super.setup();
+        const relation = this.props.record.fields[this.props.name]?.relation;
+ 
+        if (isCreationRestricted(relation)) {
+            this.activeActions = {
+                ...this.activeActions,
+                create: false,
+                createEdit: false,
+                link: false,
+            };
         }
     },
 });

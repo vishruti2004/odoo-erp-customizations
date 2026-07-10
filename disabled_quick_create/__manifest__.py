@@ -25,6 +25,7 @@
     "depends": [
         "base",
         "web",
+        "project",
     ],
 
     "data": [
