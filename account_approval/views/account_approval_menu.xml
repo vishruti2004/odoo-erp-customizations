@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <menuitem id="menu_account_approval_rule" 
+              name="Approval Rules" 
+              parent="account.menu_finance_configuration"
+              action="action_account_approval_rule"
+              sequence="15"
+              groups="account.group_account_manager"/>
+    
+</odoo>

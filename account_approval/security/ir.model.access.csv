@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_approval_rule_user,account.approval.rule.user,model_account_approval_rule,base.group_user,1,0,0,0
+access_account_approval_rule_manager,account.approval.rule.manager,model_account_approval_rule,account.group_account_manager,1,1,1,1
+access_account_approval_rule_line_user,account.approval.rule.line.user,model_account_approval_rule_line,base.group_user,1,0,0,0
+access_account_approval_rule_line_manager,account.approval.rule.line.manager,model_account_approval_rule_line,account.group_account_manager,1,1,1,1
+access_account_approval_history_user,account.approval.history.user,model_account_approval_history,base.group_user,1,0,0,0

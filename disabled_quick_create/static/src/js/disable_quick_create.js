@@ -9,7 +9,6 @@ import { X2ManyField } from "@web/views/fields/x2many/x2many_field";
 
 function isCreationRestricted(resModel) {
     const config = session.quick_create_restriction || {};
-
     if (!config.enabled) return false;
     if (!resModel) return false;
 
@@ -24,7 +23,6 @@ function isCreationRestricted(resModel) {
         const isAllowed = currentUserGroups.some((id) => allowedGroups.includes(id));
         return !isAllowed;
     }
-
     return true;
 }
 
