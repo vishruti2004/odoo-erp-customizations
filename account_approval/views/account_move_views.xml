@@ -1,71 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
-    <record id="view_move_form_approval" model="ir.ui.view">
-        <field name="name">account.move.form.approval</field>
+
+    <!-- Extend Invoice Form View -->
+    <record id="view_move_form_approval_inherit" model="ir.ui.view">
+        <field name="name">account.move.form.approval.inherit</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             
-            <!-- Hide Confirm Button -->
-            <xpath expr="//header/button[@name='action_post']" position="attributes">
+            <!-- Hide Post button 1st match - for journal entries -->
+            <xpath expr="(//header/button[@name='action_post'])[1]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            
-            <!-- Add 3 New Buttons After Confirm Button -->
-            <xpath expr="//header/button[@name='action_post']" position="after">
-                
-                <!-- Submit for Approval Button -->
-                <button name="action_submit_for_approval" 
-                        string="Submit for Approval"
-                        type="object"
-                        class="btn-primary"
-                        invisible="state != 'draft'"/>
-                
-                <!-- Approve Button -->
-                <button name="action_approve" 
-                        string="Approve"
-                        type="object"
-                        class="btn-success"
-                        invisible="state != 'draft'"
-                        groups="account.group_account_manager"/>
-                
-                <!-- Reject Button -->
-                <button name="action_reject" 
-                        string="Reject"
-                        type="object"
-                        class="btn-danger"
-                        invisible="state != 'draft'"
-                        groups="account.group_account_manager"/>
-                
+
+            <!-- Hide Confirm button - for invoices) -->
+            <xpath expr="(//header/button[@name='action_post'])[2]" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
-            
-            <!--  Add Approval History Tab-->
+
+            <!-- Add New Buttons after the "Confirm"-->
+            <xpath expr="(//header/button[@name='action_post'])[2]" position="after">
+                <button name="action_submit_for_approval" 
+                        string="Submit for Approval" 
+                        type="object" 
+                        class="btn-primary" 
+                        invisible="state not in ('draft', 'rejected')"/>
+                <button name="action_approve" 
+                        string="Approve" 
+                        type="object" 
+                        class="btn-success" 
+                        invisible="state not in ('waiting', 'partially_approved')" 
+                        groups="account.group_account_manager"/>
+                <button name="action_reject" 
+                        string="Reject" 
+                        type="object" 
+                        class="btn-danger" 
+                        invisible="state not in ('waiting', 'partially_approved')" 
+                        groups="account.group_account_manager"/>
+            </xpath>
+
+            <!-- Statusbar Visibility Settings -->
+            <xpath expr="//field[@name='state'][@widget='statusbar']" position="attributes">
+                <attribute name="statusbar_visible">draft,waiting,partially_approved,approved,posted</attribute>
+            </xpath>
+
+            <!-- Add Approval History Tab -->
             <xpath expr="//notebook" position="inside">
                 <page string="Approval History">
                     <group>
-                        <field name="approval_rule_id" readonly="1" 
-                               invisible="not approval_rule_id"/>
+                        <field name="approval_rule_id" readonly="1" invisible="not approval_rule_id"/>
+                        <field name="current_approval_level" readonly="1" invisible="not approval_rule_id"/>
                     </group>
                     <field name="approval_history_ids" nolabel="1">
                         <list string="Approval History">
                             <field name="user_id" string="Approver"/>
-                            <field name="status" widget="badge"
-                                   decoration-success="status == 'approved'"
-                                   decoration-danger="status == 'rejected'"
-                                   decoration-warning="status == 'pending'"/>
+                            <field name="status" widget="badge" decoration-success="status == 'approved'" decoration-danger="status == 'rejected'" decoration-warning="status == 'pending'"/>
                             <field name="comment" string="Comments"/>
+                            <field name="create_date" string="Date"/>
                         </list>
                     </field>
-                    <!-- Show message when no history -->
-                    <div class="alert alert-info" role="alert" 
-                         invisible="approval_history_ids">
-                        No approval history yet.
-                    </div>
                 </page>
             </xpath>
-            
+
         </field>
     </record>
-    
+
 </odoo>

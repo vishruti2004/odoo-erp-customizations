@@ -35,12 +35,13 @@
         "security/ir.model.access.csv",
         
         # Data
-        # "data/email_template_data.xml",
+        "data/mail_template.xml",
         
         # # Views
         "views/account_approval_rule_views.xml",
         "views/account_approval_menu.xml",
         "views/account_move_views.xml",
+        "views/account_approval_comment_wizard_views.xml",
         
     ],
 

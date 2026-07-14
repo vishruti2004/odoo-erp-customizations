@@ -3,4 +3,6 @@ access_account_approval_rule_user,account.approval.rule.user,model_account_appro
 access_account_approval_rule_manager,account.approval.rule.manager,model_account_approval_rule,account.group_account_manager,1,1,1,1
 access_account_approval_rule_line_user,account.approval.rule.line.user,model_account_approval_rule_line,base.group_user,1,0,0,0
 access_account_approval_rule_line_manager,account.approval.rule.line.manager,model_account_approval_rule_line,account.group_account_manager,1,1,1,1
-access_account_approval_history_user,account.approval.history.user,model_account_approval_history,base.group_user,1,0,0,0
+access_account_approval_history_user,account.approval.history.user,model_account_approval_history,base.group_user,1,1,1,0
+access_account_approval_history_manager,account.approval.history.manager,model_account_approval_history,account.group_account_manager,1,1,1,1
+access_account_approval_comment_wizard,account.approval.comment.wizard,model_account_approval_comment_wizard,base.group_user,1,1,1,1
