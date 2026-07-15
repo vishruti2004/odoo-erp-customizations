@@ -30,8 +30,6 @@
     ],
 
     "data": [
-        # Security
-        # "security/account_approval_security.xml",
         "security/ir.model.access.csv",
         
         # Data

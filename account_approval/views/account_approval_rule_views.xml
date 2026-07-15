@@ -60,10 +60,10 @@
                                 <list string="Approval Levels" editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="group_id" options="{'no_create': True}"/>
-                                    <field name="require_consent_for_all_users"/>
                                     <field name="user_ids" widget="many2many_tags" 
-                                        options="{'no_create': True}"
-                                        invisible="require_consent_for_all_users"/>
+                                        options="{'no_create': True}"/>
+                                    <field name="require_consent_for_all_users"/>
+
                                 </list>
                             </field>
                         </page>

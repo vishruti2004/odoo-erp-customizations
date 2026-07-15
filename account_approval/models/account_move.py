@@ -82,13 +82,32 @@ class AccountMove(models.Model):
         return level_lines[current_level_idx]
 
     def _get_level_approvers(self, level):
+        """All eligible approvers for a level"""
         if not level:
             return self.env['res.users']
-        if level.require_consent_for_all_users:
-            return self._get_group_users(level.group_id)
         if level.user_ids:
             return level.user_ids
         return self._get_group_users(level.group_id)
+
+    def _get_approved_users_for_level(self, level_sequence):
+        """Users who have already recorded an approved history entry
+        for the given approval level of this invoice."""
+        self.ensure_one()
+        history = self.env['account.approval.history'].search([
+            ('invoice_id', '=', self.id),
+            ('approval_level', '=', level_sequence),
+            ('status', '=', 'approved'),
+        ])
+        return history.mapped('user_id')
+
+    def _is_level_fully_approved(self, level):
+        """True when every required approverhas approved."""
+        self.ensure_one()
+        if not level:
+            return False
+        required_users = self._get_level_approvers(level)
+        approved_users = self._get_approved_users_for_level(self.current_approval_level)
+        return bool(required_users) and required_users <= approved_users
 
     def _record_approval_history(self, status, comment):
         self.ensure_one()
@@ -136,18 +155,6 @@ class AccountMove(models.Model):
                     subtype_xmlid='mail.mt_note'
                 )
                 continue
-
-            invoice.approval_rule_id = matching_rule.id
-            invoice.current_approval_level = 1
-            invoice.state = 'waiting'
-
-            self.env['account.approval.history'].create({
-                'invoice_id': invoice.id,
-                'user_id': self.env.user.id,
-                'status': 'pending',
-                'comment': 'Submitted for approval',
-                'approval_level': 1
-            })
 
             self._send_approval_notification()
 
@@ -200,9 +207,26 @@ class AccountMove(models.Model):
     def approve_with_comment(self, comment):
         self.ensure_one()
         level_lines = self.approval_rule_id.approval_line_ids.sorted('sequence')
+        level = self._get_current_level()
+
+        if level.require_consent_for_all_users:
+            already_approved = self._get_approved_users_for_level(self.current_approval_level)
+            if self.env.user in already_approved:
+                raise UserError(_('You have already approved this invoice at this level!'))
 
         self._record_approval_history('approved', comment)
-        self._send_decision_notification('approved')
+
+        if level.require_consent_for_all_users:
+            if not self._is_level_fully_approved(level):
+                self.message_post(
+                    body=_('Approved by %s. Waiting for the remaining approvers at level %s before this level is complete.')
+                    % (self.env.user.name, self.current_approval_level),
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note'
+                )
+                return
+        else:
+            self._send_decision_notification('approved')
 
         if self.current_approval_level >= len(level_lines):
             self.state = 'approved'
@@ -252,7 +276,13 @@ class AccountMove(models.Model):
         level = self._get_current_level()
         if not level:
             return False
-        return self.env.user in self._get_level_approvers(level)
+        if self.env.user not in self._get_level_approvers(level):
+            return False
+        if level.require_consent_for_all_users:
+            already_approved = self._get_approved_users_for_level(self.current_approval_level)
+            if self.env.user in already_approved:
+                return False
+        return True
 
     def _send_approval_notification(self):
         self.ensure_one()
@@ -280,6 +310,9 @@ class AccountMove(models.Model):
         self.ensure_one()
         level = self._get_current_level()
         if not level:
+            return
+        # everyone must approve anyway, so a per-approval decision email is not sent.
+        if level.require_consent_for_all_users:
             return
         other_approvers = self._get_level_approvers(level) - self.env.user
         if not other_approvers:
