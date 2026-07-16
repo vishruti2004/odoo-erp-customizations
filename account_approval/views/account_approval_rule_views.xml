@@ -1,35 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
-    <!-- Action -->
+
     <record id="action_account_approval_rule" model="ir.actions.act_window">
         <field name="name">Approval Rules</field>
         <field name="res_model">account.approval.rule</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create approval rules for invoice workflow
+                Create approval rules for invoice approval workflow.
             </p>
         </field>
     </record>
-    
-    <!-- List View  -->
+
     <record id="view_account_approval_rule_list" model="ir.ui.view">
         <field name="name">account.approval.rule.list</field>
         <field name="model">account.approval.rule</field>
         <field name="arch" type="xml">
-            <list string="Approval Rules">
+            <list string="Approval Rules" default_order="minimum_amount asc">
+
+                <field name="company_currency_id" column_invisible="True"/>
+
                 <field name="name"/>
-                <field name="company_id"/>
-                <field name="move_type"/>
-                <field name="minimum_amount"/>
-                <field name="maximum_amount"/>
-                <field name="approval_type"/>
+
+                <field name="move_type"
+                       string="Invoice Type"
+                       widget="badge"/>
+
+                <field name="minimum_amount"
+                       string="Min Amount"
+                       widget="monetary"
+                       options="{'currency_field': 'company_currency_id'}"/>
+
+                <field name="maximum_amount"
+                       string="Max Amount"
+                       widget="monetary"
+                       options="{'currency_field': 'company_currency_id'}"/>
+
+                <field name="approval_type"
+                       string="Approval Type"
+                       widget="badge"/>
+
+                <field name="company_id"
+                       optional="hide"
+                       groups="base.group_multi_company"/>
+
             </list>
         </field>
     </record>
-    
-    <!-- Form View -->
+
     <record id="view_account_approval_rule_form" model="ir.ui.view">
         <field name="name">account.approval.rule.form</field>
         <field name="model">account.approval.rule</field>
@@ -38,32 +56,38 @@
                 <sheet>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Rule Name..."/>
+                            <field name="name" placeholder="Approval Rule"/>
                         </h1>
                     </div>
-                    
+
                     <group>
                         <group>
-                            <field name="company_id" options="{'no_create': True}"/>
                             <field name="move_type"/>
                             <field name="approval_type"/>
+                            <field name="company_id" options="{'no_create': True}"/>
                         </group>
+
                         <group>
-                            <field name="minimum_amount"/>
-                            <field name="maximum_amount"/>
+                            <field name="company_currency_id" invisible="1"/>
+                            <field name="minimum_amount"
+                                   widget="monetary"
+                                   options="{'currency_field': 'company_currency_id'}"/>
+                            <field name="maximum_amount"
+                                   widget="monetary"
+                                   options="{'currency_field': 'company_currency_id'}"/>
                         </group>
                     </group>
-                    
+
                     <notebook>
                         <page string="Approval Levels">
                             <field name="approval_line_ids">
-                                <list string="Approval Levels" editable="bottom">
+                                <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="group_id" options="{'no_create': True}"/>
-                                    <field name="user_ids" widget="many2many_tags" 
-                                        options="{'no_create': True}"/>
+                                    <field name="user_ids"
+                                           widget="many2many_tags"
+                                           options="{'no_create': True}"/>
                                     <field name="require_consent_for_all_users"/>
-
                                 </list>
                             </field>
                         </page>
@@ -72,5 +96,5 @@
             </form>
         </field>
     </record>
-    
+
 </odoo>

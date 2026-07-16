@@ -3,6 +3,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
+
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -10,7 +11,12 @@ class AccountMove(models.Model):
     current_approval_level = fields.Integer(string='Current Approval Level', default=1)
     approval_history_ids = fields.One2many('account.approval.history', 'invoice_id', string='Approval History')
     is_current_user_approver = fields.Boolean(string='Is Current User Approver', compute='_compute_is_current_user_approver')
-
+    is_approval_manager = fields.Boolean(string='Is Approval Manager', compute='_compute_is_approval_manager')
+    approval_history_display_ids = fields.Many2many(
+    'account.approval.history',
+    compute='_compute_approval_history_display_ids',
+    string='Approval History (Filtered)'
+)
     state = fields.Selection(
         selection_add=[
             ('waiting', 'Waiting for Approval'),
@@ -43,16 +49,42 @@ class AccountMove(models.Model):
             else:
                 invoice.is_current_user_approver = False
 
+    @api.depends('approval_rule_id')
+    def _compute_is_approval_manager(self):
+        for invoice in self:
+            rule = invoice.approval_rule_id
+            if not rule:
+                invoice.is_approval_manager = False
+                continue
+
+            all_approvers = self.env['res.users']
+            for level in rule.approval_line_ids:
+                all_approvers |= invoice._get_level_approvers(level)
+
+            invoice.is_approval_manager = self.env.user in all_approvers
+
+    @api.depends('approval_history_ids', 'approval_history_ids.status', 'is_approval_manager')
+    def _compute_approval_history_display_ids(self):
+        for invoice in self:
+            if invoice.is_approval_manager:
+                invoice.approval_history_display_ids = invoice.approval_history_ids
+            else:
+                invoice.approval_history_display_ids = invoice.approval_history_ids.filtered(
+                    lambda h: h.status != 'pending'
+                )
+
     def _get_matching_approval_rule(self):
         self.ensure_one()
         if self.move_type not in ['out_invoice', 'in_invoice', 'out_refund', 'in_refund']:
             return False
+
         domain = [
             ('company_id', '=', self.company_id.id),
             ('move_type', '=', self.move_type),
             ('minimum_amount', '<=', self.amount_total),
         ]
         rules = self.env['account.approval.rule'].search(domain)
+
         for rule in rules:
             if not rule.maximum_amount or self.amount_total <= rule.maximum_amount:
                 return rule
@@ -75,6 +107,7 @@ class AccountMove(models.Model):
         rule = self.approval_rule_id
         if not rule:
             return self.env['account.approval.rule.line']
+
         level_lines = rule.approval_line_ids.sorted('sequence')
         current_level_idx = self.current_approval_level - 1
         if current_level_idx >= len(level_lines):
@@ -82,7 +115,6 @@ class AccountMove(models.Model):
         return level_lines[current_level_idx]
 
     def _get_level_approvers(self, level):
-        """All eligible approvers for a level"""
         if not level:
             return self.env['res.users']
         if level.user_ids:
@@ -90,8 +122,6 @@ class AccountMove(models.Model):
         return self._get_group_users(level.group_id)
 
     def _get_approved_users_for_level(self, level_sequence):
-        """Users who have already recorded an approved history entry
-        for the given approval level of this invoice."""
         self.ensure_one()
         history = self.env['account.approval.history'].search([
             ('invoice_id', '=', self.id),
@@ -101,7 +131,6 @@ class AccountMove(models.Model):
         return history.mapped('user_id')
 
     def _is_level_fully_approved(self, level):
-        """True when every required approverhas approved."""
         self.ensure_one()
         if not level:
             return False
@@ -109,18 +138,45 @@ class AccountMove(models.Model):
         approved_users = self._get_approved_users_for_level(self.current_approval_level)
         return bool(required_users) and required_users <= approved_users
 
+    def _create_pending_history_for_level(self, level):
+        self.ensure_one()
+        approvers = self._get_level_approvers(level)
+        level_number = self._level_sequence_for(level)
+        for approver in approvers:
+            self.env['account.approval.history'].create({
+                'invoice_id': self.id,
+                'user_id': approver.id,
+                'status': 'pending',
+                'comment': 'Waiting for approval',
+                'approval_level': level_number,
+            })
+
+    def _level_sequence_for(self, level):
+        self.ensure_one()
+        level_lines = self.approval_rule_id.approval_line_ids.sorted('sequence')
+        return list(level_lines).index(level) + 1
+
+    def _create_pending_history_for_all_levels(self):
+        self.ensure_one()
+        rule = self.approval_rule_id
+        if not rule:
+            return
+        for level in rule.approval_line_ids.sorted('sequence'):
+            self._create_pending_history_for_level(level)
+
     def _record_approval_history(self, status, comment):
         self.ensure_one()
-        pending_history = self.env['account.approval.history'].search([
+        own_pending = self.env['account.approval.history'].search([
             ('invoice_id', '=', self.id),
             ('status', '=', 'pending'),
-            ('approval_level', '=', self.current_approval_level)
+            ('approval_level', '=', self.current_approval_level),
+            ('user_id', '=', self.env.user.id),
         ], limit=1)
-        if pending_history:
-            pending_history.write({
+
+        if own_pending:
+            own_pending.write({
                 'status': status,
                 'comment': comment or status.capitalize(),
-                'user_id': self.env.user.id,
             })
         else:
             self.env['account.approval.history'].create({
@@ -131,38 +187,85 @@ class AccountMove(models.Model):
                 'approval_level': self.current_approval_level
             })
 
-    def action_submit_for_approval(self):
+        level = self._get_current_level()
+        if level and not level.require_consent_for_all_users:
+            other_pending = self.env['account.approval.history'].search([
+                ('invoice_id', '=', self.id),
+                ('status', '=', 'pending'),
+                ('approval_level', '=', self.current_approval_level),
+                ('user_id', '!=', self.env.user.id),
+            ])
+            other_pending.unlink()
+
+    def action_post(self):
+        admin_direct = self.browse()
+        no_rule_direct = self.browse()
+        other_direct = self.browse()
+        to_approval = self.browse()
+
         for invoice in self:
-            if invoice.state not in ['draft', 'rejected']:
-                raise UserError(_('Only draft or rejected invoices can be submitted for approval!'))
+            if invoice.state != 'draft' or invoice.move_type not in ('out_invoice', 'in_invoice', 'out_refund', 'in_refund'):
+                other_direct |= invoice
+                continue
 
             if invoice._is_admin_user():
-                invoice.action_post()
-                invoice.message_post(
-                    body=_('Invoice posted directly by Administrator (approval workflow bypassed).'),
-                    message_type='notification',
-                    subtype_xmlid='mail.mt_note'
-                )
+                admin_direct |= invoice
                 continue
 
             matching_rule = invoice._get_matching_approval_rule()
 
             if not matching_rule:
-                invoice.action_post()
-                invoice.message_post(
-                    body=_('Invoice posted directly (no approval rule matched).'),
-                    message_type='notification',
-                    subtype_xmlid='mail.mt_note'
-                )
+                no_rule_direct |= invoice
                 continue
 
-            self._send_approval_notification()
+            invoice.approval_rule_id = matching_rule.id
+            invoice.current_approval_level = 1
+            invoice.state = 'waiting'
 
+            invoice._create_pending_history_for_all_levels()
+
+            invoice._send_approval_notification()
+            to_approval |= invoice
+
+        direct_post = admin_direct | no_rule_direct | other_direct
+        if direct_post:
+            super(AccountMove, direct_post).action_post()
+
+        for invoice in admin_direct:
             invoice.message_post(
-                body=_('Invoice submitted for approval. Rule: %s (Level 1)') % matching_rule.name,
+                body=_('Invoice posted directly by Administrator (approval workflow bypassed).'),
                 message_type='notification',
                 subtype_xmlid='mail.mt_note'
             )
+
+        for invoice in no_rule_direct:
+            invoice.message_post(
+                body=_('Invoice posted directly (no approval rule matched).'),
+                message_type='notification',
+                subtype_xmlid='mail.mt_note'
+            )
+
+    def button_draft(self):
+        rejected = self.filtered(lambda m: m.state == 'rejected')
+        others = self - rejected
+
+        if rejected:
+            for invoice in rejected:
+                invoice.approval_history_ids.unlink()
+            rejected.write({
+                'state': 'draft',
+                'approval_rule_id': False,
+                'current_approval_level': 1,
+            })
+            for invoice in rejected:
+                invoice.message_post(
+                    body=_('Invoice reset to draft. The approval process will restart on next submission.'),
+                    message_type='notification',
+                    subtype_xmlid='mail.mt_note'
+                )
+
+        if others:
+            super(AccountMove, others).button_draft()
 
     def action_approve(self):
         self.ensure_one()
@@ -172,6 +275,7 @@ class AccountMove(models.Model):
             raise UserError(_('No approval rule found for this invoice!'))
         if not self._check_user_approver():
             raise UserError(_('You are not authorized to approve this invoice!'))
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Approval Comment'),
@@ -192,6 +296,7 @@ class AccountMove(models.Model):
             raise UserError(_('No approval rule found for this invoice!'))
         if not self._check_user_approver():
             raise UserError(_('You are not authorized to reject this invoice!'))
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Rejection Comment'),
@@ -206,6 +311,14 @@ class AccountMove(models.Model):
 
     def approve_with_comment(self, comment):
         self.ensure_one()
+
+        if self.state not in ('waiting', 'partially_approved'):
+            raise UserError(_('Invoice is not waiting for approval!'))
+        if not self.approval_rule_id:
+            raise UserError(_('No approval rule found for this invoice!'))
+        if not self._check_user_approver():
+            raise UserError(_('You are not authorized to approve this invoice!'))
+
         level_lines = self.approval_rule_id.approval_line_ids.sorted('sequence')
         level = self._get_current_level()
 
@@ -218,12 +331,6 @@ class AccountMove(models.Model):
 
         if level.require_consent_for_all_users:
             if not self._is_level_fully_approved(level):
-                self.message_post(
-                    body=_('Approved by %s. Waiting for the remaining approvers at level %s before this level is complete.')
-                    % (self.env.user.name, self.current_approval_level),
-                    message_type='notification',
-                    subtype_xmlid='mail.mt_note'
-                )
                 return
         else:
             self._send_decision_notification('approved')
@@ -240,14 +347,6 @@ class AccountMove(models.Model):
             self.current_approval_level += 1
             self.state = 'partially_approved'
 
-            self.env['account.approval.history'].create({
-                'invoice_id': self.id,
-                'user_id': self.env.user.id,
-                'status': 'pending',
-                'comment': 'Waiting for approval at level %s' % self.current_approval_level,
-                'approval_level': self.current_approval_level
-            })
-
             self.message_post(
                 body=_('Invoice approved at level %s. Moving to level %s.') %
                 (self.current_approval_level - 1, self.current_approval_level),
@@ -259,9 +358,22 @@ class AccountMove(models.Model):
 
     def reject_with_comment(self, comment):
         self.ensure_one()
+
+        if self.state not in ('waiting', 'partially_approved'):
+            raise UserError(_('Invoice is not waiting for approval!'))
+        if not self.approval_rule_id:
+            raise UserError(_('No approval rule found for this invoice!'))
+        if not self._check_user_approver():
+            raise UserError(_('You are not authorized to reject this invoice!'))
+
         self.state = 'rejected'
 
         self._record_approval_history('rejected', comment)
+        self.env['account.approval.history'].search([
+            ('invoice_id', '=', self.id),
+            ('status', '=', 'pending'),
+        ]).unlink()
+
         self._send_decision_notification('rejected')
 
         self.message_post(
@@ -289,12 +401,15 @@ class AccountMove(models.Model):
         level = self._get_current_level()
         if not level:
             return
+
         approvers = self._get_level_approvers(level)
         if not approvers:
             return
+
         partner_ids = approvers.mapped('partner_id').ids
         if not partner_ids:
             return
+
         template = self.env.ref('account_approval.email_template_approval_notification', raise_if_not_found=False)
         if template:
             template.send_mail(
@@ -311,15 +426,18 @@ class AccountMove(models.Model):
         level = self._get_current_level()
         if not level:
             return
-        # everyone must approve anyway, so a per-approval decision email is not sent.
+
         if level.require_consent_for_all_users:
             return
+
         other_approvers = self._get_level_approvers(level) - self.env.user
         if not other_approvers:
             return
+
         partner_ids = other_approvers.mapped('partner_id').ids
         if not partner_ids:
             return
+
         template = self.env.ref('account_approval.email_template_approval_decision', raise_if_not_found=False)
         if template:
             template.with_context(
