@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_invoices_approval_status" inherit_id="account.portal_my_invoices">
+        <xpath expr="//t[@name='invoice_status_posted']" position="after">
+            <t t-elif="invoice.state in ('waiting', 'partially_approved', 'approved', 'rejected', 'draft')">
+                <span t-attf-class="badge rounded-pill #{invoice.portal_status_class}">
+                    <i class="fa fa-fw fa-clock-o" aria-label="Status" title="Status" role="img"/>
+                    <span class="d-none d-md-inline" t-out="' ' + invoice.portal_status_label"/>
+                </span>
+            </t>
+        </xpath>
+    </template>
+</odoo>

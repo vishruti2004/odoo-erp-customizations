@@ -39,7 +39,10 @@
         "views/account_approval_rule_views.xml",
         "views/account_approval_menu.xml",
         "views/account_move_views.xml",
-        "views/account_approval_comment_wizard_views.xml",
+        "views/portal_templates_approval.xml",
+
+        "wizard/account_approval_comment_wizard_views.xml",
+
         
     ],
 

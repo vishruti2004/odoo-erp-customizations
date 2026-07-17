@@ -3,7 +3,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
@@ -13,10 +12,14 @@ class AccountMove(models.Model):
     is_current_user_approver = fields.Boolean(string='Is Current User Approver', compute='_compute_is_current_user_approver')
     is_approval_manager = fields.Boolean(string='Is Approval Manager', compute='_compute_is_approval_manager')
     approval_history_display_ids = fields.Many2many(
-    'account.approval.history',
-    compute='_compute_approval_history_display_ids',
-    string='Approval History (Filtered)'
-)
+        'account.approval.history',
+        compute='_compute_approval_history_display_ids',
+        string='Approval History (Filtered)',
+        readonly=True
+    )
+    portal_status_label = fields.Char(string='Portal Status Label', compute='_compute_portal_status_display')
+    portal_status_class = fields.Char(string='Portal Status Class', compute='_compute_portal_status_display')
+
     state = fields.Selection(
         selection_add=[
             ('waiting', 'Waiting for Approval'),
@@ -72,6 +75,22 @@ class AccountMove(models.Model):
                 invoice.approval_history_display_ids = invoice.approval_history_ids.filtered(
                     lambda h: h.status != 'pending'
                 )
+
+    @api.depends('state')
+    def _compute_portal_status_display(self):
+        mapping = {
+            'draft': (_('Draft'), 'text-bg-secondary'),
+            'waiting': (_('Waiting for Approval'), 'text-bg-warning'),
+            'partially_approved': (_('Partially Approved'), 'text-bg-info'),
+            'approved': (_('Approved'), 'text-bg-primary'),
+            'posted': (_('Posted'), 'text-bg-success'),
+            'rejected': (_('Rejected'), 'text-bg-danger'),
+            'cancel': (_('Cancelled'), 'text-bg-secondary'),
+        }
+        for invoice in self:
+            label, css_class = mapping.get(invoice.state, (invoice.state, 'text-bg-secondary'))
+            invoice.portal_status_label = label
+            invoice.portal_status_class = css_class
 
     def _get_matching_approval_rule(self):
         self.ensure_one()

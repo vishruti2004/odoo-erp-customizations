@@ -38,7 +38,7 @@
                     </group>
 
                     <field name="approval_history_display_ids" nolabel="1">
-                        <list string="Approval History" create="0" delete="0" edit="0">
+                        <list string="Approval History">
                             <field name="user_id" string="Approver"/>
                             <field name="approval_level" string="Level" column_invisible="not parent.is_approval_manager"/>
                             <field name="status" widget="badge"
