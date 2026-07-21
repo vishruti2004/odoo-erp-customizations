@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_inherit_gym_membership" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.gym.membership</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//notebook" position="inside">
+               <page string="Gym Membership">
+
+    <group>
+        <group>
+            <field name="membership_plan_id"/>
+            <field name="work_schedule_id"/>
+            <field name="membership_start_date"/>
+            <field name="membership_end_date" readonly="1"/>
+            <field name="remaining_days" readonly="1"/>
+        </group>
+
+        <group>
+            <field name="auto_renew"/>
+            <field name="is_frozen"/>
+            <field name="freeze_start_date"/>
+            <field name="freeze_end_date"/>
+            <field name="freeze_days" readonly="1"/>
+        </group>
+    </group>
+
+    <separator string="Notes"/>
+
+    <field name="notes"
+           nolabel="1"
+           colspan="2"
+           placeholder="Enter membership notes here..."/>
+    </page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

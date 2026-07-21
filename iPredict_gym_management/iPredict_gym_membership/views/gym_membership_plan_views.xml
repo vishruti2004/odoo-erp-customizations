@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- list View -->
+    <record id="view_gym_membership_plan_list" model="ir.ui.view">
+        <field name="name">gym.membership.plan.list</field>
+        <field name="model">gym.membership.plan</field>
+        <field name="arch" type="xml">
+            <list string="Membership Plans">
+                <field name="name"/>
+                <field name="product_id"/>
+                <field name="duration"/>
+                <field name="duration_uom"/>
+                <field name="price"/>
+                <field name="company_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_gym_membership_plan_form" model="ir.ui.view">
+        <field name="name">gym.membership.plan.form</field>
+        <field name="model">gym.membership.plan</field>
+        <field name="arch" type="xml">
+            <form string="Membership Plan">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="product_id"/>
+                            <field name="duration"/>
+                            <field name="duration_uom"/>
+                        </group>
+
+                        <group>
+                            <field name="price"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_gym_membership_plan" model="ir.actions.act_window">
+        <field name="name">Membership Plans</field>
+        <field name="res_model">gym.membership.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Configuration Menu -->
+    <menuitem
+            id="menu_gym_configuration"
+            name="Configuration"
+            parent="iPredict_gym_base.menu_gym_root"
+            sequence="100"/>
+
+    <!-- Membership Plan Menu -->
+    <menuitem id="menu_gym_membership_plan"
+              name="Membership Plans"
+              parent="menu_gym_configuration"
+              action="action_gym_membership_plan"
+              sequence="10"/>
+
+</odoo>
