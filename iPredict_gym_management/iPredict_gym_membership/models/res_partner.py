@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -31,12 +32,12 @@ class ResPartner(models.Model):
     )
 
     freeze_start_date = fields.Date(
-        string="Freeze Start Date",
+        string="Freeze Start",
         tracking=True,
     )
 
     freeze_end_date = fields.Date(
-        string="Freeze End Date",
+        string="Freeze End",
         tracking=True,
     )
 
@@ -57,16 +58,38 @@ class ResPartner(models.Model):
     )
 
     membership_start_date = fields.Date(
-        string="Membership Start Date",
+        string="Start Date",
         tracking=True,
     )
 
     membership_end_date = fields.Date(
-        string="Membership End Date",
+        string="End Date",
         compute="_compute_membership_end_date",
         store=True,
         tracking=True,
     )
+
+    is_gym_member = fields.Boolean(
+        string="Gym Member",
+        default=False,
+        tracking=True,
+    )
+
+    membership_history_ids = fields.One2many(
+        "gym.membership.history",
+        "member_id",
+        string="Membership History",
+    )
+    member_code = fields.Char(
+        string="Member ID",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+
+    def action_freeze_membership(self):
+        self.ensure_one()
+        return True
 
     @api.depends("freeze_start_date", "freeze_end_date")
     def _compute_freeze_days(self):
@@ -113,3 +136,22 @@ class ResPartner(models.Model):
             if record.membership_end_date:
                 remaining = (record.membership_end_date - today).days
                 record.remaining_days = max(remaining, 0)
+
+
+    def action_freeze_membership(self):
+        self.ensure_one()
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Membership Freeze Requests",
+            "res_model": "gym.membership.freeze",
+            "view_mode": "list,form",
+            "domain": [("partner_id", "=", self.id)],
+            "context": {
+                "default_partner_id": self.id,
+                "default_freeze_start_date": self.freeze_start_date,
+                "default_freeze_end_date": self.freeze_end_date,
+            },
+            "target": "current",
+        }
+   

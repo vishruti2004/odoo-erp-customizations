@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Gym Member Sequence -->
+    <record id="seq_gym_member" model="ir.sequence">
+        <field name="name">Gym Member</field>
+        <field name="code">gym.member</field>
+        <field name="prefix">GM</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+    </record>
+
+    <!-- Membership History Sequence -->
+    <record id="seq_membership_history" model="ir.sequence">
+        <field name="name">Membership History</field>
+        <field name="code">gym.membership.history</field>
+        <field name="prefix">MS</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+    </record>
+
+</odoo>

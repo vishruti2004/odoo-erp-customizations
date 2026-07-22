@@ -36,10 +36,18 @@ This module manages the complete membership lifecycle including:
         "security/ir.model.access.csv",
 
         # Data
+        "data/mail_template.xml",
+        'data/gym_sequence.xml',
+
 
         # Views
+        "views/gym_members_views.xml",
         "views/gym_membership_plan_views.xml",
         "views/res_partner_views.xml",
+        "views/hr_employee_views.xml",
+        "views/gym_membership_freeze.xml",
+
+        "views/menu_views.xml",
 
         # Menus
     ],

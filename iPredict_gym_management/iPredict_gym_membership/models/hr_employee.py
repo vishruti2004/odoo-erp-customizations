@@ -1,0 +1,11 @@
+# -*- coding: utf-8 -*-
+
+from odoo import fields, models
+
+
+class HrEmployee(models.Model):
+    _inherit = "hr.employee"
+
+    is_gym_trainer = fields.Boolean(
+        string="Gym Trainer"
+    )

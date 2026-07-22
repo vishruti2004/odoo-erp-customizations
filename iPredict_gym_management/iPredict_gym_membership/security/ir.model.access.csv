@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_gym_membership_plan,gym.membership.plan,model_gym_membership_plan,,1,1,1,1
+access_gym_membership_history,gym.membership.history,model_gym_membership_history,,1,1,1,1
+access_gym_membership_freeze,gym.membership.freeze,model_gym_membership_freeze,,1,1,1,1
