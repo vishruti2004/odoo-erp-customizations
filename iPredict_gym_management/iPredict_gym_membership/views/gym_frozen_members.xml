@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Frozen Members List View -->
+    <record id="view_gym_frozen_members_list" model="ir.ui.view">
+        <field name="name">gym.membership.history.frozen.members.list</field>
+        <field name="model">gym.membership.history</field>
+        <field name="arch" type="xml">
+            <list string="Frozen Members" create="0">
+                <field name="member_code" string="Member ID"/>
+                <field name="member_id" string="Member"/>
+                <field name="membership_plan_id" string="Membership Plan"/>
+                <field name="membership_start_date" string="Start Date"/>
+                <field name="membership_end_date" string="End Date"/>
+                <field name="status"
+                       string="Status"
+                       widget="badge"
+                       decoration-success="status == 'active'"
+                       decoration-info="status == 'frozen'"
+                       decoration-danger="status == 'expired'"
+                       decoration-muted="status == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Frozen Members Action -->
+    <record id="action_gym_frozen_members" model="ir.actions.act_window">
+        <field name="name">Frozen Members</field>
+        <field name="res_model">gym.membership.history</field>
+        <field name="domain">[]</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_gym_frozen_members_list"/>
+    </record>
+
+</odoo>

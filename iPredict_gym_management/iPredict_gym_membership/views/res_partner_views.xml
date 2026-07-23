@@ -14,8 +14,6 @@
                 type="object"
                 class="oe_stat_button"
                 icon="fa-pause-circle">
-                <!-- invisible="not is_gym_member or is_frozen"> -->
-
                 <span>Freeze Membership</span>
                 </button>
             </xpath>
@@ -30,17 +28,19 @@
                             <field name="membership_plan_id"/>
                             <field name="work_schedule_id"/>
                             <field name="membership_start_date"/>
-                            <field name="membership_end_date" readonly="1"/>
+                            <field name="membership_end_date"/>
                             <field name="remaining_days" readonly="1"/>
+                            <field name="trainer_id" widget="many2many_tags" string="Assign Trainer"/>
+                            <field name="is_frozen"/>
+
                         </group>
 
-                        <group>
+                        <!-- <group>
                             <field name="auto_renew"/>
-                            <field name="is_frozen"/>
                             <field name="freeze_start_date"/>
                             <field name="freeze_end_date"/>
                             <field name="freeze_days" readonly="1"/>
-                        </group>
+                        </group> -->
                     </group>
 
                     <separator string="Notes"/>
@@ -59,7 +59,7 @@
                         <list default_order="membership_start_date desc"
                               create="0"
                               edit="0"
-                              delete="0">
+                              delete="1">
                             <field name="name"/>
                             <field name="membership_plan_id"/>
                             <field name="membership_start_date"/>
@@ -85,7 +85,7 @@
 
                                     <group>
                                         <field name="membership_start_date" readonly="1"/>
-                                        <field name="membership_end_date" readonly="1"/>
+                                        <field name="membership_end_date"/>
                                     </group>
                                 </group>
 

@@ -1,18 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="view_employee_form_inherit_gym_trainer" model="ir.ui.view">
-        <field name="name">hr.employee.form.gym.trainer</field>
+    <!-- Employee Form View-->
+    <record id="view_hr_employee_form_inherit_gym" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.gym</field>
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//sheet/notebook" position="inside">
-                <page string="Gym">
-                    <group>
-                        <field name="is_gym_trainer"/>
-                    </group>
-                </page>
+
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <field name="member_ids" widget="many2many_tags" 
+                               domain="[('is_gym_member', '=', True)]"
+                               placeholder="Select Members..."/>
+                    </div>
+                </div>
+                <field name="is_trainer" invisible="1"/>
+                <field name="trainer_code" readonly="1" invisible="1"/>
             </xpath>
+
         </field>
     </record>
+
+    <!-- Trainers List View -->
+    <record id="view_gym_trainers_list" model="ir.ui.view">
+        <field name="name">gym.trainers.list</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <list string="Trainers">
+                <field name="trainer_code" string="Trainer ID"/>
+                <field name="name" string="Trainer Name"/>
+                <field name="work_phone" string="Phone"/>
+                <field name="work_email" string="Email"/>
+                <field name="member_ids" widget="many2many_tags" string="Assigned Members"/>
+                <field name="skill_ids" widget="many2many_tags" string="Skills"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Trainers Action -->
+    <record id="action_gym_trainers" model="ir.actions.act_window">
+        <field name="name">Trainers</field>
+        <field name="res_model">hr.employee</field>
+        <field name="domain">[('is_trainer', '=', True)]</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gym_trainers_list"/>
+    </record>
+
+
+
 </odoo>

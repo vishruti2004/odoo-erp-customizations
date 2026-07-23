@@ -7,9 +7,15 @@
         <field name="arch" type="xml">
             <list>
                 <field name="partner_id"/>
+                <field name="membership_history_id"/>
                 <field name="freeze_start_date"/>
                 <field name="freeze_end_date"/>
-                <field name="state" widget="badge"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'pending'"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'rejected'"/>
             </list>
         </field>
     </record>
@@ -50,13 +56,10 @@
                 <sheet>
 
                     <group>
-
-                        <field name="partner_id"/>
-
+                        <field name="partner_id" readonly="1"/>
+                        <field name="membership_history_id"/>
                         <field name="freeze_start_date"/>
-
                         <field name="freeze_end_date"/>
-
                     </group>
 
                 </sheet>

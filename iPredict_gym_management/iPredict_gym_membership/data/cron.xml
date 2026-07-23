@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="ir_cron_gym_membership_expire" model="ir.cron">
+        <field name="name">Gym: Auto-Expire Memberships</field>
+        <field name="model_id" ref="model_gym_membership_history"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_memberships()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_gym_membership_freeze_schedule" model="ir.cron">
+        <field name="name">Gym: Auto Freeze / Resume Memberships</field>
+        <field name="model_id" ref="model_gym_membership_freeze"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_apply_freeze_schedule()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

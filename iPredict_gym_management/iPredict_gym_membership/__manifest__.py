@@ -38,6 +38,7 @@ This module manages the complete membership lifecycle including:
         # Data
         "data/mail_template.xml",
         'data/gym_sequence.xml',
+        "data/cron.xml",
 
 
         # Views
@@ -46,10 +47,10 @@ This module manages the complete membership lifecycle including:
         "views/res_partner_views.xml",
         "views/hr_employee_views.xml",
         "views/gym_membership_freeze.xml",
+        "views/gym_frozen_members.xml",
 
         "views/menu_views.xml",
 
-        # Menus
     ],
     "demo": [],
     "installable": True,

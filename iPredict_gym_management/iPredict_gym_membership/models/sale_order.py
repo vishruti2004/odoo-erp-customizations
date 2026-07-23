@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from odoo import fields, models,api
+from odoo import fields, models, api
 
 
 class SaleOrder(models.Model):
@@ -24,22 +24,12 @@ class SaleOrder(models.Model):
                 if not plan:
                     continue
 
-                # Expire previous active membership history
-                active_history = MembershipHistory.search([
-                    ("member_id", "=", partner.id),
-                    ("status", "=", "active"),
-                ])
+                start_date = fields.Date.context_today(order)
 
-                if active_history:
-                    active_history.write({
-                        "status": "expired",
-                    })
-
-                # Update current membership
                 partner_vals = {
                     "is_gym_member": True,
                     "membership_plan_id": plan.id,
-                    "membership_start_date": fields.Date.context_today(order),
+                    "membership_start_date": start_date,
                 }
 
                 if not partner.member_code:

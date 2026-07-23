@@ -87,9 +87,11 @@ class ResPartner(models.Model):
         index=True,
     )
 
-    def action_freeze_membership(self):
-        self.ensure_one()
-        return True
+    trainer_id = fields.Many2many(
+    "hr.employee",
+    string="Trainer",
+    domain=[("is_trainer", "=", True)],
+)
 
     @api.depends("freeze_start_date", "freeze_end_date")
     def _compute_freeze_days(self):
@@ -137,7 +139,6 @@ class ResPartner(models.Model):
                 remaining = (record.membership_end_date - today).days
                 record.remaining_days = max(remaining, 0)
 
-
     def action_freeze_membership(self):
         self.ensure_one()
 
@@ -154,4 +155,3 @@ class ResPartner(models.Model):
             },
             "target": "current",
         }
-   

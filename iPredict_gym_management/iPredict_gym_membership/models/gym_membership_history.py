@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-from odoo import fields, models,api
+from odoo import api, fields, models
 
 
 class GymMembershipHistory(models.Model):
@@ -66,6 +64,22 @@ class GymMembershipHistory(models.Model):
         copy=False,
     )
 
+    member_code = fields.Char(related="member_id.member_code", store=True, string="Member Code")
+
+    display_member_id = fields.Char(
+        string="Member ID",
+        compute="_compute_display_member_id",
+        store=True,
+    )
+
+    @api.depends("member_code", "name")
+    def _compute_display_member_id(self):
+        for rec in self:
+            if rec.member_code and rec.name:
+                rec.display_member_id = f"{rec.member_code} - {rec.name}"
+            else:
+                rec.display_member_id = rec.member_code or rec.name or ""
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -74,3 +88,15 @@ class GymMembershipHistory(models.Model):
                     "gym.membership.history"
                 )
         return super().create(vals_list)
+
+    #expire cron
+
+    @api.model
+    def _cron_expire_memberships(self):
+        today = fields.Date.today()
+        to_expire = self.search([
+            ("status", "=", "active"),
+            ("membership_end_date", "<", today),
+        ])
+        if to_expire:
+            to_expire.write({"status": "expired"})

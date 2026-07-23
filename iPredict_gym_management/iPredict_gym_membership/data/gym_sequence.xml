@@ -19,4 +19,13 @@
         <field name="number_increment">1</field>
     </record>
 
+    <!-- Gym Trainer Sequence-->
+     <record id="seq_gym_trainer" model="ir.sequence">
+        <field name="name">Gym Trainer</field>
+        <field name="code">gym.trainer</field>
+        <field name="prefix">TR</field>
+        <field name="padding">4</field>
+        <field name="number_increment">1</field>
+    </record>
+
 </odoo>
