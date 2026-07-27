@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_order_form_inherit_gym" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.gym</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Renew Button - Visible only when membership is expired -->
+            <xpath expr="//header" position="inside">
+                <button name="action_renew_membership"
+                        type="object"
+                        string="Renew"
+                        class="btn-primary"
+                        invisible="state != 'sale' or not is_membership_expired"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

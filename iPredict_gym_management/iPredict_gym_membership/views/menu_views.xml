@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Members -->
+    <!-- Members - visible to Trainer, Manager, Admin  -->
     <menuitem
         id="menu_gym_members"
         name="Members"
@@ -9,29 +9,33 @@
         action="action_gym_members"
         sequence="10"/>
 
-    <!-- Configuration -->
+    <!-- Configuration - visible to Manager + Admin -->
     <menuitem
         id="menu_gym_configuration"
         name="Configuration"
         parent="iPredict_gym_base.menu_gym_root"
+        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
         sequence="100"/>
 
-    <!-- Membership Plans -->
+    <!-- Membership Plans - Manager + Admin  -->
     <menuitem
         id="menu_gym_membership_plan"
         name="Membership Plans"
         parent="menu_gym_configuration"
         action="action_gym_membership_plan"
+        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
         sequence="10"/>
 
-      <menuitem
+    <!-- Frozen Members - Manager + Admin -->
+    <menuitem
         id="menu_gym_frozen_members"
         name="Frozen Members"
         parent="menu_gym_configuration"
         action="action_gym_frozen_members"
+        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
         sequence="20"/>
 
-          <!-- Action -->
+    <!-- Action -->
     <record id="action_gym_trainers" model="ir.actions.act_window">
         <field name="name">Trainers</field>
         <field name="res_model">hr.employee</field>
@@ -40,12 +44,21 @@
         <field name="context">{'default_is_trainer': True}</field>
     </record>
 
-    <!-- Menu -->
+    <!-- trainer - Manager + Admin -->
     <menuitem
         id="menu_gym_trainers"
         name="Trainers"
         parent="iPredict_gym_base.menu_gym_root"
         action="action_gym_trainers"
+        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
         sequence="20"/>
+    
+    <!-- Measurement - all -->
+    <menuitem id="menu_gym_measurement"
+              name="Measurement History"
+              parent="iPredict_gym_base.menu_gym_root"
+              action="action_gym_measurement"
+              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="40"/>
 
 </odoo>

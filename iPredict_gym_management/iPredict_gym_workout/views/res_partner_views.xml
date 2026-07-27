@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_form_inherit_workout" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.workout</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="iPredict_gym_membership.view_partner_form_inherit_gym_membership"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='gym_membership_tab']/notebook" position="inside">
+                <page string="Workout History" name="workout_history_page">
+    <field name="workout_assignment_ids" readonly="1">
+        <list create="0" delete="0">
+            <field name="plan_id"/>
+            <field name="start_date"/>
+            <field name="end_date"/>
+            <field name="days"/>
+        </list>
+    </field>
+</page>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

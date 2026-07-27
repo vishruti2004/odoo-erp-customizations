@@ -1,40 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <record id="module_category_gym" model="ir.module.category">
+    <!-- ===================== GROUPS ===================== -->
+
+    <record id="res_groups_privilege_gym" model="res.groups.privilege">
         <field name="name">Gym Management</field>
-        <field name="description">Access rights for the Gym Management modules</field>
         <field name="sequence">20</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
     </record>
 
-    <!-- Base level: Receptionist -->
-    <record id="group_gym_receptionist" model="res.groups">
-        <field name="name">Receptionist</field>
-        <field name="category_id" ref="module_category_gym"/>
-        <field name="comment">Manages inquiries, members, trial sessions, attendance, locker allocation, and visitor records.</field>
-    </record>
-
-    <!-- Base level: Trainer -->
+    <!-- Trainer Group -->
     <record id="group_gym_trainer" model="res.groups">
         <field name="name">Trainer</field>
-        <field name="category_id" ref="module_category_gym"/>
-        <field name="comment">Views assigned members only. Manages workout plans, diet plans, body measurements, and class attendance.</field>
+        <field name="privilege_id" ref="res_groups_privilege_gym"/>
     </record>
 
-    <!-- Mid level: Manager - automatically includes Receptionist + Trainer access -->
+    <!-- Manager Group -->
     <record id="group_gym_manager" model="res.groups">
         <field name="name">Manager</field>
-        <field name="category_id" ref="module_category_gym"/>
-        <field name="implied_ids" eval="[(4, ref('group_gym_receptionist')), (4, ref('group_gym_trainer'))]"/>
-        <field name="comment">Manages memberships, trainers, classes, attendance, reports, and billing.</field>
+        <field name="privilege_id" ref="res_groups_privilege_gym"/>
+        <field name="implied_ids" eval="[(4, ref('group_gym_trainer'))]"/>
     </record>
 
-    <!-- Top level: Administrator - automatically includes Manager (and everything below it) -->
+    <!-- Admin Group -->
     <record id="group_gym_admin" model="res.groups">
         <field name="name">Administrator</field>
-        <field name="category_id" ref="module_category_gym"/>
+        <field name="privilege_id" ref="res_groups_privilege_gym"/>
         <field name="implied_ids" eval="[(4, ref('group_gym_manager'))]"/>
-        <field name="comment">Full access to all Gym Management modules and configuration.</field>
+    </record>
+
+    <!-- ===================== RECORD RULES ===================== -->
+
+    <!-- Manager and Admin see ALL members -->
+    <record id="rule_gym_manager_see_all_partners" model="ir.rule">
+        <field name="name">Gym Manager: See all members</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gym_manager'))]"/>
+    </record>
+
+    <!-- Trainer sees only their own assigned gym members -->
+    <record id="rule_gym_trainer_own_partners" model="ir.rule">
+        <field name="name">Gym Trainer: See only own assigned members</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="groups" eval="[(4, ref('group_gym_trainer'))]"/>
     </record>
 
 </odoo>

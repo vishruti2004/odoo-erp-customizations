@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="exercise_squat" model="gym.exercise">
+            <field name="name">Back Squat</field>
+            <field name="muscle_group">legs</field>
+            <field name="equipment">Squat Rack</field>
+        </record>
+
+        <record id="exercise_bench" model="gym.exercise">
+            <field name="name">Bench Press</field>
+            <field name="muscle_group">chest</field>
+            <field name="equipment">Barbell, Bench</field>
+        </record>
+
+        <record id="exercise_deadlift" model="gym.exercise">
+            <field name="name">Deadlift</field>
+            <field name="muscle_group">back</field>
+            <field name="equipment">Barbell</field>
+        </record>
+
+        <record id="exercise_overhead_press" model="gym.exercise">
+            <field name="name">Overhead Press</field>
+            <field name="muscle_group">shoulders</field>
+            <field name="equipment">Barbell</field>
+        </record>
+
+        <record id="exercise_plank" model="gym.exercise">
+            <field name="name">Plank</field>
+            <field name="muscle_group">core</field>
+            <field name="equipment">None</field>
+        </record>
+
+        <record id="exercise_bicep_curl" model="gym.exercise">
+            <field name="name">Bicep Curl</field>
+            <field name="muscle_group">biceps</field>
+            <field name="equipment">Dumbbell</field>
+        </record>
+
+        <record id="exercise_tricep_pushdown" model="gym.exercise">
+            <field name="name">Tricep Pushdown</field>
+            <field name="muscle_group">triceps</field>
+            <field name="equipment">Cable Machine</field>
+        </record>
+
+        <record id="exercise_treadmill" model="gym.exercise">
+            <field name="name">Treadmill Run</field>
+            <field name="muscle_group">cardio</field>
+            <field name="equipment">Treadmill</field>
+        </record>
+
+        <record id="exercise_downward_dog" model="gym.exercise">
+            <field name="name">Downward Dog</field>
+            <field name="muscle_group">full_body</field>
+            <field name="equipment">Mat</field>
+        </record>
+
+    </data>
+</odoo>

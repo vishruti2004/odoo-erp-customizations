@@ -1,0 +1,1 @@
+from . import gym_workout_plan_assign_wizard

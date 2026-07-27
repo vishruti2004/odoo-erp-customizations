@@ -5,7 +5,7 @@
         <field name="name">gym.membership.freeze.list</field>
         <field name="model">gym.membership.freeze</field>
         <field name="arch" type="xml">
-            <list>
+            <list create="true" edit="true" delete="true">
                 <field name="partner_id"/>
                 <field name="membership_history_id"/>
                 <field name="freeze_start_date"/>
@@ -26,55 +26,45 @@
         <field name="model">gym.membership.freeze</field>
         <field name="arch" type="xml">
             <form string="Membership Freeze Request">
-
                 <header>
-
                     <button name="action_submit"
                             type="object"
                             string="Submit"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
-
                     <button name="action_approve"
                             type="object"
                             string="Approve"
                             class="btn-primary"
                             invisible="state != 'pending'"/>
-
                     <button name="action_reject"
                             type="object"
                             string="Reject"
                             class="btn-secondary"
                             invisible="state != 'pending'"/>
-
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,pending,approved,rejected"/>
-
                 </header>
 
                 <sheet>
-
                     <group>
-                        <field name="partner_id" readonly="1"/>
+                        <field name="partner_id"/>
                         <field name="membership_history_id"/>
                         <field name="freeze_start_date"/>
                         <field name="freeze_end_date"/>
                     </group>
-
                 </sheet>
-
-                <!-- <chatter/> -->
-
             </form>
         </field>
     </record>
 
-    <!-- Action -->
     <record id="action_gym_membership_freeze" model="ir.actions.act_window">
         <field name="name">Membership Freeze Requests</field>
         <field name="res_model">gym.membership.freeze</field>
         <field name="view_mode">list,form</field>
+            <field name="context">{'create': True}</field>
+
     </record>
 
 </odoo>

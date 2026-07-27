@@ -9,61 +9,11 @@ class GymMembershipPlan(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "name"
 
-    name = fields.Char(
-        string="Plan Name",
-        required=True,
-        tracking=True,
-    )
-
-    product_id = fields.Many2one(
-        "product.template",
-        string="Product",
-        required=True,
-        tracking=True,
-    )
-
-    duration = fields.Integer(
-        string="Duration",
-        required=True,
-        default=1,
-        tracking=True,
-    )
-
-    duration_uom = fields.Selection(
-        [
-            ("days", "Days"),
-            ("months", "Months"),
-            ("years", "Years"),
-        ],
-        string="Duration Unit",
-        default="months",
-        required=True,
-        tracking=True,
-    )
-
-    price = fields.Monetary(
-        string="Price",
-        required=True,
-        tracking=True,
-    )
-
-    currency_id = fields.Many2one(
-        "res.currency",
-        string="Currency",
-        related="company_id.currency_id",
-        store=True,
-        readonly=True,
-    )
-
-    company_id = fields.Many2one(
-        "res.company",
-        string="Company",
-        default=lambda self: self.env.company,
-        required=True,
-    )
-
-    active = fields.Boolean(
-        string="Active",
-        default=True,
-        tracking=True,
-    )
+    name = fields.Char(string="Plan Name", required=True, tracking=True)
+    product_id = fields.Many2one("product.template", string="Product", required=True, tracking=True)
+    duration = fields.Integer(string="Duration", required=True, default=1, tracking=True)
+    duration_uom = fields.Selection([("days", "Days"), ("months", "Months"), ("years", "Years")], string="Duration Unit", default="months", required=True, tracking=True)
+    price = fields.Monetary(string="Price", required=True, tracking=True)
+    currency_id = fields.Many2one("res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True)
+    company_id = fields.Many2one("res.company", string="Company", default=lambda self: self.env.company, required=True)
+    active = fields.Boolean(string="Active", default=True, tracking=True)

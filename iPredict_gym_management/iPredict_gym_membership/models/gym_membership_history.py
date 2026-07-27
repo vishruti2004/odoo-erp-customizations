@@ -1,4 +1,7 @@
-from odoo import api, fields, models
+# -*- coding: utf-8 -*-
+
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class GymMembershipHistory(models.Model):
@@ -64,12 +67,30 @@ class GymMembershipHistory(models.Model):
         copy=False,
     )
 
-    member_code = fields.Char(related="member_id.member_code", store=True, string="Member Code")
+    member_code = fields.Char(
+        related="member_id.member_code",
+        store=True,
+        string="Member Code",
+    )
 
     display_member_id = fields.Char(
         string="Member ID",
         compute="_compute_display_member_id",
         store=True,
+    )
+
+    renewal_sale_order_id = fields.Many2one(
+        "sale.order",
+        string="Renewal Order",
+        readonly=True,
+        help="Sale order created for renewing this membership.",
+    )
+
+    is_renewable = fields.Boolean(
+        string="Is Renewable",
+        compute="_compute_is_renewable",
+        store=False,
+        help="True if membership is expired and no renewal order exists yet.",
     )
 
     @api.depends("member_code", "name")
@@ -80,6 +101,14 @@ class GymMembershipHistory(models.Model):
             else:
                 rec.display_member_id = rec.member_code or rec.name or ""
 
+    @api.depends("status", "renewal_sale_order_id")
+    def _compute_is_renewable(self):
+        """Only expired memberships without an existing renewal order are renewable."""
+        for rec in self:
+            rec.is_renewable = rec.status == "expired" and not rec.renewal_sale_order_id
+
+    # CREATE / SEQUENCE
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -89,10 +118,11 @@ class GymMembershipHistory(models.Model):
                 )
         return super().create(vals_list)
 
-    #expire cron
+    # CRON: AUTO EXPIRE
 
     @api.model
     def _cron_expire_memberships(self):
+        """Runs daily to expire memberships whose end date has passed."""
         today = fields.Date.today()
         to_expire = self.search([
             ("status", "=", "active"),
@@ -100,3 +130,62 @@ class GymMembershipHistory(models.Model):
         ])
         if to_expire:
             to_expire.write({"status": "expired"})
+
+    # ACTION: RENEW MEMBERSHIP
+
+    def action_renew_membership(self):
+        """
+        Create a new Sale Order Quotation for renewing this membership.
+        Button appears only for expired memberships.
+        """
+        self.ensure_one()
+
+        if not self.is_renewable:
+            raise ValidationError(
+                _("This membership cannot be renewed. It is either not expired or already has a renewal order.")
+            )
+
+        product_tmpl = self.membership_plan_id.product_id
+        if not product_tmpl:
+            raise ValidationError(
+                _("No product linked to this membership plan. Please configure the plan correctly.")
+            )
+
+        product_variant = product_tmpl.product_variant_id
+        if not product_variant:
+            product_variant = product_tmpl.product_variant_ids[:1]
+            if not product_variant:
+                raise ValidationError(
+                    _("No product variant found for this membership plan.")
+                )
+
+        sale_order = self.env["sale.order"].create({
+            "partner_id": self.member_id.id,
+            "company_id": self.env.company.id,
+            "user_id": self.env.uid,
+            "origin": self.name,
+            "note": _("Renewal of membership %s") % self.name,
+        })
+
+        self.env["sale.order.line"].create({
+            "order_id": sale_order.id,
+            "product_id": product_variant.id,
+            "product_template_id": product_tmpl.id,
+            "name": product_tmpl.name,
+            "product_uom_qty": 1,
+            "price_unit": product_tmpl.list_price or self.membership_plan_id.price,
+            "tax_ids": [(6, 0, product_tmpl.taxes_id.ids)],
+        })
+
+        self.write({
+            "renewal_sale_order_id": sale_order.id,
+        })
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Renewal Quotation"),
+            "res_model": "sale.order",
+            "view_mode": "form",
+            "res_id": sale_order.id,
+            "target": "current",
+        }

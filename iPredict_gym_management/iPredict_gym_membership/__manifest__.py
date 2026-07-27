@@ -30,10 +30,12 @@ This module manages the complete membership lifecycle including:
         "product",
         "resource",
         "iPredict_gym_base",
+        # "iPredict_gym_workout",
     ],
     "data": [
         # Security
         "security/ir.model.access.csv",
+        "security/security.xml",
 
         # Data
         "data/mail_template.xml",
@@ -48,9 +50,9 @@ This module manages the complete membership lifecycle including:
         "views/hr_employee_views.xml",
         "views/gym_membership_freeze.xml",
         "views/gym_frozen_members.xml",
-
+        "views/sale_order_views.xml",
+        "views/gym_measurement_views.xml",
         "views/menu_views.xml",
-
     ],
     "demo": [],
     "installable": True,

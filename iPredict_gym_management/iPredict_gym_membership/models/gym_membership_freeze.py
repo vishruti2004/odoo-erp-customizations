@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
 from datetime import timedelta
+import logging
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
-import logging
+
 _logger = logging.getLogger(__name__)
+
 
 class GymMembershipFreeze(models.Model):
     _name = "gym.membership.freeze"
@@ -35,6 +39,13 @@ class GymMembershipFreeze(models.Model):
         required=True,
     )
 
+    membership_plan_id = fields.Many2one(
+        "gym.membership.plan",
+        related="membership_history_id.membership_plan_id",
+        string="Membership Plan",
+        store=True,
+    )
+
     state = fields.Selection(
         [
             ("draft", "Draft"),
@@ -46,7 +57,6 @@ class GymMembershipFreeze(models.Model):
         default="draft",
         tracking=True,
     )
-
     # VALIDATIONS
 
     @api.constrains("freeze_start_date", "freeze_end_date")
@@ -113,8 +123,6 @@ class GymMembershipFreeze(models.Model):
                       "for the selected dates. Please check existing freeze requests "
                       "before creating a new one.")
                 )
-
-    
     # ACTIONS
 
     def action_submit(self):
@@ -137,21 +145,26 @@ class GymMembershipFreeze(models.Model):
         if not template:
             raise ValidationError(_("Membership Freeze mail template not found."))
 
-        admin_group = self.env.ref("base.group_system")
-        recipients = admin_group.user_ids.filtered(lambda u: u.partner_id.email)
+        trainer_partners = self.partner_id.trainer_id.mapped("user_id.partner_id")
 
-   
+        manager_group = self.env.ref(
+            "iPredict_gym_base.group_gym_manager", raise_if_not_found=False
+        )
+        manager_partners = manager_group.all_user_ids.mapped("partner_id") if manager_group else self.env["res.partner"]
+
+        recipients = (trainer_partners | manager_partners).filtered(lambda p: p.email)
 
         if not recipients:
             raise ValidationError(
-                _("No Administrator found with a valid email address.")
+                _("No Trainer or Manager found with a valid email address "
+                  "to notify for this freeze request.")
             )
 
         template.send_mail(
-            self.id,
+            self.partner_id.id, 
             email_values={
                 "email_to": False,
-                "recipient_ids": [(6, 0, recipients.mapped("partner_id").ids)],
+                "recipient_ids": [(6, 0, recipients.ids)],
                 "email_from": self.env.company.email_formatted
                 or self.env.user.email_formatted,
             },
@@ -216,34 +229,29 @@ class GymMembershipFreeze(models.Model):
 
     @api.model
     def _cron_apply_freeze_schedule(self):
-        _logger = logging.getLogger(__name__)
         _logger.info("=== CRON: Freeze Schedule Started ===")
-        
+
         today = fields.Date.today()
         _logger.info("Today: %s", today)
-        
+
         to_freeze = self.search([
             ("state", "=", "approved"),
             ("freeze_start_date", "<=", today),
             ("freeze_end_date", ">=", today),
         ])
         _logger.info("Found %s requests to freeze", len(to_freeze))
-        
+
         for rec in to_freeze:
-            _logger.info("Freezing: %s (Start: %s, End: %s)", 
-                        rec.partner_id.name, 
-                        rec.freeze_start_date, 
-                        rec.freeze_end_date)
             rec._apply_freeze()
-        
+
         to_resume = self.search([
             ("state", "=", "approved"),
             ("freeze_end_date", "<", today),
         ])
         _logger.info("Found %s requests to resume", len(to_resume))
-        
+
         for rec in to_resume:
             _logger.info("Resuming: %s", rec.partner_id.name)
             rec._apply_resume()
-        
+
         _logger.info("=== CRON: Freeze Schedule Finished ===")

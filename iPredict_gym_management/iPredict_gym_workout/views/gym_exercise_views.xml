@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_gym_exercise_list" model="ir.ui.view">
+        <field name="name">gym.exercise.list</field>
+        <field name="model">gym.exercise</field>
+        <field name="arch" type="xml">
+            <list string="Exercises">
+                <field name="name"/>
+                <field name="muscle_group"/>
+                <field name="equipment"/>
+                <field name="active" widget="boolean"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_gym_exercise_form" model="ir.ui.view">
+        <field name="name">gym.exercise.form</field>
+        <field name="model">gym.exercise</field>
+        <field name="arch" type="xml">
+            <form string="Exercise">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Exercise Name..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="muscle_group"/>
+                            <field name="equipment"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" nolabel="1" placeholder="Exercise description..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_gym_exercise" model="ir.actions.act_window">
+        <field name="name">Exercises</field>
+        <field name="res_model">gym.exercise</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
