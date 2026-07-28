@@ -1,29 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ============================== -->
-    <!-- Form View                      -->
-    <!-- ============================== -->
+    <!-- Form View -->
     <record id="view_gym_workout_plan_form" model="ir.ui.view">
         <field name="name">gym.workout.plan.form</field>
         <field name="model">gym.workout.plan</field>
         <field name="arch" type="xml">
             <form string="Workout Plan">
                 <sheet>
-                    <!-- Stat button must live in button_box, not directly in header -->
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_open_assign_wizard"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-users">
-                            <div class="o_stat_info">
-                                <!-- <span class="o_stat_value"><field name="member_count"/></span> -->
-                                <span class="o_stat_text">Assign Members</span>
-                            </div>
-                        </button>
-                    </div>
 
                     <div class="oe_title">
+                        <div class="mb-3">
+                            <button name="action_open_assign_wizard" type="object" string="Assign Members" class="btn btn-primary" icon="fa-users"/>
+                        </div>
                         <h1>
                             <field name="name" placeholder="Plan Name..."/>
                         </h1>
@@ -36,13 +25,38 @@
 
                     <notebook>
                         <page string="Exercise List">
-                            <field name="exercise_line_ids">
+                            <field name="exercise_line_ids" widget="one2many_list">
                                 <list editable="bottom">
-                                    <field name="exercise_id"/>
+                                    <field name="day"/>
+                                    <field name="exercise_id" required="1"/>
+                                    <field name="exercise_step_ids" string="Steps" widget="many2many_tags" readonly="1"/>
+                                    <field name="exercise_image" widget="image" options="{'size': [50, 50]}" readonly="1"/>
+                                    <field name="exercise_video_url" widget="url" readonly="1"/>
                                     <field name="sets"/>
                                     <field name="reps"/>
                                     <field name="rest"/>
                                 </list>
+
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="day"/>
+                                            <field name="exercise_id" required="1"/>
+                                            <field name="sets"/>
+                                            <field name="reps"/>
+                                            <field name="rest"/>
+                                        </group>
+
+                                        <group>
+                                            <field name="exercise_image" widget="image" readonly="1"/>
+                                            <field name="exercise_video_url" widget="url" readonly="1"/>
+                                        </group>
+                                    </group>
+
+                                    <group string="Steps for this Exercise">
+                                        <field name="exercise_step_ids" widget="many2many_tags" readonly="1" nolabel="1"/>
+                                    </group>
+                                </form>
                             </field>
                         </page>
                     </notebook>
@@ -51,9 +65,7 @@
         </field>
     </record>
 
-    <!-- ============================== -->
-    <!-- List View                      -->
-    <!-- ============================== -->
+    <!-- List View -->
     <record id="view_gym_workout_plan_list" model="ir.ui.view">
         <field name="name">gym.workout.plan.list</field>
         <field name="model">gym.workout.plan</field>
@@ -62,16 +74,11 @@
                 <field name="code" string="Code"/>
                 <field name="name" string="Plan Name"/>
                 <field name="days"/>
-                <!-- <field name="member_ids" widget="many2many_tags" string="Members"/>
-                <field name="start_date"/>
-                <field name="end_date"/> -->
             </list>
         </field>
     </record>
 
-    <!-- ============================== -->
-    <!-- Action                        -->
-    <!-- ============================== -->
+    <!-- Action -->
     <record id="action_gym_workout_plan" model="ir.actions.act_window">
         <field name="name">Workout Plans</field>
         <field name="res_model">gym.workout.plan</field>

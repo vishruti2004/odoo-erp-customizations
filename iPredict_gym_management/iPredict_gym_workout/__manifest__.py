@@ -34,6 +34,7 @@ This module manages gym workout plans including:
         "data/gym_exercise_data.xml",
         "data/gym_sequence.xml",
 
+
         # Views
         "views/gym_exercise_views.xml",
         "views/gym_workout_plan_views.xml",

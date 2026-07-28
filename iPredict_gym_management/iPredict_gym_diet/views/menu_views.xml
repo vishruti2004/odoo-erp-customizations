@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Parent Menu -->
+    <menuitem id="menu_gym_diet_root"
+              name="Diet"
+              parent="iPredict_gym_base.menu_gym_root"
+              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="40"/>
+
+    <!-- Diet Plans  -->
+    <menuitem id="menu_gym_diet_plan"
+              name="Diet Plans"
+              parent="menu_gym_diet_root"
+              action="action_gym_diet_plan"
+              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="10"/>
+
+    <!-- Food Master -->
+    <menuitem id="menu_gym_food"
+              name="Food"
+              parent="menu_gym_diet_root"
+              action="action_gym_food"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="20"/>
+</odoo>

@@ -9,15 +9,16 @@
 
             <xpath expr="//page[@name='gym_membership_tab']/notebook" position="inside">
                 <page string="Workout History" name="workout_history_page">
-    <field name="workout_assignment_ids" readonly="1">
-        <list create="0" delete="0">
-            <field name="plan_id"/>
-            <field name="start_date"/>
-            <field name="end_date"/>
-            <field name="days"/>
-        </list>
-    </field>
-</page>
+                    <field name="workout_assignment_ids" readonly="1">
+                        <list create="0" delete="0">
+                            <field name="plan_id"/>
+                            <field name="trainer_id"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="days"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
 
         </field>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_gym_diet_plan_list" model="ir.ui.view">
+        <field name="name">gym.diet.plan.list</field>
+        <field name="model">gym.diet.plan</field>
+        <field name="arch" type="xml">
+            <list string="Diet Plans">
+                <field name="code" string="Code"/>
+                <field name="name"/>
+                <field name="goal" widget="badge"/>
+                <field name="total_calories" string="Calories"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_gym_diet_plan_form" model="ir.ui.view">
+        <field name="name">gym.diet.plan.form</field>
+        <field name="model">gym.diet.plan</field>
+        <field name="arch" type="xml">
+            <form string="Diet Plan">
+                <sheet>
+
+                    <div class="oe_title">
+                        <div class="mb-3">
+                            <button name="action_open_assign_wizard" type="object" string="Assign Members" class="btn btn-primary" icon="fa-users"/>
+                        </div>
+                        <h1>
+                            <field name="name" placeholder="Plan Name..."/>
+                        </h1>
+                        <field name="code" readonly="1" class="text-muted"/>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="goal"/>
+                            <field name="days"/>
+                        </group>
+                        <group>
+                            <field name="total_calories" readonly="1"/>
+                            <field name="total_protein" readonly="1"/>
+                            <field name="total_carbs" readonly="1"/>
+                            <field name="total_fat" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="notes" nolabel="1" placeholder="Notes..."/>
+                    </group>
+
+                    <notebook>
+                        <page string="Meals">
+                            <field name="meal_line_ids" widget="one2many_list">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="meal_time"/>
+                                    <field name="food_id" domain="[('meal_category', '=', meal_time)]"/>
+                                    <field name="quantity"/>
+                                    <field name="note"/>
+                                    <field name="calories"/>
+                                    <field name="protein"/>
+                                    <field name="carbs"/>
+                                    <field name="fat"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="meal_time"/>
+                                            <field name="food_id" domain="[('meal_category', '=', meal_time)]"/>
+                                            <field name="quantity"/>
+                                            <field name="note"/>
+                                        </group>
+                                        <group>
+                                            <field name="calories" readonly="1"/>
+                                            <field name="protein" readonly="1"/>
+                                            <field name="carbs" readonly="1"/>
+                                            <field name="fat" readonly="1"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_gym_diet_plan" model="ir.actions.act_window">
+        <field name="name">Diet Plans</field>
+        <field name="res_model">gym.diet.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
