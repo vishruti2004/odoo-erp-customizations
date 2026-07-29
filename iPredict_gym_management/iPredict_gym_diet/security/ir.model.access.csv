@@ -1,7 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_gym_food_admin,gym.food.admin,model_gym_food,iPredict_gym_base.group_gym_admin,1,1,1,1
-access_gym_food_manager,gym.food.manager,model_gym_food,iPredict_gym_base.group_gym_manager,1,1,1,1
-access_gym_food_trainer,gym.food.trainer,model_gym_food,iPredict_gym_base.group_gym_trainer,1,0,0,0
 access_gym_diet_plan_admin,gym.diet.plan.admin,model_gym_diet_plan,iPredict_gym_base.group_gym_admin,1,1,1,1
 access_gym_diet_plan_manager,gym.diet.plan.manager,model_gym_diet_plan,iPredict_gym_base.group_gym_manager,1,1,1,1
 access_gym_diet_plan_trainer,gym.diet.plan.trainer,model_gym_diet_plan,iPredict_gym_base.group_gym_trainer,1,1,1,1

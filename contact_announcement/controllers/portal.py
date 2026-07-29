@@ -21,7 +21,6 @@ class PortalAnnouncement(http.Controller):
 
     @http.route('/portal/notifications', type='jsonrpc', auth='user')
     def portal_notifications(self):
-        """JS દ્વારા નોટિફિકેશન ડેટા ફેચ કરવા માટે"""
         partner = request.env.user.partner_id
 
         announcements = request.env['contact.announcement'].search([

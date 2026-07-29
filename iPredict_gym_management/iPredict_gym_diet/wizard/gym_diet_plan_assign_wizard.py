@@ -2,7 +2,6 @@ from datetime import timedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
-
 class GymDietPlanAssignWizard(models.TransientModel):
     _name = "gym.diet.plan.assign.wizard"
     _description = "Assign Diet Plan Wizard"
@@ -45,17 +44,12 @@ class GymDietPlanAssignWizard(models.TransientModel):
         if not self.start_date:
             raise ValidationError(_("Please select a start date."))
 
-        # Past date validation
         if self.start_date < fields.Date.today():
-            raise ValidationError(
-                _("Past dates are not allowed.")
-            )
+            raise ValidationError(_("Past dates are not allowed."))
 
         assignment_obj = self.env["gym.diet.assignment"]
 
         for member in self.member_ids:
-
-            # Same member + same plan + overlapping dates
             existing_assignment = assignment_obj.search([
                 ("member_id", "=", member.id),
                 ("plan_id", "=", self.plan_id.id),
@@ -65,7 +59,7 @@ class GymDietPlanAssignWizard(models.TransientModel):
 
             if existing_assignment:
                 raise ValidationError(_(
-                    "Workout plan '%(plan)s' is already assigned to %(member)s during the selected period."
+                    "Diet plan '%(plan)s' is already assigned to %(member)s during the selected period."
                 ) % {
                     "plan": self.plan_id.name,
                     "member": member.name,
@@ -78,6 +72,21 @@ class GymDietPlanAssignWizard(models.TransientModel):
                 "start_date": self.start_date,
                 "end_date": self.end_date,
             })
+
+        self.plan_id.message_post(
+            subject=_("Diet Plan Assigned"),
+            body=_(
+                "Assigned To : %(members)s\n"
+                "Start Date  : %(start)s\n"
+                "End Date    : %(end)s\n"
+                "Assigned By : %(user)s"
+            ) % {
+                "members": ", ".join(self.member_ids.mapped("name")),
+                "start": self.start_date.strftime("%d/%m/%Y"),
+                "end": self.end_date.strftime("%d/%m/%Y"),
+                "user": self.env.user.name,
+            }
+        )
 
         return {"type": "ir.actions.act_window_close"}
 

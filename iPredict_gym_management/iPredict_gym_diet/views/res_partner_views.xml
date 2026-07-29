@@ -15,6 +15,10 @@
                             <field name="trainer_id"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
+                            <field name="state" widget="badge"
+                                    decoration-success="state == 'active'"
+                                    decoration-warning="state == 'expiring'"
+                                    decoration-danger="state == 'expired'"/>
                         </list>
                     </field>
                 </page>

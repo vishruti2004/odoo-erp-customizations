@@ -1,26 +1,23 @@
-from odoo import fields, models, api
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class GymDietPlan(models.Model):
     _name = "gym.diet.plan"
     _description = "Diet Plan"
     _order = "id desc"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
 
-    name = fields.Char(string="Plan Name", required=True)
-    code = fields.Char(string="Plan Code", readonly=True, copy=False, default="New")
-
-    goal = fields.Selection([("weight_loss", "Weight Loss"), ("weight_gain", "Weight Gain"), ("muscle_gain", "Muscle Gain"), ("fat_loss", "Fat Loss"), ("maintenance", "Maintenance")], string="Goal", required=True)
-
-    days = fields.Integer(string="Workout Days", default=0)
-
+    name = fields.Char(string="Plan Name", required=True, tracking=True)
+    code = fields.Char(string="Plan Code", readonly=True, copy=False, default="New", tracking=True)
+    goal = fields.Selection([("weight_loss", "Weight Loss"), ("weight_gain", "Weight Gain"), ("muscle_gain", "Muscle Gain"), ("fat_loss", "Fat Loss"), ("maintenance", "Maintenance")], string="Goal", required=True, tracking=True)
+    days = fields.Integer(string="Diet Days", default=7, tracking=True)
     total_calories = fields.Float(string="Total Calories", compute="_compute_totals", store=True)
     total_protein = fields.Float(string="Total Protein (g)", compute="_compute_totals", store=True)
     total_carbs = fields.Float(string="Total Carbs (g)", compute="_compute_totals", store=True)
     total_fat = fields.Float(string="Total Fat (g)", compute="_compute_totals", store=True)
-
     meal_line_ids = fields.One2many("gym.diet.meal.line", "diet_id", string="Meals")
-
-    notes = fields.Text(string="Notes")
+    notes = fields.Text(string="Notes", tracking=True)
 
     @api.depends(
         "meal_line_ids.calories",
@@ -40,7 +37,16 @@ class GymDietPlan(models.Model):
         for vals in vals_list:
             if not vals.get("code") or vals["code"] == "New":
                 vals["code"] = self.env["ir.sequence"].next_by_code("gym.diet.plan") or "DP0001"
-        return super().create(vals_list)
+
+        plans = super().create(vals_list)
+
+        for plan in plans:
+            plan.message_post(
+                subject=_("Diet Plan Created"),
+                body=_("Plan: %s\nCreated By: %s") % (plan.name, self.env.user.name),
+            )
+
+        return plans
 
     def action_open_assign_wizard(self):
         self.ensure_one()
@@ -63,14 +69,42 @@ class GymDietMealLine(models.Model):
 
     diet_id = fields.Many2one("gym.diet.plan", string="Diet Plan", required=True, ondelete="cascade")
     sequence = fields.Integer(string="Sequence", default=10)
-
-    meal_time = fields.Selection([("breakfast", "Breakfast"), ("mid_morning", "Mid-Morning"), ("lunch", "Lunch"), ("evening", "Evening"), ("dinner", "Dinner")], string="Meal Time", required=True)
-
-    food_id = fields.Many2one("gym.food", string="Food Item", required=True, help="Dropdown auto-filters based on the selected Meal Time.")
-    quantity = fields.Char(string="Quantity", required=True, help="e.g. 100g, 1 bowl, 2 pieces")
-    note = fields.Char(string="Instructions", help="e.g. 'Without Sugar', 'Less Oil'")
-
+    start_time = fields.Float(string="Start Time")
+    end_time = fields.Float(string="End Time")
+    meal_time = fields.Selection([("breakfast", "Breakfast"), ("mid_morning", "Mid-Morning"), ("lunch", "Lunch"), ("evening", "Evening"), ("dinner", "Dinner")], string="Meal", required=True)
+    food_id = fields.Many2one("product.template", string="Food Item", required=True)
+    quantity = fields.Float(string="Quantity", default=1, required=True)
+    uom_id = fields.Many2one("uom.uom", string="UoM")
+    note = fields.Char(string="Instructions")
     calories = fields.Float(related="food_id.calories", string="Calories", store=True, readonly=True)
     protein = fields.Float(related="food_id.protein", string="Protein (g)", store=True, readonly=True)
     carbs = fields.Float(related="food_id.carbs", string="Carbs (g)", store=True, readonly=True)
     fat = fields.Float(related="food_id.fat", string="Fat (g)", store=True, readonly=True)
+    meal_category_id = fields.Many2one("product.category", compute="_compute_meal_category", store=False)
+
+    @api.depends("meal_time")
+    def _compute_meal_category(self):
+        for rec in self:
+            rec.meal_category_id = self.env["product.category"].search(
+                [("name", "=", rec.meal_time)],
+                limit=1,
+            )
+
+    @api.onchange("food_id")
+    def _onchange_food_id(self):
+        if self.food_id:
+            self.uom_id = self.food_id.uom_id
+
+    @api.constrains("start_time", "end_time", "diet_id")
+    def _check_overlap(self):
+        for rec in self:
+            if rec.start_time >= rec.end_time:
+                raise ValidationError("Start time must be before end time.")
+            overlapping = self.search([
+                ("diet_id", "=", rec.diet_id.id),
+                ("id", "!=", rec.id),
+                ("start_time", "<", rec.end_time),
+                ("end_time", ">", rec.start_time),
+            ])
+            if overlapping:
+                raise ValidationError("Time overlaps with another meal.")

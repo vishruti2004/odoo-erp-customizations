@@ -54,23 +54,31 @@
                         <page string="Meals">
                             <field name="meal_line_ids" widget="one2many_list">
                                 <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>
+                                    <field name="sequence" widget="handle"/>  
                                     <field name="meal_time"/>
-                                    <field name="food_id" domain="[('meal_category', '=', meal_time)]"/>
+                                    <field name="start_time" string="From" widget="time"/>
+                                    <field name="end_time" string="To" widget="time"/>
+                                    <field name="food_id"
+                                            domain="[('is_gym_food','=',True),
+                                                        ('categ_id','=',meal_category_id)]"/>
                                     <field name="quantity"/>
-                                    <field name="note"/>
+                                    <field name="uom_id" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="calories"/>
                                     <field name="protein"/>
                                     <field name="carbs"/>
                                     <field name="fat"/>
+                                    <field name="note"/>
+
                                 </list>
                                 <form>
                                     <group>
                                         <group>
                                             <field name="meal_time"/>
-                                            <field name="food_id" domain="[('meal_category', '=', meal_time)]"/>
+                                            <field name="food_id"
+                                                domain="[('is_gym_food','=',True),
+                                                            ('categ_id','=',meal_category_id)]"/>
                                             <field name="quantity"/>
-                                            <field name="note"/>
+                                            <field name="uom_id" options="{'no_create': True, 'no_open': True}"/>
                                         </group>
                                         <group>
                                             <field name="calories" readonly="1"/>
@@ -78,12 +86,20 @@
                                             <field name="carbs" readonly="1"/>
                                             <field name="fat" readonly="1"/>
                                         </group>
+                                        <group>
+                                            <field name="note"/>
+                                        </group>
                                     </group>
                                 </form>
                             </field>
                         </page>
                     </notebook>
                 </sheet>
+                <chatter>
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </chatter>
             </form>
         </field>
     </record>

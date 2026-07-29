@@ -2,50 +2,30 @@
 <odoo>
 
     <record id="view_gym_food_list" model="ir.ui.view">
-        <field name="name">gym.food.list</field>
-        <field name="model">gym.food</field>
+        <field name="name">product.template.gym.food.list</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>  
         <field name="arch" type="xml">
-            <list string="Food Master" editable="bottom">
-                <field name="name"/>
-                <field name="meal_category"/>
-                <field name="calories"/>
-                <field name="protein"/>
-                <field name="carbs"/>
-                <field name="fat"/>
-            </list>
+            
+          
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="calories" string="Calories" optional="show"/>
+                <field name="protein" string="Protein (g)" optional="show"/>
+                <field name="carbs" string="Carbs (g)" optional="show"/>
+                <field name="fat" string="Fat (g)" optional="show"/>
+            </xpath>
+
         </field>
     </record>
 
-    <record id="view_gym_food_form" model="ir.ui.view">
-        <field name="name">gym.food.form</field>
-        <field name="model">gym.food</field>
-        <field name="arch" type="xml">
-            <form string="Food Item">
-                <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name" placeholder="e.g. Oats"/></h1>
-                    </div>
-                    <group>
-                        <group>
-                            <field name="meal_category"/>
-                            <field name="active"/>
-                        </group>
-                        <group>
-                            <field name="calories"/>
-                            <field name="protein"/>
-                            <field name="carbs"/>
-                            <field name="fat"/>
-                        </group>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="action_gym_food" model="ir.actions.act_window">
-        <field name="name">Food Master</field>
-        <field name="res_model">gym.food</field>
+    <!-- Action – Gym Food Products -->
+    <record id="action_gym_food_product" model="ir.actions.act_window">
+        <field name="name">Food</field>
+        <field name="res_model">product.template</field>
         <field name="view_mode">list,form</field>
+        <field name="domain">[('is_gym_food', '=', True)]</field>
+        <field name="context">{'default_is_gym_food': True}</field>
+        <field name="view_id" ref="view_gym_food_list"/>
     </record>
 
 </odoo>

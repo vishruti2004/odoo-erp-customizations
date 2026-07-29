@@ -20,9 +20,12 @@
     'data': [
         'security/ir.model.access.csv',
         'data/diet_plan_sequence.xml',
+        'data/diet_assignment_cron.xml',
         'views/gym_diet_plan_views.xml',
         'views/gym_food.xml',
         'views/res_partner_views.xml',
+        'views/product_template_views.xml',
+        'views/diet_assignment_views.xml',
         'views/menu_views.xml',
 
         'wizard/gym_diet_plan_assign_wizard_views.xml',

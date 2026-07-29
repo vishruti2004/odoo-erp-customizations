@@ -8,7 +8,7 @@
               groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
               sequence="40"/>
 
-    <!-- Diet Plans  -->
+    <!-- Diet Plans -->
     <menuitem id="menu_gym_diet_plan"
               name="Diet Plans"
               parent="menu_gym_diet_root"
@@ -16,11 +16,20 @@
               groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
               sequence="10"/>
 
-    <!-- Food Master -->
+    <menuitem id="menu_gym_diet_assignment"
+              name="Diet Assignments"
+              parent="menu_gym_diet_root"
+              action="action_gym_diet_assignment"
+              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="20"/>
+
+
+    <!-- Food -->
     <menuitem id="menu_gym_food"
               name="Food"
               parent="menu_gym_diet_root"
-              action="action_gym_food"
+              action="action_gym_food_product"
               groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
               sequence="20"/>
-</odoo>
+
+</odoo>     
