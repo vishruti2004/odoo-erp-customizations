@@ -23,7 +23,16 @@
               name="Exercises"
               parent="menu_gym_workout"
               action="action_gym_exercise"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
               sequence="30"/>
+
+     <!-- workout_assignment -->
+    <menuitem id="menu_gym_workout_assignment"
+                name="Workout Assignments"
+                parent="menu_gym_workout"
+                action="action_gym_workout_assignment"
+                groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
+                sequence="30"/>
+
 
 </odoo>

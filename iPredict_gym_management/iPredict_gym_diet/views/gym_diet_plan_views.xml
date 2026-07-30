@@ -22,7 +22,11 @@
         <field name="arch" type="xml">
             <form string="Diet Plan">
                 <sheet>
-
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_assigned_members" type="object" class="oe_stat_button" icon="fa-users">
+                            <field name="assignment_count" widget="statinfo" string="Assigned Members"/>
+                        </button>
+                    </div>
                     <div class="oe_title">
                         <div class="mb-3">
                             <button name="action_open_assign_wizard" type="object" string="Assign Members" class="btn btn-primary" icon="fa-users"/>
@@ -54,13 +58,11 @@
                         <page string="Meals">
                             <field name="meal_line_ids" widget="one2many_list">
                                 <list editable="bottom">
-                                    <field name="sequence" widget="handle"/>  
+                                    <field name="sequence" widget="handle"/>
                                     <field name="meal_time"/>
                                     <field name="start_time" string="From" widget="time"/>
                                     <field name="end_time" string="To" widget="time"/>
-                                    <field name="food_id"
-                                            domain="[('is_gym_food','=',True),
-                                                        ('categ_id','=',meal_category_id)]"/>
+                                    <field name="food_id" domain="[('is_gym_food','=',True), ('categ_id','=',meal_category_id)]"/>
                                     <field name="quantity"/>
                                     <field name="uom_id" options="{'no_create': True, 'no_open': True}"/>
                                     <field name="calories"/>
@@ -68,15 +70,12 @@
                                     <field name="carbs"/>
                                     <field name="fat"/>
                                     <field name="note"/>
-
                                 </list>
                                 <form>
                                     <group>
                                         <group>
                                             <field name="meal_time"/>
-                                            <field name="food_id"
-                                                domain="[('is_gym_food','=',True),
-                                                            ('categ_id','=',meal_category_id)]"/>
+                                            <field name="food_id" domain="[('is_gym_food','=',True), ('categ_id','=',meal_category_id)]"/>
                                             <field name="quantity"/>
                                             <field name="uom_id" options="{'no_create': True, 'no_open': True}"/>
                                         </group>

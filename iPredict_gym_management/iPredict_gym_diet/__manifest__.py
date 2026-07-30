@@ -19,8 +19,9 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+
         'data/diet_plan_sequence.xml',
-        'data/diet_assignment_cron.xml',
+        'data/ir_cron_data.xml',           
         'views/gym_diet_plan_views.xml',
         'views/gym_food.xml',
         'views/res_partner_views.xml',

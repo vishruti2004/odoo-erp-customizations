@@ -1,6 +1,7 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+
 class GymWorkoutPlan(models.Model):
     _name = "gym.workout.plan"
     _description = "Workout Plan"
@@ -9,8 +10,18 @@ class GymWorkoutPlan(models.Model):
     name = fields.Char(string="Plan Name", required=True)
     code = fields.Char(string="Plan Code", readonly=True, copy=False, default="New")
     days = fields.Integer(string="Workout Days", default=0)
-
+    assignment_count = fields.Integer(string="Assigned Members", compute="_compute_assignment_count")
     exercise_line_ids = fields.One2many("gym.workout.plan.exercise.line", "plan_id", string="Exercise List")
+
+    def _compute_assignment_count(self):
+        assignment_obj = self.env["gym.workout.assignment"]
+
+        for rec in self:
+            member_ids = assignment_obj.search([
+                ("plan_id", "=", rec.id),
+            ]).mapped("member_id").ids
+
+            rec.assignment_count = len(set(member_ids))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -29,6 +40,33 @@ class GymWorkoutPlan(models.Model):
             "target": "new",
             "context": {
                 "default_plan_id": self.id,
+            },
+        }
+
+    def action_view_assigned_members(self):
+        self.ensure_one()
+
+        assignments = self.env["gym.workout.assignment"].search([
+            ("plan_id", "=", self.id),
+        ])
+
+        member_ids = list(set(assignments.mapped("member_id").ids))
+
+        expired_member_ids = list(set(
+            assignments.filtered(
+                lambda a: a.state == "expired" and not a.is_renewed
+            ).mapped("member_id").ids
+        ))
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Assigned Members",
+            "res_model": "res.partner",
+            "view_mode": "list,form",
+            "domain": [("id", "in", member_ids)],
+            "context": {
+                "search_default_expired_workout": 1,
+                "expired_workout_member_ids": expired_member_ids,
             },
         }
 

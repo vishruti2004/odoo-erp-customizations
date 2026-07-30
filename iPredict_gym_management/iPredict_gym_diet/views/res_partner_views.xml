@@ -15,13 +15,27 @@
                             <field name="trainer_id"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
-                            <field name="state" widget="badge"
-                                    decoration-success="state == 'active'"
-                                    decoration-warning="state == 'expiring'"
-                                    decoration-danger="state == 'expired'"/>
+                            <field name="is_renewed" invisible="1"/>
+                            <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'expiring'" decoration-danger="state == 'expired'"/>
+                            <button name="action_renew_diet" type="object" string="Renew" class="btn btn-primary" invisible="state != 'expired' or is_renewed"/>
                         </list>
                     </field>
                 </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_partner_search_inherit_diet" model="ir.ui.view">
+        <field name="name">res.partner.search.inherit.diet</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//search" position="inside">
+
+                <filter name="expired_diet" string="Expired Diet" domain="[('id', 'in', context.get('expired_member_ids', []))]"/>
+
             </xpath>
 
         </field>

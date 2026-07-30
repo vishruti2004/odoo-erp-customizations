@@ -33,14 +33,14 @@ This module manages gym workout plans including:
         # Data
         "data/gym_exercise_data.xml",
         "data/gym_sequence.xml",
-
+        "data/ir_cron_data.xml",
 
         # Views
         "views/gym_exercise_views.xml",
         "views/gym_workout_plan_views.xml",
         "views/res_partner_views.xml",
+        "views/gym_workout_assignment_views.xml",
         "views/menu_views.xml",
-
 
         "wizard/gym_workout_plan_assign_wizard_views.xml",
     ],

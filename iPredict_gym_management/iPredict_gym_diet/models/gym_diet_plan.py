@@ -1,6 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-
+from datetime import timedelta
 
 class GymDietPlan(models.Model):
     _name = "gym.diet.plan"
@@ -18,6 +18,46 @@ class GymDietPlan(models.Model):
     total_fat = fields.Float(string="Total Fat (g)", compute="_compute_totals", store=True)
     meal_line_ids = fields.One2many("gym.diet.meal.line", "diet_id", string="Meals")
     notes = fields.Text(string="Notes", tracking=True)
+    assignment_count = fields.Integer(string="Assignments",compute="_compute_assignment_count")
+
+
+    def get_end_date(self, start_date):
+        self.ensure_one()
+        return start_date + timedelta(days=self.days - 1)
+
+    def _compute_assignment_count(self):
+        assignment_obj = self.env["gym.diet.assignment"]
+
+        for rec in self:
+            member_ids = assignment_obj.search([
+                ("plan_id", "=", rec.id),
+            ]).mapped("member_id").ids
+
+            rec.assignment_count = len(set(member_ids))
+        
+    def action_view_assigned_members(self):
+        self.ensure_one()
+
+        assignments = self.env["gym.diet.assignment"].search([
+            ("plan_id", "=", self.id),
+        ])
+
+        member_ids = assignments.mapped("member_id").ids
+
+        expired_member_ids = assignments.filtered(
+            lambda a: a.state == "expired" and not a.is_renewed
+        ).mapped("member_id").ids
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Assigned Members",
+            "res_model": "res.partner",
+            "view_mode": "list,form",
+            "domain": [("id", "in", member_ids)],
+            "context": {
+                "search_default_expired_diet": 1,
+                "expired_member_ids": expired_member_ids,
+            },
+        }
 
     @api.depends(
         "meal_line_ids.calories",

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Equipment Root Menu -->
+    <menuitem id="menu_gym_equipment_root"
+              name="Equipment"
+              parent="iPredict_gym_base.menu_gym_root"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="50"/>
+
+    <!-- Equipment -->
+    <menuitem id="menu_gym_equipment"
+              name="Equipment"
+              parent="menu_gym_equipment_root"
+              action="maintenance.hr_equipment_action"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="1"/>
+
+    <!-- Maintenance Requests -->
+    <menuitem id="menu_gym_maintenance_requests"
+              name="Maintenance Requests"
+              parent="menu_gym_equipment_root"
+              action="maintenance.hr_equipment_request_action"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="2"/>
+
+    <!-- Repair Orders -->
+    <menuitem id="menu_gym_repair_orders"
+              name="Repair Orders"
+              parent="menu_gym_equipment_root"
+              action="repair.action_repair_order_tree"
+              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              sequence="3"/>
+
+</odoo>

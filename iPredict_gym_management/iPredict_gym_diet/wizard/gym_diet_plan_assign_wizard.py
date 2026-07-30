@@ -29,9 +29,7 @@ class GymDietPlanAssignWizard(models.TransientModel):
     @api.onchange("plan_id", "start_date")
     def _onchange_dates(self):
         if self.plan_id and self.start_date:
-            self.end_date = self.start_date + timedelta(
-                days=self.plan_id.days - 1
-            )
+            self.end_date = self.plan_id.get_end_date(self.start_date)
         else:
             self.end_date = False
 

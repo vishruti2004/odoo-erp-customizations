@@ -9,6 +9,12 @@
             <form string="Workout Plan">
                 <sheet>
 
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_assigned_members" type="object" class="oe_stat_button" icon="fa-users">
+                            <field name="assignment_count" widget="statinfo" string="Assigned Members"/>
+                        </button>
+                    </div>
+
                     <div class="oe_title">
                         <div class="mb-3">
                             <button name="action_open_assign_wizard" type="object" string="Assign Members" class="btn btn-primary" icon="fa-users"/>
