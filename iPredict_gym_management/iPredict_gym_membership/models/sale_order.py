@@ -24,11 +24,41 @@ class SaleOrder(models.Model):
 
     def action_confirm(self):
         """Confirm sale order and create membership"""
-        res = super().action_confirm()
 
         MembershipPlan = self.env["gym.membership.plan"]
         MembershipHistory = self.env["gym.membership.history"]
 
+        # Prevent duplicate active membership
+        for order in self:
+            partner = order.partner_id
+
+            for line in order.order_line:
+                plan = MembershipPlan.search(
+                    [("product_id", "=", line.product_template_id.id)],
+                    limit=1,
+                )
+
+                # Skip if product is not a membership plan
+                if not plan:
+                    continue
+
+                active_membership = MembershipHistory.search([
+                    ("member_id", "=", partner.id),
+                    ("status", "=", "active"),
+                ], limit=1)
+
+                if active_membership:
+                    raise ValidationError(_(
+                        "%s already has an active membership. "
+                        "Only one active membership is allowed."
+                    ) % partner.name)
+
+                break
+
+        # Confirm Sale Order
+        res = super().action_confirm()
+
+        # Create Membership
         for order in self:
             partner = order.partner_id
 
@@ -56,7 +86,6 @@ class SaleOrder(models.Model):
 
                 partner.write(partner_vals)
 
-                # Create membership history
                 MembershipHistory.create({
                     "member_id": partner.id,
                     "membership_plan_id": plan.id,

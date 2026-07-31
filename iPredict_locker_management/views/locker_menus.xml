@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_locker_dashboard" model="ir.actions.act_window">
+        <field name="name">Locker Dashboard</field>
+        <field name="res_model">locker.allocation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <menuitem
+        id="menu_locker_root"
+        name="Locker Management"
+        sequence="50"
+        web_icon="iPredict_locker_management,static/description/icon.png"/>
+
+  
+    <menuitem
+        id="menu_locker_dashboard"
+        name="Dashboard"
+        parent="menu_locker_root"
+        action="action_locker_dashboard"
+        sequence="1"/>
+
+
+    <menuitem
+        id="menu_locker_allocation"
+        name="Locker Allocations"
+        parent="menu_locker_root"
+        action="action_locker_allocation"
+        sequence="20"/>
+
+    <menuitem
+        id="menu_locker_configuration"
+        name="Configuration"
+        parent="menu_locker_root"
+        sequence="100"/>
+
+    <menuitem
+        id="menu_locker_profile"
+        name="Locker Profiles"
+        parent="menu_locker_configuration"
+        action="action_locker_profile"
+        sequence="10"/>
+
+    <menuitem
+        id="menu_locker"
+        name="Lockers"
+        parent="menu_locker_configuration"
+        action="action_locker"
+        sequence="20"/>
+
+</odoo>

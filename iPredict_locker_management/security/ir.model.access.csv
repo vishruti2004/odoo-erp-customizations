@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_locker_profile_user,locker.profile.user,model_locker_profile,iPredict_locker_management.group_locker_user,1,0,0,0
+access_locker_profile_manager,locker.profile.manager,model_locker_profile,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_profile_admin,locker.profile.admin,model_locker_profile,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_locker_user,locker.locker.user,model_locker_locker,iPredict_locker_management.group_locker_user,1,0,0,0
+access_locker_locker_manager,locker.locker.manager,model_locker_locker,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_locker_admin,locker.locker.admin,model_locker_locker,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_allocation_user,locker.allocation.user,model_locker_allocation,iPredict_locker_management.group_locker_user,1,1,1,0
+access_locker_allocation_manager,locker.allocation.manager,model_locker_allocation,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_allocation_admin,locker.allocation.admin,model_locker_allocation,iPredict_locker_management.group_locker_admin,1,1,1,1

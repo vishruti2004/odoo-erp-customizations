@@ -30,6 +30,7 @@ Adds only what's missing:
         "security/ir.model.access.csv",
         "views/equipment_views.xml",
         "views/repair_views.xml",
+        "views/maintenance_request.xml",
         "views/menu_views.xml",
     ],
     "demo": [],

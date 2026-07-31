@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_locker_profile_list" model="ir.ui.view">
+        <field name="name">locker.profile.list</field>
+        <field name="model">locker.profile</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="access_method"/>
+                <field name="is_rental"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_locker_profile_form" model="ir.ui.view">
+        <field name="name">locker.profile.form</field>
+        <field name="model">locker.profile</field>
+        <field name="arch" type="xml">
+
+            <form>
+                <header/>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_lockers" class="oe_stat_button" icon="fa-archive">
+                            <field name="locker_count" widget="statinfo" string="Lockers"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Profile Name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="access_method"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="is_rental"/>
+                            <field name="rental_product_id" invisible="not is_rental"/>
+                            <field name="deposit_required" invisible="not is_rental"/>
+                            <field name="deposit_product_id" invisible="not is_rental or not deposit_required"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Notes">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+
+        </field>
+    </record>
+
+    <record id="action_locker_profile" model="ir.actions.act_window">
+        <field name="name">Locker Profiles</field>
+        <field name="res_model">locker.profile</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

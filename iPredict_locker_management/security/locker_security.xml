@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== GROUPS ===================== -->
+
+    <record id="res_groups_privilege_locker" model="res.groups.privilege">
+        <field name="name">Locker Management</field>
+        <field name="sequence">30</field>
+        <field name="category_id" ref="base.module_category_hidden"/>
+    </record>
+
+    <!-- User Group -->
+    <record id="group_locker_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="privilege_id" ref="res_groups_privilege_locker"/>
+    </record>
+
+    <!-- Manager Group -->
+    <record id="group_locker_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="res_groups_privilege_locker"/>
+        <field name="implied_ids" eval="[(4, ref('group_locker_user'))]"/>
+    </record>
+
+    <!-- Administrator Group -->
+    <record id="group_locker_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="privilege_id" ref="res_groups_privilege_locker"/>
+        <field name="implied_ids" eval="[(4, ref('group_locker_manager'))]"/>
+    </record>
+
+</odoo>
