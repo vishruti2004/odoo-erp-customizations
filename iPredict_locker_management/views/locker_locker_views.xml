@@ -8,46 +8,38 @@
             <list>
                 <field name="name"/>
                 <field name="profile_id"/>
-                <field name="company_id"/>
-                <field name="status"/>
-                <field name="allocation_count"/>
+                <field name="location_id"/>
+                <field name="status" widget="badge" decoration-success="status == 'available'" decoration-danger="status == 'allocated'"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
-
-    <!-- Form View -->
 
     <record id="view_locker_form" model="ir.ui.view">
         <field name="name">locker.locker.form</field>
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <form>
-
                 <header>
-                    <field name="status" widget="statusbar" statusbar_visible="available,allocated"/>
+                    <button name="action_open_3d_view" type="object" string="3D View" class="btn-primary" icon="fa-cube"/>
                 </header>
 
                 <sheet>
-                    <!-- Smart Button -->
-                    <div class="oe_button_box" name="button_box">
-                        <button type="object" name="action_view_allocations" class="oe_stat_button" icon="fa-history">
-                            <field name="allocation_count" widget="statinfo" string="Allocations"/>
-                        </button>
-                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Locker Number"/>
                         </h1>
                     </div>
+
                     <group>
                         <group>
                             <field name="profile_id"/>
-                            <field name="company_id"/>
-                            <field name="active"/>
+                            <field name="location_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group>
-                            <field name="status" readonly="1"/>
-                            <field name="current_allocation_id" readonly="1"/>
+                            <field name="status" widget="badge" readonly="1" decoration-success="status == 'available'" decoration-danger="status == 'allocated'"/>
                         </group>
                     </group>
 
@@ -67,17 +59,33 @@
                                 </list>
                             </field>
                         </page>
-                    </notebook>
 
+                        <page string="3D Configuration">
+                            <group>
+                                <group string="Position">
+                                    <field name="pos_x"/>
+                                    <field name="pos_y"/>
+                                    <field name="pos_z"/>
+                                </group>
+                                <group string="Dimension">
+                                    <field name="width"/>
+                                    <field name="height"/>
+                                    <field name="depth"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
 
                 <chatter/>
-
             </form>
         </field>
     </record>
 
-    <!-- Action -->
+    <record id="action_locker_3d_view" model="ir.actions.client">
+        <field name="name">3D Locker View</field>
+        <field name="tag">locker_3d_view</field>
+    </record>
 
     <record id="action_locker" model="ir.actions.act_window">
         <field name="name">Lockers</field>

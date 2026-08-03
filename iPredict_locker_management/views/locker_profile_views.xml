@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- List View -->
     <record id="view_locker_profile_list" model="ir.ui.view">
         <field name="name">locker.profile.list</field>
         <field name="model">locker.profile</field>
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="company_id"/>
                 <field name="access_method"/>
-                <field name="is_rental"/>
-                <field name="active"/>
+                <field name="allocation_type"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
 
+    <!-- Form View -->
     <record id="view_locker_profile_form" model="ir.ui.view">
         <field name="name">locker.profile.form</field>
         <field name="model">locker.profile</field>
         <field name="arch" type="xml">
-
             <form>
-                <header/>
-
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button type="object" name="action_view_lockers" class="oe_stat_button" icon="fa-archive">
@@ -40,13 +39,14 @@
                         <group>
                             <field name="company_id"/>
                             <field name="access_method"/>
-                            <field name="active"/>
+                            <field name="allocation_type"/>
+                            <field name="active" widget="boolean_toggle"/>
                         </group>
                         <group>
-                            <field name="is_rental"/>
-                            <field name="rental_product_id" invisible="not is_rental"/>
-                            <field name="deposit_required" invisible="not is_rental"/>
-                            <field name="deposit_product_id" invisible="not is_rental or not deposit_required"/>
+                            <field name="rental_product_id" required="allocation_type == 'paid'"/>
+                            <field name="deposit_required" invisible="allocation_type != 'paid'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="deposit_amount" widget="monetary" invisible="allocation_type != 'paid' or not deposit_required" required="allocation_type == 'paid' and deposit_required"/>
                         </group>
                     </group>
 
@@ -59,10 +59,10 @@
 
                 <chatter/>
             </form>
-
         </field>
     </record>
 
+    <!-- Action -->
     <record id="action_locker_profile" model="ir.actions.act_window">
         <field name="name">Locker Profiles</field>
         <field name="res_model">locker.profile</field>

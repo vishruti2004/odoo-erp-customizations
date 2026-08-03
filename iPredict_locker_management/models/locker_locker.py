@@ -17,13 +17,21 @@ class LockerLocker(models.Model):
     active = fields.Boolean(default=True, tracking=True)
     note = fields.Html(string="Notes")
     allocation_ids = fields.One2many("locker.allocation", "locker_id", string="Allocations")
-    allocation_count = fields.Integer(string="Allocation Count", compute="_compute_allocation_count")
-    current_allocation_id = fields.Many2one("locker.allocation", string="Current Allocation", compute="_compute_current_allocation")
+    location_id = fields.Many2one(
+        "stock.location",
+        string="Location",
+        domain="[('usage','=','internal')]",
+        tracking=True,
+        required=True,
+    )
 
-    @api.depends("allocation_ids")
-    def _compute_allocation_count(self):
-        for rec in self:
-            rec.allocation_count = len(rec.allocation_ids)
+    # 3D VIEW FIELDS
+    pos_x = fields.Float(string="Position X", default=0.0)
+    pos_y = fields.Float(string="Position Y", default=0.0)
+    pos_z = fields.Float(string="Position Z", default=0.0)
+    width = fields.Float(string="Width", default=1.0)
+    height = fields.Float(string="Height", default=1.0)
+    depth = fields.Float(string="Depth", default=1.0)
 
     @api.depends("allocation_ids.state")
     def _compute_current_allocation(self):
@@ -37,7 +45,6 @@ class LockerLocker(models.Model):
                 limit=1,
             )
             rec.current_allocation_id = allocation
-
 
     def action_view_allocations(self):
         self.ensure_one()
@@ -56,9 +63,46 @@ class LockerLocker(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+
+            company_id = vals.get("company_id", self.env.company.id)
+
             if vals.get("name", _("New")) == _("New"):
-                vals["name"] = self.env["ir.sequence"].next_by_code(
-                    "locker.locker"
-                ) or _("New")
+                vals["name"] = (
+                    self.env["ir.sequence"]
+                    .with_company(company_id)
+                    .next_by_code("locker.locker")
+                    or _("New")
+                )
 
         return super().create(vals_list)
+
+    def action_open_3d_view(self):
+        return {
+            "type": "ir.actions.client",
+            "tag": "locker_3d_view",
+            "name": _("3D Locker View"),
+            "context": {"default_company_id": self.company_id.id},
+        }
+
+    @api.model
+    def get_3d_data(self, company_id=None):
+        domain = [("active", "=", True)]
+        if company_id:
+            domain.append(("company_id", "=", company_id))
+
+        lockers = self.search(domain)
+        result = []
+        for locker in lockers:
+            result.append({
+                "id": locker.id,
+                "name": locker.name,
+                "status": locker.status,
+                "location": locker.location_id.complete_name or locker.location_id.name,
+                "x": locker.pos_x,
+                "y": locker.pos_y,
+                "z": locker.pos_z,
+                "w": locker.width or 1.0,
+                "h": locker.height or 1.0,
+                "d": locker.depth or 1.0,
+            })
+        return result

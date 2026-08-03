@@ -14,28 +14,34 @@ class LockerProfile(models.Model):
     company_id = fields.Many2one("res.company", string="Company", default=lambda self: self.env.company, required=True, tracking=True)
     active = fields.Boolean(default=True, tracking=True)
     note = fields.Html(string="Notes")
-    is_rental = fields.Boolean(string="Is Rental", tracking=True, help="Enable this option if lockers of this profile are rented.")
+    allocation_type = fields.Selection([("free", "Free"), ("paid", "Paid")], string="Allocation Type", default="paid", required=True, tracking=True)
     rental_product_id = fields.Many2one("product.product", string="Rental Product", domain="[('type', '=', 'service')]", tracking=True)
     deposit_required = fields.Boolean(string="Deposit Required", tracking=True)
-    deposit_product_id = fields.Many2one("product.product", string="Deposit Product", domain="[('type', '=', 'service')]", tracking=True)
+    deposit_amount = fields.Monetary(string="Deposit Amount", currency_field="currency_id", tracking=True, help="Security deposit amount for lockers under this profile.")
+    currency_id = fields.Many2one("res.currency", related="company_id.currency_id", string="Currency", store=True, readonly=True)
     access_method = fields.Selection([("physical_key", "Physical Key"), ("pin", "PIN Code"), ("qr", "QR Code"), ("rfid", "RFID Card"), ("biometric", "Biometric")], string="Access Method", default="physical_key", required=True, tracking=True)
     locker_ids = fields.One2many("locker.locker", "profile_id", string="Lockers")
     locker_count = fields.Integer(string="Locker Count", compute="_compute_locker_count")
-
 
     @api.depends("locker_ids")
     def _compute_locker_count(self):
         for rec in self:
             rec.locker_count = len(rec.locker_ids)
 
-    @api.constrains("is_rental", "rental_product_id", "deposit_required", "deposit_product_id")
+    @api.constrains("rental_product_id", "deposit_required", "deposit_amount")
     def _check_rental_configuration(self):
         for rec in self:
-            if rec.is_rental and not rec.rental_product_id:
+            if not rec.rental_product_id:
                 raise ValidationError("Please select a Rental Product.")
 
-            if rec.is_rental and rec.deposit_required and not rec.deposit_product_id:
-                raise ValidationError("Please select a Deposit Product.")
+    @api.constrains("deposit_required", "deposit_amount")
+    def _check_deposit_amount(self):
+        for rec in self:
+            if rec.deposit_required and rec.deposit_amount <= 0:
+                raise ValidationError(
+                    "Please enter a Deposit Amount greater than zero."
+                )
+    # Actions
 
     def action_view_lockers(self):
         self.ensure_one()

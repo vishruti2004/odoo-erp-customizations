@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+   <record id="view_partner_form_locker" model="ir.ui.view">
+    <field name="name">res.partner.form.locker</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+
+        <xpath expr="//notebook" position="inside">
+
+            <page string="Locker"
+                  invisible="not has_active_locker">
+
+                <field name="locker_allocation_ids" readonly="1">
+                    <list>
+                        <field name="name"/>
+                        <field name="locker_id"/>
+                        <field name="profile_id"/>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                        <field name="state"
+                               widget="badge"
+                               decoration-info="state == 'draft'"
+                               decoration-success="state == 'allocated'"
+                               decoration-warning="state == 'returned'"
+                               decoration-danger="state == 'cancelled'"/>
+                    </list>
+                </field>
+
+            </page>
+
+        </xpath>
+
+    </field>
+</record>
+
+</odoo>

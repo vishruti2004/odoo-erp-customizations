@@ -1,0 +1,10 @@
+.o_locker_3d_container{
+    width:100%;
+    height:100%;
+}
+
+.locker_canvas{
+    width:100%;
+    height:850px;
+    background:#2c2c2c;
+}

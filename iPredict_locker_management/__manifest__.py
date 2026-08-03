@@ -13,6 +13,7 @@ Features:
 - Locker Availability Tracking
 - Locker Access Method Management
 - Locker Status Tracking
+- 3D Locker Visualization
     """,
     "category": "Operations",
     "author": "iPredict IT Solutions Pvt. Ltd.",
@@ -22,7 +23,9 @@ Features:
         "base",
         "mail",
         "contacts",
-        'product',
+        "product",
+        "stock",
+        "account",
     ],
     "data": [
         # Security
@@ -30,16 +33,27 @@ Features:
         "security/ir.model.access.csv",
 
         # Sequence
-        "data/locker_sequence.xml",
+        # "data/locker_sequence.xml",
 
         # Views
         "views/locker_profile_views.xml",
         "views/locker_locker_views.xml",
         "views/locker_allocation_views.xml",
+        "views/res_partner_views.xml",
 
         # Menus
         "views/locker_menus.xml",
     ],
+    "assets": {
+    "web.assets_backend": [
+        "iPredict_locker_management/static/src/lib/three.module.js",
+        "iPredict_locker_management/static/src/lib/three.core.js",
+        "iPredict_locker_management/static/src/lib/OrbitControls.js",
+        "iPredict_locker_management/static/src/js/locker_3d_view.js",
+        "iPredict_locker_management/static/src/xml/locker_3d_view.xml",
+        "iPredict_locker_management/static/src/css/locker_3d_view.css",
+    ],
+    },
     "demo": [],
     "installable": True,
     "application": True,
