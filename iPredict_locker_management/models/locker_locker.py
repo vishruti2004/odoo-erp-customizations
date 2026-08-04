@@ -86,23 +86,54 @@ class LockerLocker(models.Model):
 
     @api.model
     def get_3d_data(self, company_id=None):
+
         domain = [("active", "=", True)]
+
         if company_id:
             domain.append(("company_id", "=", company_id))
 
-        lockers = self.search(domain)
-        result = []
+        lockers = self.search(
+            domain,
+            order="location_id, name, id"
+        )
+
+        location_data = {}
+
         for locker in lockers:
-            result.append({
+
+            location = locker.location_id
+            location_id = location.id or 0
+            location_name = (
+                location.complete_name
+                or location.name
+                or "No Location"
+            )
+
+            if location_id not in location_data:
+                location_data[location_id] = {
+                    "location_id": location_id,
+                    "location": location_name,
+                    "lockers": [],
+                }
+
+            location_data[location_id]["lockers"].append({
                 "id": locker.id,
                 "name": locker.name,
                 "status": locker.status,
-                "location": locker.location_id.complete_name or locker.location_id.name,
-                "x": locker.pos_x,
-                "y": locker.pos_y,
-                "z": locker.pos_z,
-                "w": locker.width or 1.0,
-                "h": locker.height or 1.0,
-                "d": locker.depth or 1.0,
+
+                "company_id": locker.company_id.id,
+                "location_id": locker.location_id.id,
+
+                "x": float(locker.pos_x or 0.0),
+                "y": float(locker.pos_y or 0.0),
+                "z": float(locker.pos_z or 0.0),
+
+                "w": float(locker.width or 1.0),
+                "h": float(locker.height or 2.0),
+                "d": float(locker.depth or 1.0),
             })
+
+        result = list(location_data.values())
+        result.sort(key=lambda loc: loc["location"].lower())
+
         return result

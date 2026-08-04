@@ -48,18 +48,6 @@
                             <field name="note"/>
                         </page>
 
-                        <page string="Allocation History">
-                            <field name="allocation_ids" readonly="1">
-                                <list>
-                                    <field name="name"/>
-                                    <field name="partner_id"/>
-                                    <field name="start_date"/>
-                                    <field name="end_date"/>
-                                    <field name="state"/>
-                                </list>
-                            </field>
-                        </page>
-
                         <page string="3D Configuration">
                             <group>
                                 <group string="Position">

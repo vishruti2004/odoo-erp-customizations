@@ -48,7 +48,10 @@ Features:
     "web.assets_backend": [
         "iPredict_locker_management/static/src/lib/three.module.js",
         "iPredict_locker_management/static/src/lib/three.core.js",
-        "iPredict_locker_management/static/src/lib/OrbitControls.js",
+        # "iPredict_locker_management/static/src/lib/OrbitControls.js",
+        "iPredict_locker_management/static/src/lib/CSS2DRenderer.js",
+
+
         "iPredict_locker_management/static/src/js/locker_3d_view.js",
         "iPredict_locker_management/static/src/xml/locker_3d_view.xml",
         "iPredict_locker_management/static/src/css/locker_3d_view.css",

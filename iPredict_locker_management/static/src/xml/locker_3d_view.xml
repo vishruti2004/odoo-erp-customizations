@@ -1,18 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <templates xml:space="preserve">
 
     <t t-name="iPredict_locker_management.Locker3DView">
-
         <div class="o_locker_3d_container">
 
-            <div
-                t-ref="canvas"
-                class="locker_canvas">
+            <!-- Header -->
+            <div class="o_locker_header">
+
+                <!-- Left -->
+                <div class="o_locker_header_left">
+                    <label class="o_header_label">Company</label>
+                    <select class="o_company_select" t-on-change="onCompanyChange">
+                        <t t-foreach="state.companies" t-as="company" t-key="company.id">
+                            <option t-att-value="company.id"
+                                    t-att-selected="company.id === state.selectedCompanyId">
+                                <t t-esc="company.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Right -->
+                <div class="o_locker_header_right">
+                    <div class="o_legend_title">Status</div>
+
+                    <div class="o_legend_item">
+                        <span class="o_legend_color available"></span>
+                        <span>Available</span>
+                    </div>
+
+                    <div class="o_legend_item">
+                        <span class="o_legend_color allocated"></span>
+                        <span>Allocated</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Canvas + Labels -->
+            <div class="locker_canvas_wrapper">
+                <div t-ref="canvas" class="locker_canvas"></div>
+                <div t-ref="labels" class="locker_labels_layer"></div>
             </div>
 
         </div>
-
     </t>
 
 </templates>
