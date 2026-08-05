@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_locker_location_list" model="ir.ui.view">
+        <field name="name">locker.location.list</field>
+        <field name="model">locker.location</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="total_lockers" readonly="1"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="company_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_locker_location_form" model="ir.ui.view">
+        <field name="name">locker.location.form</field>
+        <field name="model">locker.location</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="company_id"/>
+                        <field name="total_lockers" readonly="1"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Locker Types">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="profile_id"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_locker_location" model="ir.actions.act_window">
+        <field name="name">Locker Locations</field>
+        <field name="res_model">locker.location</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

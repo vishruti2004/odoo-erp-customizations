@@ -4,3 +4,4 @@ from . import locker_allocation
 from . import res_partner
 from . import res_company
 from . import stock_location
+from . import locker_location

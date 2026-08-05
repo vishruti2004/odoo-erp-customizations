@@ -4,43 +4,111 @@
     <t t-name="iPredict_locker_management.Locker3DView">
         <div class="o_locker_3d_container">
 
-            <!-- Header -->
+            <!-- Header-->
             <div class="o_locker_header">
+                <div class="o_locker_filters">
+                    
+                    <!-- Company Selection -->
+                    <div class="filter_item">
+                        <label>Company</label>
+                        <select class="o_company_select" t-on-change="onCompanyChange">
+                            <t t-foreach="state.companies" t-as="company" t-key="company.id">
+                                <option t-att-value="company.id"
+                                        t-att-selected="company.id === state.selectedCompanyId">
+                                    <t t-esc="company.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
 
-                <!-- Left -->
-                <div class="o_locker_header_left">
-                    <label class="o_header_label">Company</label>
-                    <select class="o_company_select" t-on-change="onCompanyChange">
-                        <t t-foreach="state.companies" t-as="company" t-key="company.id">
-                            <option t-att-value="company.id"
-                                    t-att-selected="company.id === state.selectedCompanyId">
-                                <t t-esc="company.name"/>
-                            </option>
-                        </t>
-                    </select>
+                    <!-- Locker Location Selection -->
+                    <div class="filter_item">
+                        <label>Locker Location</label>
+                        <select class="o_company_select" t-on-change="onLockerLocationChange">
+                            <t t-foreach="state.lockerLocations" t-as="location" t-key="location.id">
+                                <option t-att-value="location.id"
+                                        t-att-selected="location.id === state.selectedLockerLocationId">
+                                    <t t-esc="location.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+
                 </div>
 
-                <!-- Right -->
+                <!-- Legend Status -->
                 <div class="o_locker_header_right">
                     <div class="o_legend_title">Status</div>
-
                     <div class="o_legend_item">
                         <span class="o_legend_color available"></span>
                         <span>Available</span>
                     </div>
-
                     <div class="o_legend_item">
                         <span class="o_legend_color allocated"></span>
                         <span>Allocated</span>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Canvas + Labels -->
             <div class="locker_canvas_wrapper">
-                <div t-ref="canvas" class="locker_canvas"></div>
-                <div t-ref="labels" class="locker_labels_layer"></div>
+                
+                <div t-ref="canvas" class="locker_canvas"/>
+
+                <!-- Locker Details Info Popup -->
+                <t t-if="state.selectedLocker">
+                    <div class="locker_info_popup">
+                        
+                        <div class="popup_header">
+                            <span>Location: <t t-esc="state.selectedLocker.locker_location || state.selectedLocker.name"/></span>
+                            <button class="popup_close btn btn-link p-0 text-muted" t-on-click="closePopup" aria-label="Close">
+                                <i class="fa fa-times"/>
+                            </button>
+                        </div>
+
+                        <div class="popup_body">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="label">Locker</td>
+                                        <td class="value"><t t-esc="state.selectedLocker.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">Profile</td>
+                                        <td class="value"><t t-esc="state.selectedLocker.profile"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">Location</td>
+                                        <td class="value"><t t-esc="state.selectedLocker.locker_location"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">Status</td>
+                                        <td class="value">
+                                            <span t-attf-class="badge #{state.selectedLocker.status == 'available' ? 'bg-success' : 'bg-danger'}">
+                                                <t t-esc="state.selectedLocker.status"/>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <t t-if="state.selectedLocker.status == 'allocated'">
+                                        <tr>
+                                            <td class="label">Partner</td>
+                                            <td class="value"><t t-esc="state.selectedLocker.partner"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">Start Date</td>
+                                            <td class="value"><t t-esc="state.selectedLocker.start_date"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="label">End Date</td>
+                                            <td class="value"><t t-esc="state.selectedLocker.end_date"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </t>
+
             </div>
 
         </div>

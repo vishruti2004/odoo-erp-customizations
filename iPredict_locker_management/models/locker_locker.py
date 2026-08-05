@@ -24,6 +24,13 @@ class LockerLocker(models.Model):
         tracking=True,
         required=True,
     )
+    locker_location_id = fields.Many2one(
+    "locker.location",
+    string="Locker Location",
+    required=True,
+    tracking=True,
+    domain="[('company_id', '=', company_id)]",
+)
 
     # 3D VIEW FIELDS
     pos_x = fields.Float(string="Position X", default=0.0)
@@ -84,6 +91,60 @@ class LockerLocker(models.Model):
             "context": {"default_company_id": self.company_id.id},
         }
 
+    # @api.model
+    # def get_3d_data(self, company_id=None):
+
+    #     domain = [("active", "=", True)]
+
+    #     if company_id:
+    #         domain.append(("company_id", "=", company_id))
+
+    #     lockers = self.search(
+    #         domain,
+    #         order="location_id, name, id"
+    #     )
+
+    #     location_data = {}
+
+    #     for locker in lockers:
+
+    #         location = locker.location_id
+    #         location_id = location.id or 0
+    #         location_name = (
+    #             location.complete_name
+    #             or location.name
+    #             or "No Location"
+    #         )
+
+    #         if location_id not in location_data:
+    #             location_data[location_id] = {
+    #                 "location_id": location_id,
+    #                 "location": location_name,
+    #                 "lockers": [],
+    #             }
+
+    #         location_data[location_id]["lockers"].append({
+    #             "id": locker.id,
+    #             "name": locker.name,
+    #             "status": locker.status,
+
+    #             "company_id": locker.company_id.id,
+    #             "location_id": locker.location_id.id,
+
+    #             "x": float(locker.pos_x or 0.0),
+    #             "y": float(locker.pos_y or 0.0),
+    #             "z": float(locker.pos_z or 0.0),
+
+    #             "w": float(locker.width or 1.0),
+    #             "h": float(locker.height or 2.0),
+    #             "d": float(locker.depth or 1.0),
+    #         })
+
+    #     result = list(location_data.values())
+    #     result.sort(key=lambda loc: loc["location"].lower())
+
+    #     return result
+
     @api.model
     def get_3d_data(self, company_id=None):
 
@@ -94,24 +155,21 @@ class LockerLocker(models.Model):
 
         lockers = self.search(
             domain,
-            order="location_id, name, id"
+            order="locker_location_id, profile_id, name, id"
         )
 
         location_data = {}
 
         for locker in lockers:
 
-            location = locker.location_id
-            location_id = location.id or 0
-            location_name = (
-                location.complete_name
-                or location.name
-                or "No Location"
-            )
+            location = locker.locker_location_id
+            location_id = location.id
+            location_name = location.name
 
             if location_id not in location_data:
                 location_data[location_id] = {
                     "location_id": location_id,
+                    "locker_location_id": location_id,
                     "location": location_name,
                     "lockers": [],
                 }
@@ -122,12 +180,19 @@ class LockerLocker(models.Model):
                 "status": locker.status,
 
                 "company_id": locker.company_id.id,
-                "location_id": locker.location_id.id,
 
+                "locker_location_id": locker.locker_location_id.id,
+
+                # NEW
+                "profile_id": locker.profile_id.id,
+                "profile": locker.profile_id.name,
+
+                # Position
                 "x": float(locker.pos_x or 0.0),
                 "y": float(locker.pos_y or 0.0),
                 "z": float(locker.pos_z or 0.0),
 
+                # Dimension
                 "w": float(locker.width or 1.0),
                 "h": float(locker.height or 2.0),
                 "d": float(locker.depth or 1.0),
@@ -137,3 +202,40 @@ class LockerLocker(models.Model):
         result.sort(key=lambda loc: loc["location"].lower())
 
         return result
+
+    @api.model
+    def get_locker_locations(self, company_id):
+        locations = self.env["locker.location"].search(
+            [("company_id", "=", company_id)],
+            order="name",
+        )
+
+        return [
+            {
+                "id": loc.id,
+                "name": loc.name,
+            }
+            for loc in locations
+        ]
+
+    @api.model
+    def get_locker_details(self, locker_id):
+        locker = self.browse(locker_id)
+
+        allocation = self.env["locker.allocation"].search(
+            [
+                ("locker_id", "=", locker.id),
+                ("state", "=", "allocated"),
+            ],
+            limit=1,
+        )
+
+        return {
+            "name": locker.name,
+            "profile": locker.profile_id.name or "",
+            "locker_location": locker.locker_location_id.name or "",
+            "status": locker.status,
+            "partner": allocation.partner_id.name if allocation else "",
+            "start_date": str(allocation.start_date) if allocation else "",
+            "end_date": str(allocation.end_date) if allocation else "",
+        }

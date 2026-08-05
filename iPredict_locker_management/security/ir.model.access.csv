@@ -10,3 +10,7 @@ access_locker_locker_admin,locker.locker.admin,model_locker_locker,iPredict_lock
 access_locker_allocation_user,locker.allocation.user,model_locker_allocation,iPredict_locker_management.group_locker_user,1,1,1,0
 access_locker_allocation_manager,locker.allocation.manager,model_locker_allocation,iPredict_locker_management.group_locker_manager,1,1,1,0
 access_locker_allocation_admin,locker.allocation.admin,model_locker_allocation,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_location_user,locker.location.user,model_locker_location,base.group_user,1,1,1,1
+
+access_locker_location_line_user,locker.location.line.user,model_locker_location_line,base.group_user,1,1,1,1

@@ -29,7 +29,7 @@ Features:
     ],
     "data": [
         # Security
-        "security/locker_security.xml",
+        "security/security.xml",
         "security/ir.model.access.csv",
 
         # Sequence
@@ -40,6 +40,7 @@ Features:
         "views/locker_locker_views.xml",
         "views/locker_allocation_views.xml",
         "views/res_partner_views.xml",
+        "views/locker_location_views.xml",
 
         # Menus
         "views/locker_menus.xml",
@@ -48,7 +49,6 @@ Features:
     "web.assets_backend": [
         "iPredict_locker_management/static/src/lib/three.module.js",
         "iPredict_locker_management/static/src/lib/three.core.js",
-        # "iPredict_locker_management/static/src/lib/OrbitControls.js",
         "iPredict_locker_management/static/src/lib/CSS2DRenderer.js",
 
 

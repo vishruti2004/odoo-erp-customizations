@@ -31,11 +31,18 @@
         sequence="10"/>
 
     <menuitem
+    id="menu_locker_location"
+    name="Locker Locations"
+    parent="menu_locker_configuration"
+    action="action_locker_location"
+    sequence="20"/>
+
+    <menuitem
         id="menu_locker"
         name="Lockers"
         parent="menu_locker_configuration"
         action="action_locker"
-        sequence="20"/>
+        sequence="30"/>
 
     <menuitem id="menu_locker_3d_view"
               name="3D View"

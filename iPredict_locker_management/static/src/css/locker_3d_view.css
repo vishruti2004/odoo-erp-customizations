@@ -1,149 +1,252 @@
-.o_locker_3d_container{
-    width:100%;
-    height:100%;
-    background:#f5f5f5;
-    display:flex;
-    flex-direction:column;
+/* Main Layout Container */
+.o_locker_3d_container {
+    width: 100%;
+    height: 100%;
+    background: #f5f5f5;
+    display: flex;
+    flex-direction: column;
 }
 
-/*  Header*/
-
-.o_locker_header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:16px 24px;
-    background:#ffffff;
-    border-bottom:1px solid #dddddd;
-    box-shadow:0 2px 6px rgba(0,0,0,.05);
+/* Header Section */
+.o_locker_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 18px 25px;
 }
 
-.o_locker_header_left{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
+.o_locker_filters {
+    display: flex;
+    gap: 18px;
 }
 
-.o_header_label{
-    font-size:14px;
-    font-weight:600;
-    color:#555;
+.filter_item {
+    display: flex;
+    flex-direction: column;
 }
 
-.o_company_select{
-    width:280px;
-    height:38px;
-    padding:0 12px;
-    border:1px solid #d3d3d3;
-    border-radius:6px;
-    background:#fff;
-    font-size:14px;
-    cursor:pointer;
-    outline:none;
+.filter_item label {
+    margin-bottom: 6px;
+    font-weight: 600;
 }
 
-.o_company_select:focus{
-    border-color:#017e84;
-    box-shadow:0 0 0 2px rgba(1,126,132,.15);
+.filter_item select {
+    width: 230px;
 }
 
-.o_locker_header_right{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    min-width:180px;
+.o_locker_header_left {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.o_legend_title{
-    font-size:15px;
-    font-weight:600;
-    color:#444;
+.o_header_label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
 }
 
-.o_legend_item{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:14px;
-    color:#555;
+.o_company_select {
+    width: 280px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #d3d3d3;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
 }
 
-.o_legend_color{
-    width:14px;
-    height:14px;
-    border-radius:50%;
-    display:inline-block;
-    border:1px solid #bdbdbd;
+.o_company_select:focus {
+    border-color: #017e84;
+    box-shadow: 0 0 0 2px rgba(1, 126, 132, 0.15);
 }
 
-.o_legend_color.available{ background:#52c41a; }
-.o_legend_color.allocated{ background:#ff4d4f; }
-
-
-.locker_canvas_wrapper{
-    position:relative;
-    width:100%;
-    height:780px;
-    overflow:hidden;
+.o_locker_header_right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 180px;
 }
 
-.locker_canvas{
-    width:100%;
-    height:100%;
-    background:#f5f5f5;
-    position:absolute;
-    top:0;
-    left:0;
+.o_legend_title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #444;
 }
 
-.locker_labels_layer{
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-    z-index:2;
+.o_legend_item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #555;
 }
 
-/* 
-   Locker Number Label
- */
-
-.locker-label{
-    position:absolute;
-    top:0;
-    left:0;
-    background:#ffffff;
-    color:#222;
-    border:1px solid #d8d8d8;
-    border-radius:5px;
-    padding:2px 7px;
-    font-size:10px;
-    font-weight:600;
-    white-space:nowrap;
-    box-shadow:0 2px 6px rgba(0,0,0,.12);
-    user-select:none;
-    pointer-events:none;
-    will-change:transform;
+.o_legend_color {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid #bdbdbd;
 }
 
-   /* //Location Name Label (above each group) */
+.o_legend_color.available {
+    background: #52c41a;
+}
 
-.location-label{
-    position:absolute;
-    top:0;
-    left:0;
-    background:#017e84;
-    color:#ffffff;
-    border-radius:6px;
-    padding:5px 14px;
-    font-size:13px;
-    font-weight:700;
-    letter-spacing:.3px;
-    white-space:nowrap;
-    box-shadow:0 3px 8px rgba(0,0,0,.18);
-    user-select:none;
-    pointer-events:none;
-    will-change:transform;
+.o_legend_color.allocated {
+    background: #ff4d4f;
+}
+
+/* 3D Canvas Container Wrapper */
+.locker_canvas_wrapper {
+    position: relative !important;
+    width: 100%;
+    height: calc(100vh - 120px);
+    min-height: 600px;
+    overflow: hidden;
+}
+
+.locker_canvas {
+    width: 100%;
+    height: 100%;
+    background: #f5f5f5;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Canvas element override to prevent stacking context issue */
+.locker_canvas canvas,
+.locker_canvas > div {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+}
+
+.locker_labels_layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Locker Number Label (CSS2D) */
+.locker-label {
+    background: #ffffff;
+    color: #222;
+    border: 1px solid #d8d8d8;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Location Name Label (above each group) */
+.location-label {
+    background: #017e84;
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Main Popup Styling */
+.locker_info_popup {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    z-index: 999;
+}
+
+/* Header Section */
+.popup_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #2c3e50;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.popup_close {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 18px;
+    color: #888;
+    transition: color 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.popup_close:hover {
+    color: #000;
+}
+
+/* Body Content */
+.popup_body {
+    padding: 12px 16px;
+}
+
+.locker_info_popup table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+}
+
+.locker_info_popup td,
+.locker_info_popup th {
+    padding: 6px 0;
+    border: none !important;
+    font-size: 13px;
+}
+
+.locker_info_popup th,
+.locker_info_popup td.label {
+    width: 35%;
+    color: #6c757d;
+    font-weight: 600;
+    text-align: left;
+    background: transparent !important;
+}
+
+.locker_info_popup td.value {
+    width: 65%;
+    color: #212529;
+    font-weight: 500;
+    text-align: left;
+}
+
+/* Badge Styling for Status inside Popup */
+.locker_info_popup .badge {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 12px;
+    text-transform: capitalize;
 }

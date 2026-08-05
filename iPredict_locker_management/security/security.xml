@@ -29,4 +29,25 @@
         <field name="implied_ids" eval="[(4, ref('group_locker_manager'))]"/>
     </record>
 
+
+      <!-- Locker -->
+    <record id="locker_company_rule" model="ir.rule">
+        <field name="name">Locker Multi Company</field>
+        <field name="model_id" ref="model_locker_locker"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+    <!-- Locker Location -->
+    <record id="locker_location_company_rule" model="ir.rule">
+        <field name="name">Locker Location Multi Company</field>
+        <field name="model_id" ref="model_locker_location"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
 </odoo>
