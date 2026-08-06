@@ -22,7 +22,6 @@ class LockerLocker(models.Model):
         string="Location",
         domain="[('usage','=','internal')]",
         tracking=True,
-        required=True,
     )
     locker_location_id = fields.Many2one(
     "locker.location",
@@ -91,63 +90,20 @@ class LockerLocker(models.Model):
             "context": {"default_company_id": self.company_id.id},
         }
 
-    # @api.model
-    # def get_3d_data(self, company_id=None):
-
-    #     domain = [("active", "=", True)]
-
-    #     if company_id:
-    #         domain.append(("company_id", "=", company_id))
-
-    #     lockers = self.search(
-    #         domain,
-    #         order="location_id, name, id"
-    #     )
-
-    #     location_data = {}
-
-    #     for locker in lockers:
-
-    #         location = locker.location_id
-    #         location_id = location.id or 0
-    #         location_name = (
-    #             location.complete_name
-    #             or location.name
-    #             or "No Location"
-    #         )
-
-    #         if location_id not in location_data:
-    #             location_data[location_id] = {
-    #                 "location_id": location_id,
-    #                 "location": location_name,
-    #                 "lockers": [],
-    #             }
-
-    #         location_data[location_id]["lockers"].append({
-    #             "id": locker.id,
-    #             "name": locker.name,
-    #             "status": locker.status,
-
-    #             "company_id": locker.company_id.id,
-    #             "location_id": locker.location_id.id,
-
-    #             "x": float(locker.pos_x or 0.0),
-    #             "y": float(locker.pos_y or 0.0),
-    #             "z": float(locker.pos_z or 0.0),
-
-    #             "w": float(locker.width or 1.0),
-    #             "h": float(locker.height or 2.0),
-    #             "d": float(locker.depth or 1.0),
-    #         })
-
-    #     result = list(location_data.values())
-    #     result.sort(key=lambda loc: loc["location"].lower())
-
-    #     return result
+    @api.model
+    def update_locker_position(self, locker_id, pos_x, pos_y, pos_z):
+        locker = self.browse(locker_id)
+        if locker.exists():
+            locker.write({
+                'pos_x': float(pos_x),
+                'pos_y': float(pos_y),
+                'pos_z': float(pos_z),
+            })
+            return True
+        return False
 
     @api.model
     def get_3d_data(self, company_id=None):
-
         domain = [("active", "=", True)]
 
         if company_id:
@@ -161,10 +117,9 @@ class LockerLocker(models.Model):
         location_data = {}
 
         for locker in lockers:
-
             location = locker.locker_location_id
-            location_id = location.id
-            location_name = location.name
+            location_id = location.id or 0
+            location_name = location.name or "Unassigned"
 
             if location_id not in location_data:
                 location_data[location_id] = {
@@ -178,21 +133,18 @@ class LockerLocker(models.Model):
                 "id": locker.id,
                 "name": locker.name,
                 "status": locker.status,
-
                 "company_id": locker.company_id.id,
-
                 "locker_location_id": locker.locker_location_id.id,
-
-                # NEW
+                "locker_location": locker.locker_location_id.name or "",
                 "profile_id": locker.profile_id.id,
+                "profile_color": locker.profile_id.color,
                 "profile": locker.profile_id.name,
 
-                # Position
-                "x": float(locker.pos_x or 0.0),
-                "y": float(locker.pos_y or 0.0),
-                "z": float(locker.pos_z or 0.0),
+                "pos_x": float(locker.pos_x or 0.0),
+                "pos_y": float(locker.pos_y or 0.0),
+                "pos_z": float(locker.pos_z or 0.0),
 
-                # Dimension
+                # Dimensions
                 "w": float(locker.width or 1.0),
                 "h": float(locker.height or 2.0),
                 "d": float(locker.depth or 1.0),

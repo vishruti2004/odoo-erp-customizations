@@ -9,7 +9,7 @@
                 <field name="name"/>
                 <field name="profile_id"/>
                 <field name="locker_location_id"/>
-                <field name="location_id"/>
+                <!-- <field name="location_id"/> -->
                 <field name="status" widget="badge" decoration-success="status == 'available'" decoration-danger="status == 'allocated'"/>
                 <field name="company_id" optional="hide" groups="base.group_multi_company"/>
             </list>
@@ -36,7 +36,7 @@
                         <group>
                             <field name="profile_id"/>
                             <field name="locker_location_id"/>
-                            <field name="location_id"/>
+                            <!-- <field name="location_id"/> -->
                             <field name="active" widget="boolean_toggle"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>

@@ -116,14 +116,44 @@
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
 }
 
-/* Canvas element override to prevent stacking context issue */
 .locker_canvas canvas,
 .locker_canvas > div {
     position: absolute !important;
     top: 0;
     left: 0;
+}
+
+
+.o_locker_canvas_legend {
+    position: absolute !important;
+    top: 20px !important;
+    right: 25px !important;
+    background: #ffffff !important; 
+    padding: 14px 18px !important; 
+    border-radius: 8px !important;  
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; 
+    border: 1px solid #e0e0e0 !important;
+    z-index: 9999 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 170px;
+    pointer-events: auto !important;
+}
+
+.legend_divider {
+    height: 1px;
+    background: #eee;
+    margin: 2px 0;
+}
+
+.locker_canvas_wrapper:has(.no_lockers),
+.locker_canvas_wrapper:has(.o_no_data),
+.locker_canvas_wrapper:has(:contains("No lockers found")) .o_locker_canvas_legend {
+    display: none !important;
 }
 
 .locker_labels_layer {
@@ -151,7 +181,7 @@
     pointer-events: none;
 }
 
-/* Location Name Label (above each group) */
+/* Location Name Label */
 .location-label {
     background: #017e84;
     color: #ffffff;
@@ -176,7 +206,7 @@
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    z-index: 999;
+    z-index: 9999;
 }
 
 /* Header Section */
@@ -243,7 +273,6 @@
     text-align: left;
 }
 
-/* Badge Styling for Status inside Popup */
 .locker_info_popup .badge {
     padding: 3px 8px;
     font-size: 11px;

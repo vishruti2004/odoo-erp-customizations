@@ -20,21 +20,47 @@
         <field name="name">locker.location.form</field>
         <field name="model">locker.location</field>
         <field name="arch" type="xml">
-            <form>
+            <form string="Locker Location">
+                
+                <header>
+                    <button name="action_generate_lockers" 
+                            string="Generate Lockers" 
+                            type="object" 
+                            class="oe_highlight" 
+                            icon="fa-cogs"/>
+                </header>
+
                 <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. First Floor"/>
+                        </h1>
+                    </div>
+
                     <group>
-                        <field name="name"/>
-                        <field name="company_id"/>
-                        <field name="total_lockers" readonly="1"/>
-                        <field name="active" widget="boolean_toggle"/>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="total_lockers"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
                     </group>
 
                     <notebook>
-                        <page string="Locker Types">
+                        <page string="Locker Types" name="locker_types">
                             <field name="line_ids">
                                 <list editable="bottom">
                                     <field name="profile_id"/>
-                                    <field name="quantity"/>
+                                    <field name="width"/>
+                                    <field name="height"/>
+                                    <field name="depth"/>
+                                    <field name="rows"/>
+                                    <field name="cols"/>
+                                    <field name="start_row"/>
+                                    <field name="start_col"/>
+                                    <field name="levels"/>
+                                    <field name="quantity" string="Total Lockers" readonly="1"/>
                                 </list>
                             </field>
                         </page>

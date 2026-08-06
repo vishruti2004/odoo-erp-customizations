@@ -22,6 +22,7 @@ class LockerProfile(models.Model):
     access_method = fields.Selection([("physical_key", "Physical Key"), ("pin", "PIN Code"), ("qr", "QR Code"), ("rfid", "RFID Card"), ("biometric", "Biometric")], string="Access Method", default="physical_key", required=True, tracking=True)
     locker_ids = fields.One2many("locker.locker", "profile_id", string="Lockers")
     locker_count = fields.Integer(string="Locker Count", compute="_compute_locker_count")
+    color = fields.Integer(string="Color",default=0, )
 
     @api.depends("locker_ids")
     def _compute_locker_count(self):

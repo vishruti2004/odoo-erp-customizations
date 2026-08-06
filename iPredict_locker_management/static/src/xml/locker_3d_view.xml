@@ -4,62 +4,88 @@
     <t t-name="iPredict_locker_management.Locker3DView">
         <div class="o_locker_3d_container">
 
-            <!-- Header-->
+            <!-- Header -->
             <div class="o_locker_header">
                 <div class="o_locker_filters">
-                    
-                    <!-- Company Selection -->
                     <div class="filter_item">
                         <label>Company</label>
                         <select class="o_company_select" t-on-change="onCompanyChange">
-                            <t t-foreach="state.companies" t-as="company" t-key="company.id">
-                                <option t-att-value="company.id"
-                                        t-att-selected="company.id === state.selectedCompanyId">
-                                    <t t-esc="company.name"/>
-                                </option>
+                            <option value="">All Companies</option>
+                            <t t-if="state.companies and state.companies.length">
+                                <t t-foreach="state.companies" t-as="company" t-key="company.id">
+                                    <option t-att-value="company.id"
+                                            t-att-selected="company.id === state.selectedCompanyId">
+                                        <t t-esc="company.name"/>
+                                    </option>
+                                </t>
                             </t>
                         </select>
                     </div>
 
-                    <!-- Locker Location Selection -->
                     <div class="filter_item">
                         <label>Locker Location</label>
                         <select class="o_company_select" t-on-change="onLockerLocationChange">
-                            <t t-foreach="state.lockerLocations" t-as="location" t-key="location.id">
-                                <option t-att-value="location.id"
-                                        t-att-selected="location.id === state.selectedLockerLocationId">
-                                    <t t-esc="location.name"/>
-                                </option>
+                            <option value="">All Locations</option>
+                            <t t-if="state.lockerLocations and state.lockerLocations.length">
+                                <t t-foreach="state.lockerLocations" t-as="location" t-key="location.id">
+                                    <option t-att-value="location.id"
+                                            t-att-selected="location.id === state.selectedLockerLocationId">
+                                        <t t-esc="location.name"/>
+                                    </option>
+                                </t>
                             </t>
                         </select>
-                    </div>
-
-                </div>
-
-                <!-- Legend Status -->
-                <div class="o_locker_header_right">
-                    <div class="o_legend_title">Status</div>
-                    <div class="o_legend_item">
-                        <span class="o_legend_color available"></span>
-                        <span>Available</span>
-                    </div>
-                    <div class="o_legend_item">
-                        <span class="o_legend_color allocated"></span>
-                        <span>Allocated</span>
                     </div>
                 </div>
             </div>
 
+            <!-- Canvas Wrapper -->
             <div class="locker_canvas_wrapper">
                 
+                <!-- 3D Canvas -->
                 <div t-ref="canvas" class="locker_canvas"/>
+
+                <!-- Right Side Floating Legends -->
+                <div class="o_locker_canvas_legend">
+                    <!-- Status Legend -->
+                    <div class="legend_section">
+                        <div class="o_legend_title">Status</div>
+                        <div class="o_legend_items">
+                            <div class="o_legend_item">
+                                <span class="o_legend_color" style="border: 2px solid #103a10; background: transparent;"></span>
+                                <span>Available</span>
+                            </div>
+                            <div class="o_legend_item">
+                                <span class="o_legend_color" style="border: 2px solid #ff0000; background: transparent;"></span>
+                                <span>Allocated</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="legend_divider"></div>
+
+                    <!-- Locker Profiles Legend -->
+                    <div class="legend_section">
+                        <div class="o_legend_title">Locker Types</div>
+                        <div class="o_legend_items">
+                            <t t-if="state.profilesList and state.profilesList.length">
+                                <t t-foreach="state.profilesList" t-as="prof" t-key="prof.id">
+                                    <div class="o_legend_item">
+                                        <span class="o_legend_color" t-attf-style="background-color: {{prof.color}};"></span>
+                                        <span><t t-esc="prof.name"/></span>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Locker Details Info Popup -->
                 <t t-if="state.selectedLocker">
                     <div class="locker_info_popup">
-                        
                         <div class="popup_header">
-                            <span>Location: <t t-esc="state.selectedLocker.locker_location || state.selectedLocker.name"/></span>
+                            <span>Locker Detail</span>
                             <button class="popup_close btn btn-link p-0 text-muted" t-on-click="closePopup" aria-label="Close">
                                 <i class="fa fa-times"/>
                             </button>
@@ -69,7 +95,7 @@
                             <table>
                                 <tbody>
                                     <tr>
-                                        <td class="label">Locker</td>
+                                        <td class="label">Locker No</td>
                                         <td class="value"><t t-esc="state.selectedLocker.name"/></td>
                                     </tr>
                                     <tr>
@@ -91,27 +117,24 @@
                                     <t t-if="state.selectedLocker.status == 'allocated'">
                                         <tr>
                                             <td class="label">Partner</td>
-                                            <td class="value"><t t-esc="state.selectedLocker.partner"/></td>
+                                            <td class="value"><t t-esc="state.selectedLocker.partner || '-'"/></td>
                                         </tr>
                                         <tr>
                                             <td class="label">Start Date</td>
-                                            <td class="value"><t t-esc="state.selectedLocker.start_date"/></td>
+                                            <td class="value"><t t-esc="state.selectedLocker.start_date || '-'"/></td>
                                         </tr>
                                         <tr>
                                             <td class="label">End Date</td>
-                                            <td class="value"><t t-esc="state.selectedLocker.end_date"/></td>
+                                            <td class="value"><t t-esc="state.selectedLocker.end_date || '-'"/></td>
                                         </tr>
                                     </t>
                                 </tbody>
                             </table>
                         </div>
-
                     </div>
                 </t>
 
             </div>
-
         </div>
     </t>
-
 </templates>
