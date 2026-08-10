@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- List View -->
     <record id="view_locker_profile_list" model="ir.ui.view">
         <field name="name">locker.profile.list</field>
         <field name="model">locker.profile</field>
@@ -16,13 +15,13 @@
         </field>
     </record>
 
-    <!-- Form View -->
     <record id="view_locker_profile_form" model="ir.ui.view">
         <field name="name">locker.profile.form</field>
         <field name="model">locker.profile</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <!-- Stat Buttons -->
                     <div class="oe_button_box" name="button_box">
                         <button type="object" name="action_view_lockers" class="oe_stat_button" icon="fa-archive">
                             <field name="locker_count" widget="statinfo" string="Lockers"/>
@@ -35,12 +34,14 @@
                         </h1>
                     </div>
 
+                    <!-- Profile Configuration -->
                     <group>
                         <group>
                             <field name="company_id"/>
                             <field name="access_method"/>
                             <field name="allocation_type"/>
-                            <field name="color" widget="color_picker"/>
+                            <!-- <field name="color" widget="color_picker"/> -->
+                            <field name="color" widget="color"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                         <group>
@@ -51,6 +52,7 @@
                         </group>
                     </group>
 
+                    <!-- Additional Details -->
                     <notebook>
                         <page string="Notes">
                             <field name="note"/>
@@ -58,12 +60,12 @@
                     </notebook>
                 </sheet>
 
+                <!-- Chatter -->
                 <chatter/>
             </form>
         </field>
     </record>
 
-    <!-- Action -->
     <record id="action_locker_profile" model="ir.actions.act_window">
         <field name="name">Locker Profiles</field>
         <field name="res_model">locker.profile</field>

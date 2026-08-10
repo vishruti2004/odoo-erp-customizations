@@ -14,3 +14,11 @@ access_locker_allocation_admin,locker.allocation.admin,model_locker_allocation,i
 access_locker_location_user,locker.location.user,model_locker_location,base.group_user,1,1,1,1
 
 access_locker_location_line_user,locker.location.line.user,model_locker_location_line,base.group_user,1,1,1,1
+
+access_locker_access_user,access.locker.access.user,model_locker_access,iPredict_locker_management.group_locker_user,1,1,1,0
+access_locker_access_manager,access.locker.access.manager,model_locker_access,iPredict_locker_management.group_locker_manager,1,1,1,1
+access_locker_access_admin,access.locker.access.admin,model_locker_access,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_access_credential_user,locker.access.credential.user,model_locker_access_credential,iPredict_locker_management.group_locker_user,1,1,1,0
+access_locker_access_credential_manager,locker.access.credential.manager,model_locker_access_credential,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_access_credential_admin,locker.access.credential.admin,model_locker_access_credential,iPredict_locker_management.group_locker_admin,1,1,1,1

@@ -1,20 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Root App Menu -->
+        <!-- Root App Menu -->
     <menuitem
         id="menu_locker_root"
         name="Locker Management"
         web_icon="iPredict_locker_management,static/description/icon.png"
         sequence="50"/>
 
-    <!-- Transactions -->
+    <!-- 3D View -->
+    <menuitem
+        id="menu_locker_3d_view"
+        name="3D View"
+        parent="menu_locker_root"
+        action="action_locker_3d_view"
+        groups="iPredict_locker_management.group_locker_admin"
+        sequence="5"/>
+
+    <!-- Check In / Check Out -->
+    <menuitem
+        id="menu_locker_access"
+        name="Check In / Check Out"
+        parent="menu_locker_root"
+        action="action_locker_kiosk"
+        sequence="10"/>
+
+    <!-- Locker Allocations -->
     <menuitem
         id="menu_locker_allocation"
         name="Locker Allocations"
         parent="menu_locker_root"
         action="action_locker_allocation"
-        sequence="10"/>
+        sequence="20"/>
+
+    <!-- Access History -->
+    <menuitem
+        id="menu_locker_access_history"
+        name="Access History"
+        parent="menu_locker_root"
+        action="action_locker_access_history"
+        sequence="30"/>
+
+    <!-- Lockers -->
+    <menuitem
+        id="menu_locker"
+        name="Lockers"
+        parent="menu_locker_root"
+        action="action_locker"
+        sequence="40"/>
 
     <!-- Configuration -->
     <menuitem
@@ -31,23 +64,10 @@
         sequence="10"/>
 
     <menuitem
-    id="menu_locker_location"
-    name="Locker Locations"
-    parent="menu_locker_configuration"
-    action="action_locker_location"
-    sequence="20"/>
-
-    <menuitem
-        id="menu_locker"
-        name="Lockers"
+        id="menu_locker_location"
+        name="Locker Locations"
         parent="menu_locker_configuration"
-        action="action_locker"
-        sequence="30"/>
-
-    <menuitem id="menu_locker_3d_view"
-              name="3D View"
-              parent="menu_locker_root"
-              action="action_locker_3d_view"
-              sequence="5"/>
+        action="action_locker_location"
+        sequence="20"/>
 
 </odoo>

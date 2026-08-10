@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- List View -->
     <record id="view_locker_location_list" model="ir.ui.view">
         <field name="name">locker.location.list</field>
         <field name="model">locker.location</field>
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="partner_id"/>
                 <field name="total_lockers" readonly="1"/>
                 <field name="active" widget="boolean_toggle"/>
                 <field name="company_id" optional="hide"/>
@@ -15,19 +15,15 @@
         </field>
     </record>
 
-    <!-- Form View -->
     <record id="view_locker_location_form" model="ir.ui.view">
         <field name="name">locker.location.form</field>
         <field name="model">locker.location</field>
         <field name="arch" type="xml">
             <form string="Locker Location">
-                
+                <!-- Header -->
                 <header>
-                    <button name="action_generate_lockers" 
-                            string="Generate Lockers" 
-                            type="object" 
-                            class="oe_highlight" 
-                            icon="fa-cogs"/>
+                    <button name="action_generate_lockers" string="Generate Lockers" type="object" class="oe_highlight" icon="fa-cogs"/>
+                    <button name="action_open_3d_view" string="3D View" type="object" class="btn-secondary" icon="fa-cubes"/>
                 </header>
 
                 <sheet>
@@ -37,9 +33,11 @@
                         </h1>
                     </div>
 
+                    <!-- Location Details -->
                     <group>
                         <group>
                             <field name="company_id"/>
+                            <field name="partner_id" widget="many2one_avatar"/>
                             <field name="total_lockers"/>
                         </group>
                         <group>
@@ -47,6 +45,7 @@
                         </group>
                     </group>
 
+                    <!-- Locker Configuration -->
                     <notebook>
                         <page string="Locker Types" name="locker_types">
                             <field name="line_ids">
@@ -65,13 +64,11 @@
                             </field>
                         </page>
                     </notebook>
-
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- Action -->
     <record id="action_locker_location" model="ir.actions.act_window">
         <field name="name">Locker Locations</field>
         <field name="res_model">locker.location</field>

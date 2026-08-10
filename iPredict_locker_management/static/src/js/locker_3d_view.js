@@ -1,8 +1,9 @@
 /** @odoo-module **/
 
-import { Component, onMounted, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { user } from "@web/core/user";  // 🔥 Direct import
 import * as THREE from "@iPredict_locker_management/lib/three.module";
 import { CSS2DRenderer, CSS2DObject } from "@iPredict_locker_management/lib/CSS2DRenderer";
 
@@ -11,85 +12,196 @@ export class Locker3DView extends Component {
         this.canvasRef = useRef("canvas");
         this.orm = useService("orm");
 
+        const actionContext = this.props.action?.context || {};
+        const defaultLocationId = actionContext.default_location_id || false;
+        const defaultCompanyId = actionContext.default_company_id || false;
+
         this.state = useState({
             companies: [],
-            selectedCompanyId: false,
-
+            selectedCompanyId: defaultCompanyId || false,
             lockerLocations: [],
-            selectedLockerLocationId: false,
-
+            selectedLockerLocationId: defaultLocationId || false,
             selectedLocker: null,
             profilesList: [],
+            statusColors: {
+                available: "#28A745",
+                allocated: "#DC3545",
+            },
+            activeStatusFilter: 'all',
+            activeProfileFilter: 'all',
+            isEditMode: false,
+            hasLockers: false,
+            searchQuery: '',
+            isAdmin: false,
         });
 
         this.scene = null;
         this.camera = null;
         this.renderer = null;
         this.labelRenderer = null;
-        this.target = new THREE.Vector3(0, 1, 0);
+        this.animationFrameId = null;
+        this.target = new THREE.Vector3(0, 0, 0);
 
         this.lockerMeshes = [];
         this.draggedObject = null;
         this.dragPlane = new THREE.Plane();
-        this.planeNormal = new THREE.Vector3();
+        this.planeNormal = new THREE.Vector3(0, 1, 0);
         this.planeIntersection = new THREE.Vector3();
         this.dragOffset = new THREE.Vector3();
         this.isDraggingLocker = false;
+        this.isOrbiting = false;
 
         this.dragStartPos = { x: 0, y: 0 };
         this.hasMoved = false;
 
-        this.lockerSlots = [];
-        this.slotOfLocker = new Map();
-        this.lockerAtSlot = [];
+        this.groupsCache = null;
+
+        this.boundOnMouseMove = this.onMouseMove.bind(this);
+        this.boundOnMouseUp = this.onMouseUp.bind(this);
+        this.boundOnResize = this.onResize.bind(this);
+        this.boundOnWheel = this.onWheel.bind(this);
 
         onMounted(async () => {
+            // 🔥 Direct user object — no RPC, no undefined
+            this.state.isAdmin = user.isAdmin || false;
+            console.log("[Locker3DView] isAdmin (from user import):", this.state.isAdmin);
+
             await this.loadAllProfiles();
             await this.loadCompanies();
             await this.renderScene();
         });
+
+        onWillUnmount(() => {
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+            }
+            window.removeEventListener("mousemove", this.boundOnMouseMove);
+            window.removeEventListener("mouseup", this.boundOnMouseUp);
+            window.removeEventListener("resize", this.boundOnResize);
+        });
+    }
+
+    // ========================== SEARCH ==========================
+    clearSearch() {
+        this.state.searchQuery = '';
+        this.apply3DFilters();
+    }
+
+    focusOnLocker(mesh) {
+        if (!mesh) return;
+        const pos = mesh.position.clone();
+        this.target.copy(pos);
+        const dist = Math.max(15, this.lockerMeshes.length * 0.8);
+        this.camera.position.set(pos.x + dist * 0.7, pos.y + dist * 0.5, pos.z + dist);
+        this.camera.lookAt(this.target);
+    }
+
+    // ========================== EDIT MODE ==========================
+    toggleEditMode() {
+        this.state.isEditMode = !this.state.isEditMode;
+        if (this.dragControls) {
+            this.dragControls.enabled = this.state.isEditMode;
+            if (!this.state.isEditMode) {
+                this.lockerMeshes.forEach(mesh => this.setObjectOpacity(mesh, 1.0));
+                this.draggedObject = null;
+                this.isDraggingLocker = false;
+            }
+        }
+    }
+
+    setObjectOpacity(object, opacity) {
+        object.traverse((child) => {
+            if (child.isMesh && child.material) {
+                child.material.transparent = opacity < 1.0;
+                child.material.opacity = opacity;
+            }
+        });
+    }
+
+    getCanvasMousePos(e) {
+        if (!this.renderer || !this.renderer.domElement) return { x: 0, y: 0 };
+        const canvas = this.renderer.domElement;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+        };
+    }
+
+    toggleStatusFilter(status) {
+        if (this.state.activeStatusFilter === status) {
+            this.state.activeStatusFilter = 'all';
+        } else {
+            this.state.activeStatusFilter = status;
+        }
+        this.apply3DFilters();
+    }
+
+    toggleProfileFilter(profileId) {
+        if (this.state.activeProfileFilter === profileId) {
+            this.state.activeProfileFilter = 'all';
+        } else {
+            this.state.activeProfileFilter = profileId;
+        }
+        this.apply3DFilters();
+    }
+
+    apply3DFilters() {
+        const { activeStatusFilter, activeProfileFilter, searchQuery } = this.state;
+        let foundMesh = null;
+
+        this.lockerMeshes.forEach((mesh) => {
+            const locker = mesh.userData.lockerData;
+
+            const matchesStatus =
+                activeStatusFilter === 'all' ||
+                (activeStatusFilter === 'available' && locker.status !== 'allocated') ||
+                (activeStatusFilter === 'allocated' && locker.status === 'allocated');
+
+            const matchesProfile =
+                activeProfileFilter === 'all' ||
+                locker.profile_id === activeProfileFilter ||
+                locker.profile_id?.[0] === activeProfileFilter ||
+                locker.profile === activeProfileFilter;
+
+            let matchesSearch = true;
+            if (searchQuery.trim() !== '') {
+                matchesSearch = locker.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
+                if (matchesSearch) foundMesh = mesh;
+            }
+
+            mesh.visible = matchesStatus && matchesProfile && matchesSearch;
+        });
+
+        if (searchQuery.trim() !== '' && foundMesh) {
+            this.focusOnLocker(foundMesh);
+        } else if (searchQuery.trim() === '' && this.groupsCache) {
+            this.fitCamera(this.groupsCache);
+        }
     }
 
     async loadAllProfiles() {
         try {
-            const profiles = await this.orm.searchRead(
-                "locker.profile", 
-                [], 
-                ["id", "name", "color"]
-            );
+            const profiles = await this.orm.searchRead("locker.profile", [], ["id", "name", "color"]);
             this.state.profilesList = profiles.map(p => ({
                 id: p.id,
                 name: p.name,
                 color: this.getProfileColorCss(p.color)
             }));
         } catch (e) {
-            console.error("Error loading profiles:", e);
+            console.error("[Locker3DView] Error loading profiles:", e);
         }
     }
 
     getProfileColorHex(colorValue) {
         const ODOO_COLORS = {
-            0: 0x8f8f8f,
-            1: 0xF05365,
-            2: 0xFABC2A,
-            3: 0xECE133,
-            4: 0x27AE60,
-            5: 0x1ABC9C,
-            6: 0x3498DB,
-            7: 0x2980B9,
-            8: 0x9B59B6,
-            9: 0xE84393,
-            10: 0x7F8C8D,
-            11: 0x34495E,
+            0: 0x8f8f8f, 1: 0xF05365, 2: 0xFABC2A, 3: 0xECE133,
+            4: 0x27AE60, 5: 0x1ABC9C, 6: 0x3498DB, 7: 0x2980B9,
+            8: 0x9B59B6, 9: 0xE84393, 10: 0x7F8C8D, 11: 0x34495E,
         };
-
-        if (typeof colorValue === "number" && ODOO_COLORS[colorValue] !== undefined) {
-            return ODOO_COLORS[colorValue];
-        }
-        if (typeof colorValue === "string" && colorValue.startsWith("#")) {
-            return parseInt(colorValue.replace("#", "0x"), 16);
-        }
-        return 0x2e7d32;
+        if (typeof colorValue === "number" && ODOO_COLORS[colorValue] !== undefined) return ODOO_COLORS[colorValue];
+        if (typeof colorValue === "string" && colorValue.startsWith("#")) return parseInt(colorValue.replace("#", "0x"), 16);
+        return 0x8f8f8f;
     }
 
     getProfileColorCss(colorValue) {
@@ -104,57 +216,59 @@ export class Locker3DView extends Component {
     async loadCompanies() {
         try {
             this.state.companies = await this.orm.searchRead("res.company", [], ["name"]);
-
             if (this.state.companies.length) {
-                this.state.selectedCompanyId = this.state.companies[0].id;
+                if (!this.state.selectedCompanyId) {
+                    this.state.selectedCompanyId = this.state.companies[0].id;
+                }
 
-                this.state.lockerLocations = await this.orm.call(
-                    "locker.locker",
-                    "get_locker_locations",
-                    [this.state.selectedCompanyId]
-                );
+                this.state.lockerLocations = await this.orm.call("locker.locker", "get_locker_locations", [this.state.selectedCompanyId]);
 
-                if (this.state.lockerLocations.length) {
-                    this.state.selectedLockerLocationId = this.state.lockerLocations[0].id;
+                if (this.state.selectedLockerLocationId) {
+                    const exists = this.state.lockerLocations.some(loc => loc.id === this.state.selectedLockerLocationId);
+                    if (!exists) {
+                        this.state.selectedLockerLocationId = this.state.lockerLocations.length ? this.state.lockerLocations[0].id : false;
+                    }
+                } else {
+                    this.state.selectedLockerLocationId = this.state.lockerLocations.length ? this.state.lockerLocations[0].id : false;
                 }
             }
         } catch (e) {
-            console.error("ERROR loading companies:", e);
+            console.error("[Locker3DView] ERROR loading companies:", e);
         }
     }
 
     async onCompanyChange(ev) {
+        if (!this.state.isAdmin) return;
         this.state.selectedCompanyId = Number(ev.target.value);
+        this.state.activeStatusFilter = 'all';
+        this.state.activeProfileFilter = 'all';
+        this.state.searchQuery = '';
         this.closePopup();
 
-        this.state.lockerLocations = await this.orm.call(
-            "locker.locker",
-            "get_locker_locations",
-            [this.state.selectedCompanyId]
-        );
-
-        if (this.state.lockerLocations.length) {
-            this.state.selectedLockerLocationId = this.state.lockerLocations[0].id;
-        } else {
-            this.state.selectedLockerLocationId = false;
-        }
-
+        this.state.lockerLocations = await this.orm.call("locker.locker", "get_locker_locations", [this.state.selectedCompanyId]);
+        this.state.selectedLockerLocationId = this.state.lockerLocations.length ? this.state.lockerLocations[0].id : false;
         await this.renderScene();
     }
 
     async onLockerLocationChange(ev) {
+        if (!this.state.isAdmin) return;
         this.state.selectedLockerLocationId = Number(ev.target.value);
+        this.state.activeStatusFilter = 'all';
+        this.state.activeProfileFilter = 'all';
+        this.state.searchQuery = '';
         this.closePopup();
         await this.renderScene();
     }
 
+    // ========================== RENDER ==========================
     async renderScene() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+
         this.state.selectedLocker = null;
         this.lockerMeshes = [];
-
-        this.lockerSlots = [];
-        this.slotOfLocker = new Map();
-        this.lockerAtSlot = [];
 
         const container = this.canvasRef.el;
         if (!container) return;
@@ -163,11 +277,20 @@ export class Locker3DView extends Component {
 
         let locations = [];
         try {
-            locations = await this.orm.call("locker.locker", "get_3d_data", [this.state.selectedCompanyId]);
+            const data = await this.orm.call("locker.locker", "get_3d_data", [this.state.selectedCompanyId]);
+
+            if (data && typeof data === "object" && !Array.isArray(data)) {
+                locations = data.locations || [];
+                if (data.status_colors) {
+                    this.state.statusColors.available = data.status_colors.available || "#28A745";
+                    this.state.statusColors.allocated = data.status_colors.allocated || "#DC3545";
+                }
+            } else {
+                locations = data || [];
+            }
+
             if (this.state.selectedLockerLocationId) {
-                locations = locations.filter(
-                    (loc) => loc.location_id === this.state.selectedLockerLocationId
-                );
+                locations = locations.filter((loc) => loc.location_id === this.state.selectedLockerLocationId);
             }
         } catch (e) {
             container.innerHTML = `<div style="padding:50px;color:red;text-align:center;">Error: ${e.message}</div>`;
@@ -175,6 +298,7 @@ export class Locker3DView extends Component {
         }
 
         if (!locations || locations.length === 0) {
+            this.state.hasLockers = false;
             container.innerHTML = `<div style="padding:50px;color:#666;text-align:center;font-size:16px;margin-top:100px;">No lockers found.</div>`;
             return;
         }
@@ -185,7 +309,7 @@ export class Locker3DView extends Component {
         const width = container.clientWidth || 800;
         const height = container.clientHeight || 600;
 
-        this.camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 2000);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -210,17 +334,8 @@ export class Locker3DView extends Component {
         mainLight.castShadow = true;
         this.scene.add(mainLight);
 
-        const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(400, 400),
-            new THREE.MeshStandardMaterial({ color: 0xb0b0b0, roughness: 0.9 })
-        );
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = 0;
-        floor.receiveShadow = true;
-        this.scene.add(floor);
-
         const groups = this.buildGroups(locations);
-        this.buildLockerSlots(groups);
+        this.groupsCache = groups;
 
         for (const key in groups) {
             const group = groups[key];
@@ -230,35 +345,42 @@ export class Locker3DView extends Component {
             this.drawSignboard(group);
         }
 
+        this.state.hasLockers = this.lockerMeshes.length > 0;
+
         this.fitCamera(groups);
         this.setupControls();
 
         const animate = () => {
-            requestAnimationFrame(animate);
+            this.animationFrameId = requestAnimationFrame(animate);
             this.renderer.render(this.scene, this.camera);
             this.labelRenderer.render(this.scene, this.camera);
         };
         animate();
 
-        window.addEventListener("resize", () => {
-            const w = container.clientWidth, h = container.clientHeight;
-            if (w > 0 && h > 0) {
-                this.camera.aspect = w / h;
-                this.camera.updateProjectionMatrix();
-                this.renderer.setSize(w, h);
-                this.labelRenderer.setSize(w, h);
-            }
-        });
+        window.removeEventListener("resize", this.boundOnResize);
+        window.addEventListener("resize", this.boundOnResize);
+
+        this.apply3DFilters();
+    }
+
+    onResize() {
+        const container = this.canvasRef.el;
+        if (!container || !this.camera) return;
+        const w = container.clientWidth, h = container.clientHeight;
+        if (w > 0 && h > 0) {
+            this.camera.aspect = w / h;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(w, h);
+            this.labelRenderer.setSize(w, h);
+        }
     }
 
     buildGroups(locations) {
         const groups = {};
-        const LOCATION_GAP = 80.0;
-        let locationIndex = 0;
 
         for (const loc of locations) {
             const locKey = loc.locker_location_id ?? loc.location_id ?? 0;
-            const locName = loc.location || loc.location_name || "Ground Floor";
+            const locName = loc.location || loc.location_name || "Locker Area";
             const locType = loc.location_type || loc.type || "Standard";
 
             if (!groups[locKey]) {
@@ -269,23 +391,21 @@ export class Locker3DView extends Component {
                     lockers: [],
                     profiles: {},
                     topOfStack: 0,
-                    offsetX: locationIndex * LOCATION_GAP,
                 };
-                locationIndex++;
             }
 
             for (const locker of loc.lockers) {
-                if (locker.w <= 0 || locker.h <= 0 || locker.d <= 0) continue;
+                if (!locker.w || !locker.h || !locker.d) continue;
 
                 locker.location_type = locType;
-                locker.renderX = groups[locKey].offsetX + (locker.pos_x || 0);
-                locker.renderY = locker.pos_y || 0;
-                locker.renderZ = locker.pos_z || 0;
-                locker.rotationY = 0;
+
+                locker.renderX = parseFloat(locker.pos_x) || 0;
+                locker.renderY = parseFloat(locker.pos_y) || 0;
+                locker.renderZ = parseFloat(locker.pos_z) || 0;
 
                 groups[locKey].lockers.push(locker);
 
-                const top = locker.renderY + (locker.h || 3.0);
+                const top = locker.renderY + locker.h;
                 if (top > groups[locKey].topOfStack) {
                     groups[locKey].topOfStack = top;
                 }
@@ -294,42 +414,23 @@ export class Locker3DView extends Component {
         return groups;
     }
 
-    buildLockerSlots(groups) {
-        let slotIndex = 0;
-        for (const key in groups) {
-            for (const locker of groups[key].lockers) {
-                const w = locker.w || 2.2;
-                const h = locker.h || 3.2;
-                const d = locker.d || 2.2;
-
-                this.lockerSlots.push({
-                    x: locker.renderX + w / 2,
-                    y: locker.renderY + h / 2,
-                    z: locker.renderZ + d / 2,
-                    w, h, d,
-                });
-                this.slotOfLocker.set(locker.id, slotIndex);
-                this.lockerAtSlot.push(locker.id);
-                slotIndex++;
-            }
-        }
-    }
-
     drawLocker(locker) {
-        const w = locker.w || 2.2;
-        const h = locker.h || 3.2;
-        const d = locker.d || 2.2;
+        const w = parseFloat(locker.w);
+        const h = parseFloat(locker.h);
+        const d = parseFloat(locker.d);
 
-        const profileColor = this.getProfileColorHex(locker.profile_color);
         const isAllocated = locker.status === "allocated";
-        const borderColor = isAllocated ? 0xff0000 : 0x00ff00;
+        const statusHexStr = isAllocated
+            ? this.state.statusColors.allocated
+            : this.state.statusColors.available;
+        const bodyColorHex = this.getProfileColorHex(statusHexStr);
 
         const boxGeometry = new THREE.BoxGeometry(w, h, d);
         const body = new THREE.Mesh(
             boxGeometry,
             new THREE.MeshStandardMaterial({
-                color: profileColor,
-                roughness: 0.3,
+                color: bodyColorHex,
+                roughness: 0.4,
                 metalness: 0.1,
                 polygonOffset: true,
                 polygonOffsetFactor: 1,
@@ -343,37 +444,36 @@ export class Locker3DView extends Component {
             locker.renderZ + d / 2
         );
 
-        if (locker.rotationY !== undefined) {
-            body.rotation.y = locker.rotationY;
-        }
-
         const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
         const borderMaterial = new THREE.LineBasicMaterial({
-            color: borderColor,
-            linewidth: 3,
+            color: bodyColorHex,
+            linewidth: 2
         });
-        const wireframeBorder = new THREE.LineSegments(edgesGeometry, borderMaterial);
-        body.add(wireframeBorder);
+        body.add(new THREE.LineSegments(edgesGeometry, borderMaterial));
 
         body.userData.lockerData = locker;
         body.userData.lockerId = locker.id;
-
         body.castShadow = true;
         body.receiveShadow = true;
 
+        const doorColorHex = this.getProfileColorHex(locker.profile_color);
+
         const door = new THREE.Mesh(
-            new THREE.PlaneGeometry(w * 0.85, h * 0.85),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 })
+            new THREE.PlaneGeometry(w * 0.88, h * 0.88),
+            new THREE.MeshStandardMaterial({
+                color: doorColorHex,
+                roughness: 0.3
+            })
         );
-        door.position.set(0, 0, d / 2 + 0.02);
+        door.position.set(0, 0, d / 2 + 0.01);
         body.add(door);
 
         const handle = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8),
+            new THREE.CylinderGeometry(w * 0.03, w * 0.03, h * 0.1, 8),
             new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 })
         );
         handle.rotation.x = Math.PI / 2;
-        handle.position.set(w * 0.3, 0, d / 2 + 0.08);
+        handle.position.set(w * 0.35, 0, d / 2 + 0.03);
         body.add(handle);
 
         this.scene.add(body);
@@ -385,12 +485,12 @@ export class Locker3DView extends Component {
 
         let sumX = 0, sumZ = 0;
         for (const locker of group.lockers) {
-            sumX += locker.renderX + (locker.w || 2.2) / 2;
-            sumZ += locker.renderZ + (locker.d || 2.2) / 2;
+            sumX += locker.renderX + locker.w / 2;
+            sumZ += locker.renderZ + locker.d / 2;
         }
         const x = sumX / group.lockers.length;
         const z = sumZ / group.lockers.length;
-        const y = group.topOfStack + 4.0;
+        const y = group.topOfStack + (group.topOfStack * 0.15 || 1.0);
 
         const titleDiv = document.createElement("div");
         titleDiv.className = "location-label";
@@ -409,20 +509,20 @@ export class Locker3DView extends Component {
         for (const key in groups) {
             const group = groups[key];
             for (const locker of group.lockers) {
-                const w = locker.w || 2.2;
-                const d = locker.d || 2.2;
+                const w = parseFloat(locker.w);
+                const d = parseFloat(locker.d);
                 minX = Math.min(minX, locker.renderX);
                 maxX = Math.max(maxX, locker.renderX + w);
                 minZ = Math.min(minZ, locker.renderZ);
                 maxZ = Math.max(maxZ, locker.renderZ + d);
-                const h = locker.renderY + (locker.h || 3.2);
+                const h = locker.renderY + parseFloat(locker.h);
                 if (h > maxHeight) maxHeight = h;
             }
         }
 
         if (!isFinite(minX)) {
-            minX = -10; maxX = 10;
-            minZ = -10; maxZ = 10;
+            minX = 0; maxX = 10;
+            minZ = 0; maxZ = 10;
         }
 
         const centerX = (minX + maxX) / 2;
@@ -432,216 +532,263 @@ export class Locker3DView extends Component {
 
         const sizeX = maxX - minX;
         const sizeZ = maxZ - minZ;
-        const maxDim = Math.max(sizeX, sizeZ);
-
-        const cameraDist = Math.max(maxDim * 1.2, 18);
+        const cameraDist = Math.max(Math.max(sizeX, sizeZ) * 1.2, 10);
 
         this.camera.position.set(
             centerX,
             maxHeight + cameraDist * 0.6,
             centerZ + cameraDist * 1.1
         );
-
         this.camera.lookAt(this.target);
     }
 
+    // ========================== DRAG & DROP ==========================
     async onDrop(draggedLockerMesh) {
         const draggedLockerId = draggedLockerMesh.userData.lockerId;
+        const draggedData = draggedLockerMesh.userData.lockerData;
         const initialPos = draggedLockerMesh.userData.initialPos;
 
-        const startSlotIndex = this.slotOfLocker.get(draggedLockerId);
-        const startSlot = this.lockerSlots[startSlotIndex];
-
-        if (startSlot === undefined) {
-            draggedLockerMesh.position.copy(initialPos);
-            return;
-        }
+        const w = parseFloat(draggedData.w);
+        const h = parseFloat(draggedData.h);
+        const d = parseFloat(draggedData.d);
 
         const dropX = draggedLockerMesh.position.x;
+        const dropY = draggedLockerMesh.position.y; 
         const dropZ = draggedLockerMesh.position.z;
 
-        let targetSlotIndex = -1;
+        let targetMesh = null;
         let minDistance = Infinity;
-        const snapRadius = Math.max(startSlot.w, startSlot.d) * 1.5;
 
-        for (let i = 0; i < this.lockerSlots.length; i++) {
-            if (i === startSlotIndex) continue;
-            const slot = this.lockerSlots[i];
+        for (const mesh of this.lockerMeshes) {
+            if (mesh === draggedLockerMesh || !mesh.visible) continue;
 
-            if (Math.abs(slot.z - startSlot.z) > startSlot.d * 0.6) continue;
+            const otherData = mesh.userData.lockerData;
+            const ow = parseFloat(otherData.w);
+            const od = parseFloat(otherData.d);
 
-            const distance = Math.hypot(slot.x - dropX, slot.z - dropZ);
-            if (distance < snapRadius && distance < minDistance) {
+            if (Math.abs(mesh.position.y - dropY) > h * 0.5) continue;
+
+            const swapRadius = (Math.max(w, ow) + Math.max(d, od)) / 2 * 0.9;
+            const distance = Math.hypot(mesh.position.x - dropX, mesh.position.z - dropZ);
+
+            if (distance < swapRadius && distance < minDistance) {
                 minDistance = distance;
-                targetSlotIndex = i;
+                targetMesh = mesh;
             }
         }
 
         try {
-            if (targetSlotIndex !== -1) {
-                const targetLockerId = this.lockerAtSlot[targetSlotIndex];
-                const targetSlot = this.lockerSlots[targetSlotIndex];
-                const targetMesh = this.lockerMeshes.find(
-                    (m) => m.userData.lockerId === targetLockerId
-                );
+            if (targetMesh) {
+                const targetData = targetMesh.userData.lockerData;
+                const tw = parseFloat(targetData.w);
+                const th = parseFloat(targetData.h);
+                const td = parseFloat(targetData.d);
 
-                draggedLockerMesh.position.set(targetSlot.x, targetSlot.y, targetSlot.z);
-                if (targetMesh) {
-                    targetMesh.position.set(startSlot.x, startSlot.y, startSlot.z);
-                }
+                const targetPos = targetMesh.position.clone();
 
-                this.lockerAtSlot[startSlotIndex] = targetLockerId;
-                this.lockerAtSlot[targetSlotIndex] = draggedLockerId;
-                this.slotOfLocker.set(draggedLockerId, targetSlotIndex);
-                this.slotOfLocker.set(targetLockerId, startSlotIndex);
+                draggedLockerMesh.position.set(targetPos.x, initialPos.y, targetPos.z);
+                draggedLockerMesh.userData.initialPos = draggedLockerMesh.position.clone();
 
-                await this.orm.call("locker.locker", "update_locker_position", [
-                    draggedLockerId, targetSlot.x, targetSlot.y, targetSlot.z
+                targetMesh.position.copy(initialPos);
+                targetMesh.userData.initialPos = targetMesh.position.clone();
+
+                const draggedPosX = targetPos.x - w / 2;
+                const draggedPosY = initialPos.y - h / 2;
+                const draggedPosZ = targetPos.z - d / 2;
+
+                const targetPosX = initialPos.x - tw / 2;
+                const targetPosY = initialPos.y - th / 2;
+                const targetPosZ = initialPos.z - td / 2;
+
+                draggedData.pos_x = draggedPosX;
+                draggedData.pos_y = draggedPosY;
+                draggedData.pos_z = draggedPosZ;
+
+                targetData.pos_x = targetPosX;
+                targetData.pos_y = targetPosY;
+                targetData.pos_z = targetPosZ;
+
+                await Promise.all([
+                    this.orm.call("locker.locker", "update_locker_position", [
+                        draggedLockerId, draggedPosX, draggedPosY, draggedPosZ
+                    ]),
+                    this.orm.call("locker.locker", "update_locker_position", [
+                        targetMesh.userData.lockerId, targetPosX, targetPosY, targetPosZ
+                    ]),
                 ]);
-                await this.orm.call("locker.locker", "update_locker_position", [
-                    targetLockerId, startSlot.x, startSlot.y, startSlot.z
-                ]);
+
             } else {
-                draggedLockerMesh.position.copy(initialPos);
+                const posX = dropX - w / 2;
+                const posY = dropY - h / 2;
+                const posZ = dropZ - d / 2;
+
+                draggedData.pos_x = posX;
+                draggedData.pos_y = posY;
+                draggedData.pos_z = posZ;
+
+                draggedLockerMesh.userData.initialPos = draggedLockerMesh.position.clone();
+
+                await this.orm.call("locker.locker", "update_locker_position", [
+                    draggedLockerId, posX, posY, posZ
+                ]);
             }
         } catch (err) {
-            console.error("Error in onDrop:", err);
+            console.error("[Locker3DView] Error updating positions:", err);
             draggedLockerMesh.position.copy(initialPos);
         }
     }
 
+    // ========================== CONTROLS ==========================
     setupControls() {
         const canvas = this.renderer.domElement;
-        let isOrbiting = false;
-        let lastX = 0, lastY = 0;
+        this.isOrbiting = false;
+        this.lastX = 0;
+        this.lastY = 0;
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        const getMousePos = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        };
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
 
         canvas.addEventListener("mousedown", (e) => {
-            getMousePos(e);
-            lastX = e.clientX;
-            lastY = e.clientY;
+            if (e.button !== 0) return;
 
+            const pos = this.getCanvasMousePos(e);
+            this.mouse.x = pos.x;
+            this.mouse.y = pos.y;
+
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
             this.dragStartPos = { x: e.clientX, y: e.clientY };
             this.hasMoved = false;
 
-            raycaster.setFromCamera(mouse, this.camera);
-            const intersects = raycaster.intersectObjects(this.lockerMeshes, true);
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const visibleMeshes = this.lockerMeshes.filter(m => m.visible);
+            const intersects = this.raycaster.intersectObjects(visibleMeshes, true);
 
             if (intersects.length > 0) {
                 let hitObject = intersects[0].object;
 
-                while (hitObject.parent && hitObject.parent.type !== "Scene") {
-                    if (hitObject.userData && hitObject.userData.lockerId) {
-                        break;
-                    }
+                while (hitObject && (!hitObject.userData || !hitObject.userData.lockerId)) {
                     hitObject = hitObject.parent;
                 }
 
-                if (hitObject && hitObject.userData.lockerId) {
-                    this.isDraggingLocker = true;
-                    this.draggedObject = hitObject;
+                if (hitObject && hitObject.userData && hitObject.userData.lockerId) {
+                    if (!this.state.isEditMode) {
+                        this.isDraggingLocker = false;
+                        this.isOrbiting = false;
+                        this.draggedObject = hitObject;
+                        hitObject.userData.initialPos = hitObject.position.clone();
+                        return;
+                    }
 
+                    this.isDraggingLocker = true;
+                    this.isOrbiting = false;
+                    this.draggedObject = hitObject;
                     hitObject.userData.initialPos = hitObject.position.clone();
 
                     this.planeNormal.set(0, 1, 0);
                     this.dragPlane.setFromNormalAndCoplanarPoint(this.planeNormal, this.draggedObject.position);
 
-                    if (raycaster.ray.intersectPlane(this.dragPlane, this.planeIntersection)) {
+                    if (this.raycaster.ray.intersectPlane(this.dragPlane, this.planeIntersection)) {
                         this.dragOffset.copy(this.draggedObject.position).sub(this.planeIntersection);
+                    } else {
+                        this.dragOffset.set(0, 0, 0);
                     }
 
-                    if (this.draggedObject.material) {
-                        this.draggedObject.material.opacity = 0.6;
-                        this.draggedObject.material.transparent = true;
-                    }
+                    this.setObjectOpacity(hitObject, 0.6);
                 }
             } else {
-                isOrbiting = true;
+                this.isOrbiting = true;
+                this.isDraggingLocker = false;
             }
         });
 
-        window.addEventListener("mousemove", (e) => {
-            const distMoved = Math.hypot(e.clientX - this.dragStartPos.x, e.clientY - this.dragStartPos.y);
-            if (distMoved > 5) {
-                this.hasMoved = true;
+        window.removeEventListener("mousemove", this.boundOnMouseMove);
+        window.removeEventListener("mouseup", this.boundOnMouseUp);
+        window.addEventListener("mousemove", this.boundOnMouseMove);
+        window.addEventListener("mouseup", this.boundOnMouseUp);
+
+        canvas.removeEventListener("wheel", this.boundOnWheel);
+        canvas.addEventListener("wheel", this.boundOnWheel, { passive: false });
+    }
+
+    onWheel(e) {
+        e.preventDefault();
+        if (this.isDraggingLocker) return;
+
+        const radius = this.camera.position.distanceTo(this.target);
+        const newRadius = Math.max(5, Math.min(200, radius + (e.deltaY > 0 ? 2 : -2)));
+
+        const dir = this.camera.position.clone().sub(this.target).normalize();
+        this.camera.position.copy(this.target).add(dir.multiplyScalar(newRadius));
+        this.camera.lookAt(this.target);
+    }
+
+    onMouseMove(e) {
+        if (Math.hypot(e.clientX - this.dragStartPos.x, e.clientY - this.dragStartPos.y) > 5) {
+            this.hasMoved = true;
+        }
+
+        const pos = this.getCanvasMousePos(e);
+        this.mouse.x = pos.x;
+        this.mouse.y = pos.y;
+
+        if (this.isDraggingLocker && this.draggedObject) {
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            if (this.raycaster.ray.intersectPlane(this.dragPlane, this.planeIntersection)) {
+                const newPos = this.planeIntersection.clone().add(this.dragOffset);
+                this.draggedObject.position.x = newPos.x;
+                this.draggedObject.position.z = newPos.z;
             }
+            return;
+        }
 
-            if (this.isDraggingLocker && this.draggedObject) {
-                getMousePos(e);
-                raycaster.setFromCamera(mouse, this.camera);
+        if (this.isOrbiting) {
+            const dx = (e.clientX - this.lastX) * 0.005;
+            const dy = (e.clientY - this.lastY) * 0.005;
 
-                if (raycaster.ray.intersectPlane(this.dragPlane, this.planeIntersection)) {
-                    const newPos = this.planeIntersection.clone().add(this.dragOffset);
-                    this.draggedObject.position.x = newPos.x;
-                    this.draggedObject.position.z = newPos.z;
-                }
-                return;
-            }
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
 
-            if (isOrbiting) {
-                const dx = (e.clientX - lastX) * 0.005;
-                const dy = (e.clientY - lastY) * 0.005;
-
-                lastX = e.clientX;
-                lastY = e.clientY;
-
-                const radius = this.camera.position.distanceTo(this.target);
-                const theta = Math.atan2(
-                    this.camera.position.x - this.target.x,
-                    this.camera.position.z - this.target.z
-                ) + dx;
-
-                let phi = Math.acos(
-                    (this.camera.position.y - this.target.y) / radius
-                ) + dy;
-
-                phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi));
-
-                this.camera.position.x = this.target.x + radius * Math.sin(phi) * Math.sin(theta);
-                this.camera.position.y = this.target.y + radius * Math.cos(phi);
-                this.camera.position.z = this.target.z + radius * Math.sin(phi) * Math.cos(theta);
-
-                this.camera.lookAt(this.target);
-            }
-        });
-
-        window.addEventListener("mouseup", async () => {
-            if (this.isDraggingLocker && this.draggedObject) {
-                if (this.draggedObject.material) {
-                    this.draggedObject.material.opacity = 1.0;
-                    this.draggedObject.material.transparent = false;
-                }
-
-                if (this.hasMoved) {
-                    await this.onDrop(this.draggedObject);
-                } else {
-                    this.state.selectedLocker = this.draggedObject.userData.lockerData;
-                    this.draggedObject.position.copy(this.draggedObject.userData.initialPos);
-                }
-            }
-
-            this.draggedObject = null;
-            this.isDraggingLocker = false;
-            isOrbiting = false;
-        });
-
-        canvas.addEventListener("wheel", (e) => {
-            e.preventDefault();
             const radius = this.camera.position.distanceTo(this.target);
-            const newRadius = Math.max(8, Math.min(150, radius + (e.deltaY > 0 ? 2 : -2)));
+            const theta = Math.atan2(
+                this.camera.position.x - this.target.x,
+                this.camera.position.z - this.target.z
+            ) + dx;
 
-            const dir = this.camera.position.clone().sub(this.target).normalize();
-            this.camera.position.copy(this.target).add(dir.multiplyScalar(newRadius));
+            let phi = Math.acos(
+                (this.camera.position.y - this.target.y) / radius
+            ) + dy;
+
+            phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi));
+
+            this.camera.position.x = this.target.x + radius * Math.sin(phi) * Math.sin(theta);
+            this.camera.position.y = this.target.y + radius * Math.cos(phi);
+            this.camera.position.z = this.target.z + radius * Math.sin(phi) * Math.cos(theta);
+
             this.camera.lookAt(this.target);
-        }, { passive: false });
+        }
+    }
+
+    async onMouseUp() {
+        if (this.isDraggingLocker && this.draggedObject) {
+            this.setObjectOpacity(this.draggedObject, 1.0);
+
+            if (this.hasMoved) {
+                await this.onDrop(this.draggedObject);
+            } else {
+                this.state.selectedLocker = this.draggedObject.userData.lockerData;
+                this.draggedObject.position.copy(this.draggedObject.userData.initialPos);
+            }
+        } else if (this.draggedObject && !this.hasMoved && !this.state.isEditMode) {
+            this.state.selectedLocker = this.draggedObject.userData.lockerData;
+            this.draggedObject.position.copy(this.draggedObject.userData.initialPos);
+        }
+
+        this.draggedObject = null;
+        this.isDraggingLocker = false;
+        this.isOrbiting = false;
     }
 }
 

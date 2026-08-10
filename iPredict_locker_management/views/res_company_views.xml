@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_inherit_locker_colors" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.locker.colors</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="3D Locker Configuration" name="locker_config">
+                    <group>
+                        <group string="Status Colors (Body)">
+                            <field name="available_locker_color" widget="color"/>
+                            <field name="allocated_locker_color" widget="color"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

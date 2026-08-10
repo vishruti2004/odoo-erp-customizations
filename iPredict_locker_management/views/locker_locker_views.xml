@@ -21,10 +21,6 @@
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <form>
-                <header>
-                    <button name="action_open_3d_view" type="object" string="3D View" class="btn-primary" icon="fa-cube"/>
-                </header>
-
                 <sheet>
                     <div class="oe_title">
                         <h1>
@@ -45,6 +41,7 @@
                         </group>
                     </group>
 
+                    <!-- Additional Details -->
                     <notebook>
                         <page string="Notes">
                             <field name="note"/>

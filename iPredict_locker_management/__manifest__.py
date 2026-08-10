@@ -32,15 +32,15 @@ Features:
         "security/security.xml",
         "security/ir.model.access.csv",
 
-        # Sequence
-        # "data/locker_sequence.xml",
-
         # Views
         "views/locker_profile_views.xml",
         "views/locker_locker_views.xml",
         "views/locker_allocation_views.xml",
         "views/res_partner_views.xml",
         "views/locker_location_views.xml",
+        "views/res_company_views.xml",
+        "views/locker_access_views.xml",
+        "views/locker_access_credential_views.xml",
 
         # Menus
         "views/locker_menus.xml",
@@ -50,11 +50,14 @@ Features:
         "iPredict_locker_management/static/src/lib/three.module.js",
         "iPredict_locker_management/static/src/lib/three.core.js",
         "iPredict_locker_management/static/src/lib/CSS2DRenderer.js",
-
-
         "iPredict_locker_management/static/src/js/locker_3d_view.js",
         "iPredict_locker_management/static/src/xml/locker_3d_view.xml",
         "iPredict_locker_management/static/src/css/locker_3d_view.css",
+        "iPredict_locker_management/static/src/js/locker_kiosk.js",
+        "iPredict_locker_management/static/src/xml/locker_kiosk.xml",
+        "iPredict_locker_management/static/src/css/locker_kiosk.css",
+        
+
     ],
     },
     "demo": [],

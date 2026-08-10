@@ -5,3 +5,5 @@ from . import res_partner
 from . import res_company
 from . import stock_location
 from . import locker_location
+from . import locker_access
+from . import locker_access_credential
