@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Locker Authentication OTP Email -->
+        <record id="mail_template_locker_authentication_otp" model="mail.template">
+            <field name="name">Locker Authentication OTP</field>
+            <field name="model_id" ref="iPredict_locker_management.model_locker_access_credential"/>
+            <field name="subject">Locker Authentication OTP - {{ object.allocation_id.name }}</field>
+            <field name="email_from">{{ object.env.company.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email }}</field>
+
+            <field name="body_html" type="html">
+                <div style="margin:0;padding:0;background-color:#f4f6f9;">
+                    <div style="max-width:650px;margin:30px auto;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+
+                        <!-- Header -->
+                        <div style="background-color:#714B67;padding:30px;text-align:center;">
+                            <h2 style="color:#ffffff;margin:0;font-size:24px;font-family:Arial,sans-serif;font-weight:600;">
+                                Locker Authentication
+                            </h2>
+
+                            <p style="color:#f1e8ef;margin-top:8px;font-size:14px;margin-bottom:0;">
+                                Secure OTP Verification
+                            </p>
+                        </div>
+
+                        <!-- Body -->
+                        <div style="padding:30px;font-family:Arial,sans-serif;">
+
+                            <p style="font-size:16px;color:#333;margin-top:0;">
+                                Dear <strong><t t-out="object.partner_id.name"/></strong>,
+                            </p>
+
+                            <p style="font-size:14px;color:#555;line-height:1.8;">
+                                We received a request to authenticate your identity for locker access.
+                                Please use the One-Time Password (OTP) below to continue.
+                            </p>
+
+                            <!-- Locker Information -->
+                            <div style="margin:25px 0;border:1px solid #eee;border-radius:6px;overflow:hidden;">
+                                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left;">
+
+                                    <tbody>
+
+                                        <tr style="border-bottom:1px solid #eee;">
+                                            <td style="padding:12px 15px;color:#777;font-weight:500;width:40%;">
+                                                Locker Allocation
+                                            </td>
+
+                                            <td style="padding:12px 15px;color:#333;font-weight:600;">
+                                                <t t-out="object.allocation_id.name"/>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td style="padding:12px 15px;color:#777;font-weight:500;">
+                                                Authentication Method
+                                            </td>
+
+                                            <td style="padding:12px 15px;color:#333;font-weight:600;">
+                                                OTP Verification
+                                            </td>
+                                        </tr>
+
+                                    </tbody>
+
+                                </table>
+                            </div>
+
+                            <!-- OTP Box -->
+                            <div style="margin:30px 0;text-align:center;">
+
+                                <p style="font-size:14px;color:#555;margin-bottom:10px;">
+                                    Your One-Time Password is
+                                </p>
+
+                                <div style="display:inline-block;background-color:#f4f1f3;border:2px solid #714B67;border-radius:8px;padding:15px 35px;">
+
+                                    <span style="font-size:32px;letter-spacing:8px;font-weight:bold;color:#714B67;font-family:Arial,sans-serif;">
+                                        <t t-out="ctx.get('otp', '')"/>
+                                    </span>
+
+                                </div>
+
+                                <p style="font-size:13px;color:#e67e22;margin-top:12px;margin-bottom:0;">
+                                    This OTP is valid for 5 minutes.
+                                </p>
+
+                            </div>
+
+                            <!-- Security Notice -->
+                            <div style="margin:25px 0;padding:15px 18px;background-color:#fff8e6;border-left:4px solid #f0ad4e;border-radius:4px;">
+
+                                <p style="margin:0;font-size:13px;color:#665c45;line-height:1.7;">
+                                    <strong>Security Notice:</strong>
+                                    Do not share this OTP with anyone.
+                                    Our staff will never ask you to disclose your OTP.
+                                </p>
+
+                            </div>
+
+                            <p style="font-size:14px;color:#555;line-height:1.8;margin-bottom:0;">
+                                If you did not request this authentication, please contact the
+                                locker administrator immediately.
+                            </p>
+
+                        </div>
+
+                        <!-- Footer -->
+                        <div style="background:#f8f9fa;padding:20px;text-align:center;border-top:1px solid #eee;">
+
+                            <p style="margin:0;font-size:12px;color:#999;font-family:Arial,sans-serif;">
+                                This is an automated locker authentication email generated by Odoo.
+                            </p>
+
+                            <p style="margin-top:6px;font-size:13px;color:#714B67;font-weight:bold;margin-bottom:0;">
+                                <t t-out="object.env.company.name"/>
+                            </p>
+
+                        </div>
+
+                    </div>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

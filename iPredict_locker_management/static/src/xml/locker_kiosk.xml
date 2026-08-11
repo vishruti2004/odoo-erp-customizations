@@ -2,84 +2,59 @@
 <templates xml:space="preserve">
 
     <t t-name="iPredict_locker_management.LockerKiosk">
-
         <div class="locker-kiosk">
 
             <!-- =====================================================
-                 STEP 1 : SEARCH PERSON
-                 ===================================================== -->
-
+                 PERSON SEARCH
+            ====================================================== -->
             <t t-if="state.mode === 'person_search'">
-
                 <div class="locker-kiosk-header">
                     <h1>Locker Check In / Check Out</h1>
                     <p>Enter Name, Email or Phone Number</p>
                 </div>
 
                 <div class="locker-authentication-card">
-
                     <div class="locker-auth-icon">
                         <i class="fa fa-user"/>
                     </div>
 
                     <h2>Find Person</h2>
+                    <p>Search for the person using Name, Email or Phone Number</p>
 
-                    <p>
-                        Search for the person using Name, Email or Phone Number
-                    </p>
+                    <input type="text"
+                           class="locker-person-search-input"
+                           placeholder="Enter Name / Email / Phone"
+                           t-att-value="state.personSearch"
+                           t-on-input="onPersonSearchChange"
+                           t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; findPerson()"
+                           autocomplete="off"/>
 
-                    <input
-                        type="text"
-                        class="locker-person-search-input"
-                        placeholder="Enter Name / Email / Phone"
-                        t-att-value="state.personSearch"
-                        t-on-input="onPersonSearchChange"
-                        t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; findPerson()"
-                        autocomplete="off"
-                    />
-
-                    <button
-                        type="button"
-                        class="btn btn-primary locker-authenticate-button"
-                        t-on-click="findPerson"
-                        t-att-disabled="state.loading"
-                    >
-                        <t t-if="state.loading">
-                            Searching...
-                        </t>
-                        <t t-else="">
-                            Find Person
-                        </t>
+                    <button type="button"
+                            class="btn btn-primary locker-authenticate-button"
+                            t-on-click="findPerson"
+                            t-att-disabled="state.loading">
+                        <t t-if="state.loading">Searching...</t>
+                        <t t-else="">Find Person</t>
                     </button>
-
-                    <!-- Search Message -->
 
                     <t t-if="state.message">
                         <div t-att-class="'locker-message ' + state.messageType">
                             <t t-esc="state.message"/>
                         </div>
                     </t>
-
                 </div>
-
             </t>
 
-
             <!-- =====================================================
-                 STEP 2 : SELECT PERSON
-                 ===================================================== -->
-
+                 PERSON SELECTION
+            ====================================================== -->
             <t t-if="state.mode === 'person_selection'">
-
-                <div class="locker-person-selection-header">
+                <div class="locker-kiosk-header">
                     <h1>Select Person</h1>
-                    <p>
-                        Select the person who wants to access the locker
-                    </p>
+                    <p>Select the person who wants to access the locker</p>
                 </div>
 
-                <div class="locker-person-selection-card">
-
+                <div class="locker-authentication-card locker-person-selection-card">
                     <div class="locker-auth-icon">
                         <i class="fa fa-users"/>
                     </div>
@@ -87,52 +62,32 @@
                     <h2>Authorized Persons</h2>
 
                     <div class="locker-person-list">
+                        <t t-foreach="state.persons"
+                           t-as="person"
+                           t-key="person.partner_id + '-' + person.allocation_id">
 
-                        <t
-                            t-foreach="state.persons"
-                            t-as="person"
-                            t-key="person.partner_id + '-' + person.allocation_id"
-                        >
-
-                            <button
-                                type="button"
-                                class="locker-person-option"
-                                t-on-click="() => selectPerson(person)"
-                            >
+                            <button type="button"
+                                    class="locker-person-option"
+                                    t-on-click="() => selectPerson(person)">
 
                                 <div class="locker-person-option-icon">
                                     <i class="fa fa-user"/>
                                 </div>
 
                                 <div class="locker-person-option-info">
-
                                     <strong>
                                         <t t-esc="person.partner_name"/>
                                     </strong>
-
-                                    <span>
-                                        Locker:
-                                        <t t-esc="person.locker_name"/>
-                                    </span>
-
-                                    <span>
-                                        Access Method:
-                                        <t t-esc="person.access_method"/>
-                                    </span>
-
+                                    <span>Locker: <t t-esc="person.locker_name"/></span>
+                                    <span>Access: <t t-esc="person.access_method"/></span>
                                 </div>
 
                                 <div class="locker-person-option-arrow">
                                     <i class="fa fa-chevron-right"/>
                                 </div>
-
                             </button>
-
                         </t>
-
                     </div>
-
-                    <!-- Selection Message -->
 
                     <t t-if="state.message">
                         <div t-att-class="'locker-message ' + state.messageType">
@@ -140,127 +95,218 @@
                         </div>
                     </t>
 
-                    <button
-                        type="button"
-                        class="btn btn-link locker-reset-button"
-                        t-on-click="backToPersonSearch"
-                    >
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="backToPersonSearch">
                         Back to Search
                     </button>
-
                 </div>
-
             </t>
 
-
             <!-- =====================================================
-                 STEP 3 : AUTHENTICATE SELECTED PERSON
-                 ===================================================== -->
-
+                 CREDENTIAL SCREEN (PIN / RFID / QR / BIOMETRIC)
+            ====================================================== -->
             <t t-if="state.mode === 'credential'">
-
                 <div class="locker-kiosk-header">
                     <h1>Authenticate</h1>
-                    <p>
-                        Verify the selected person's identity
-                    </p>
+                    <p>Verify the selected person's identity</p>
                 </div>
 
                 <div class="locker-result-card locker-credential-card">
-
                     <div class="locker-success-icon">
                         <i class="fa fa-user"/>
                     </div>
 
-                    <h2>
-                        <t t-esc="state.selectedPerson.partner_name"/>
-                    </h2>
+                    <h2><t t-esc="state.selectedPerson.partner_name"/></h2>
 
                     <div class="locker-information">
-
                         <div class="locker-info-row">
                             <span>Locker</span>
-                            <strong>
-                                <t t-esc="state.selectedPerson.locker_name"/>
-                            </strong>
+                            <strong><t t-esc="state.selectedPerson.locker_name"/></strong>
                         </div>
-
                         <div class="locker-info-row">
                             <span>Locker Profile</span>
-                            <strong>
-                                <t t-esc="state.selectedPerson.profile_name"/>
-                            </strong>
+                            <strong><t t-esc="state.selectedPerson.profile_name"/></strong>
                         </div>
-
                         <div class="locker-info-row">
                             <span>Access Method</span>
-                            <strong>
-                                <t t-esc="state.selectedPerson.access_method"/>
-                            </strong>
+                            <strong><t t-esc="state.selectedPerson.access_method"/></strong>
                         </div>
-
                     </div>
 
                     <div class="locker-credential-section">
+                        <!-- PIN -->
+                        <t t-if="state.selectedPerson.access_method === 'pin'">
+                            <p>Enter your PIN</p>
+                            <input type="password"
+                                   class="locker-authentication-input"
+                                   placeholder="Enter 6 Digit PIN"
+                                   maxlength="6"
+                                   inputmode="numeric"
+                                   t-att-value="state.authentication"
+                                   t-on-input="onInputChange"
+                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                   autocomplete="off"/>
 
-                        <p>
+                            <button type="button"
+                                    class="btn btn-primary locker-action-button"
+                                    t-on-click="authenticate"
+                                    t-att-disabled="state.loading">
+                                <t t-if="state.loading">Authenticating...</t>
+                                <t t-else="">Authenticate PIN</t>
+                            </button>
+                        </t>
 
-                            <t t-if="state.selectedPerson.access_method === 'pin'">
-                                Enter your PIN
-                            </t>
+                        <!-- RFID -->
+                        <t t-elif="state.selectedPerson.access_method === 'rfid'">
+                            <div class="locker-method-icon">
+                                <i class="fa fa-credit-card"/>
+                            </div>
+                            <h3 class="locker-method-title">Scan RFID Card</h3>
+                            <p>Please scan your RFID card on the reader</p>
 
-                            <t t-elif="state.selectedPerson.access_method === 'rfid'">
-                                Scan your RFID card
-                            </t>
+                            <input type="text"
+                                   class="locker-authentication-input locker-rfid-input"
+                                   placeholder="Scan RFID Card"
+                                   t-att-value="state.authentication"
+                                   t-on-input="onInputChange"
+                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                   autocomplete="off"/>
 
-                            <t t-elif="state.selectedPerson.access_method === 'qr'">
-                                Scan your QR Code
-                            </t>
+                            <button type="button"
+                                    class="btn btn-primary locker-action-button"
+                                    t-on-click="authenticate"
+                                    t-att-disabled="state.loading">
+                                <t t-if="state.loading">Authenticating...</t>
+                                <t t-else="">Authenticate RFID</t>
+                            </button>
+                        </t>
 
-                            <t t-elif="state.selectedPerson.access_method === 'biometric'">
-                                Scan your biometric identity
-                            </t>
+                        <!-- QR CODE -->
+                        <t t-elif="state.selectedPerson.access_method === 'qr'">
+                            <h3 class="locker-method-title">Scan QR Code</h3>
+                            <p>Place your QR code inside the scanner</p>
 
-                            <t t-else="">
-                                Authenticate your identity
-                            </t>
+                            <div class="locker-qr-scanner">
+                                <video class="locker-qr-video"
+                                       autoplay="autoplay"
+                                       muted="muted"
+                                       playsinline="playsinline"/>
 
-                        </p>
+                                <div class="locker-qr-frame">
+                                    <span class="qr-corner qr-top-left"/>
+                                    <span class="qr-corner qr-top-right"/>
+                                    <span class="qr-corner qr-bottom-left"/>
+                                    <span class="qr-corner qr-bottom-right"/>
+                                    <div class="qr-scan-line"/>
+                                </div>
 
-                        <input
-                            type="text"
-                            class="locker-authentication-input"
-                            t-att-placeholder="
-                                state.selectedPerson.access_method === 'pin'
-                                ? 'Enter PIN'
-                                : 'Scan / Enter Credential'
-                            "
-                            t-att-value="state.authentication"
-                            t-on-input="onInputChange"
-                            t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
-                            autocomplete="off"
-                        />
+                                <t t-if="!state.qrScanning">
+                                    <div class="locker-qr-overlay">
+                                        <i class="fa fa-qrcode"/>
+                                        <span>Starting Camera...</span>
+                                    </div>
+                                </t>
+                            </div>
 
-                        <button
-                            type="button"
-                            class="btn btn-primary locker-action-button"
-                            t-on-click="authenticate"
-                            t-att-disabled="state.loading"
-                        >
+                            <div class="locker-qr-status">
+                                <t t-if="state.qrScanning">
+                                    <i class="fa fa-camera me-1"/>
+                                    Scanning QR code...
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-spinner fa-spin me-1"/>
+                                    Starting camera...
+                                </t>
+                            </div>
 
                             <t t-if="state.loading">
-                                Authenticating...
+                                <button type="button"
+                                        class="btn btn-primary locker-action-button"
+                                        disabled="disabled">
+                                    Verifying QR...
+                                </button>
                             </t>
+                        </t>
 
+                        <!-- BIOMETRIC / FACE RECOGNITION -->
+                        <t t-elif="state.selectedPerson.access_method === 'biometric'">
+                            <div class="locker-method-icon">
+                                <i class="fa fa-camera"/>
+                            </div>
+                            <h3 class="locker-method-title">Face Recognition</h3>
+                            <p>Look at the camera to verify your identity</p>
+
+                            <div class="locker-face-scanner">
+                                <video class="locker-face-video"
+                                       autoplay="autoplay"
+                                       muted="muted"
+                                       playsinline="playsinline"/>
+
+                                <div class="locker-face-frame">
+                                    <div class="locker-face-corner face-top-left"/>
+                                    <div class="locker-face-corner face-top-right"/>
+                                    <div class="locker-face-corner face-bottom-left"/>
+                                    <div class="locker-face-corner face-bottom-right"/>
+                                </div>
+
+                                <t t-if="!state.faceScanning">
+                                    <div class="locker-face-overlay">
+                                        <i class="fa fa-camera"/>
+                                        <span>Starting Camera...</span>
+                                    </div>
+                                </t>
+                            </div>
+
+                            <div class="locker-face-status">
+                                <t t-if="state.faceScanning">
+                                    <i class="fa fa-camera me-1"/>
+                                    Looking for your face...
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-spinner fa-spin me-1"/>
+                                    Starting camera...
+                                </t>
+                            </div>
+
+                            <t t-if="state.faceVerifying">
+                                <button type="button"
+                                        class="btn btn-primary locker-action-button"
+                                        disabled="disabled">
+                                    Verifying Face...
+                                </button>
+                            </t>
                             <t t-else="">
-                                Authenticate
+                                <button type="button"
+                                        class="btn btn-primary locker-action-button"
+                                        t-on-click="verifyFace"
+                                        t-att-disabled="state.loading || !state.faceScanning">
+                                    <i class="fa fa-user me-2"/>
+                                    Verify Face
+                                </button>
                             </t>
+                        </t>
 
-                        </button>
+                        <!-- DEFAULT -->
+                        <t t-else="">
+                            <p>Authenticate your identity</p>
+                            <input type="text"
+                                   class="locker-authentication-input"
+                                   placeholder="Scan / Enter Credential"
+                                   t-att-value="state.authentication"
+                                   t-on-input="onInputChange"
+                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                   autocomplete="off"/>
 
+                            <button type="button"
+                                    class="btn btn-primary locker-action-button"
+                                    t-on-click="authenticate"
+                                    t-att-disabled="state.loading">
+                                <t t-if="state.loading">Authenticating...</t>
+                                <t t-else="">Authenticate</t>
+                            </button>
+                        </t>
                     </div>
-
-                    <!-- Authentication Message -->
 
                     <t t-if="state.message">
                         <div t-att-class="'locker-message ' + state.messageType">
@@ -268,214 +314,217 @@
                         </div>
                     </t>
 
-                    <button
-                        type="button"
-                        class="btn btn-link locker-reset-button"
-                        t-on-click="backToPersonSearch"
-                    >
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="backToPersonSearch">
                         Back to Person Selection
                     </button>
-
                 </div>
-
             </t>
 
-
             <!-- =====================================================
-                 STEP 4 : IDENTITY VERIFIED
-                 ===================================================== -->
-
-            <t t-if="state.mode === 'result'">
-
+                 QR SECONDARY AUTHENTICATION OPTIONS
+            ====================================================== -->
+            <t t-if="state.mode === 'qr_verification'">
                 <div class="locker-kiosk-header">
-                    <h1>Identity Verified</h1>
-                    <p>
-                        Authentication successful
-                    </p>
+                    <h1>Choose Authentication</h1>
+                    <p>QR code verified. Continue with OTP verification.</p>
                 </div>
 
-                <div class="locker-result-card locker-result-compact">
-
-                    <!-- Success Icon -->
-
+                <div class="locker-result-card locker-qr-auth-card">
                     <div class="locker-success-icon">
                         <i class="fa fa-check-circle"/>
                     </div>
 
+                    <h2>QR Code Verified</h2>
+                    <p>Verify your identity using the OTP sent to your registered email address.</p>
 
-                    <!-- Authenticated Person -->
-
-                    <div class="locker-authenticated-person">
-
-                        <span>
-                            Authenticated Person
-                        </span>
-
-                        <h2>
-                            <t t-esc="state.allocation.authenticated_partner_name"/>
-                        </h2>
-
-                    </div>
-
-
-                    <!-- Locker Information -->
-
-                    <div class="locker-information">
-
-                        <div class="locker-info-row">
-
-                            <span>
-                                Allocation Partner
-                            </span>
-
-                            <strong>
-                                <t t-esc="state.allocation.partner_name"/>
-                            </strong>
-
-                        </div>
-
-
-                        <div class="locker-info-row">
-
-                            <span>
-                                Locker
-                            </span>
-
-                            <strong>
-                                <t t-esc="state.allocation.locker_name"/>
-                            </strong>
-
-                        </div>
-
-
-                        <div class="locker-info-row">
-
-                            <span>
-                                Locker Profile
-                            </span>
-
-                            <strong>
-                                <t t-esc="state.allocation.profile_name"/>
-                            </strong>
-
-                        </div>
-
-
-                        <div class="locker-info-row">
-
-                            <span>
-                                Access Method
-                            </span>
-
-                            <strong>
-                                <t t-esc="state.allocation.access_method"/>
-                            </strong>
-
-                        </div>
-
-
-                        <div class="locker-info-row">
-
-                            <span>
-                                Current Status
-                            </span>
-
-                            <strong>
-                                <t t-if="state.allocation.is_checked_in">
-                                    Checked In
-                                </t>
-
-                                <t t-else="">
-                                    Checked Out
-                                </t>
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- =================================================
-                         CHECK IN / CHECK OUT BUTTONS
-                         ================================================= -->
-
-                    <div class="locker-check-actions">
-
-                        <!-- Check In -->
-
-                        <button
-                            type="button"
-                            class="btn btn-primary locker-check-button"
-                            t-on-click="checkIn"
-                            t-if="state.allocation.can_check_in"
-                            t-att-disabled="state.loading"
-                        >
-
-                            <i class="fa fa-sign-in me-2"/>
-
-                            <t t-if="state.loading">
-                                Processing...
-                            </t>
-
-                            <t t-else="">
-                                Check In
-                            </t>
-
+                    <div class="locker-qr-auth-options">
+                        <button type="button"
+                                class="btn btn-primary locker-action-button"
+                                t-if="state.qrHasOTP"
+                                t-on-click="chooseOTP"
+                                t-att-disabled="state.loading">
+                            <i class="fa fa-envelope me-2"/>
+                            Send OTP
                         </button>
 
-
-                        <!-- Check Out -->
-
-                        <button
-                            type="button"
-                            class="btn btn-danger locker-check-button"
-                            t-on-click="checkOut"
-                            t-if="state.allocation.can_check_out"
-                            t-att-disabled="state.loading"
-                        >
-
-                            <i class="fa fa-sign-out me-2"/>
-
-                            <t t-if="state.loading">
-                                Processing...
-                            </t>
-
-                            <t t-else="">
-                                Check Out
-                            </t>
-
-                        </button>
-
+                        <t t-if="!state.qrHasOTP">
+                            <div class="locker-message danger">
+                                OTP authentication is not configured for this person.
+                            </div>
+                        </t>
                     </div>
-
-
-                    <!-- Result Message -->
 
                     <t t-if="state.message">
-
                         <div t-att-class="'locker-message ' + state.messageType">
                             <t t-esc="state.message"/>
                         </div>
-
                     </t>
 
-
-                    <!-- Reset -->
-
-                    <button
-                        type="button"
-                        class="btn btn-link locker-reset-button"
-                        t-on-click="resetScreen"
-                    >
-                        Start New Authentication
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="backToPersonSearch">
+                        Back to Person Selection
                     </button>
+                </div>
+            </t>
 
+            <!-- =====================================================
+                 OTP SCREEN
+            ====================================================== -->
+            <t t-if="state.mode === 'otp'">
+                <div class="locker-kiosk-header">
+                    <h1>OTP Verification</h1>
+                    <p>Enter the OTP sent to the registered email address.</p>
                 </div>
 
+                <div class="locker-result-card locker-qr-auth-card">
+                    <div class="locker-auth-icon">
+                        <i class="fa fa-mobile"/>
+                    </div>
+
+                    <h2>Verify OTP</h2>
+                    <p>A 6-digit OTP has been sent to the registered email address.</p>
+
+                    <input type="text"
+                           class="locker-authentication-input locker-otp-input"
+                           placeholder="Enter 6 Digit OTP"
+                           maxlength="6"
+                           inputmode="numeric"
+                           t-att-value="state.otp"
+                           t-on-input="onOTPChange"
+                           t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; verifyOTP()"
+                           autocomplete="off"/>
+
+                    <button type="button"
+                            class="btn btn-primary locker-action-button"
+                            t-on-click="verifyOTP"
+                            t-att-disabled="state.loading">
+                        <t t-if="state.loading">Verifying OTP...</t>
+                        <t t-else="">Verify OTP</t>
+                    </button>
+
+                    <t t-if="state.message">
+                        <div t-att-class="'locker-message ' + state.messageType">
+                            <t t-esc="state.message"/>
+                        </div>
+                    </t>
+
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="backToQRAuthentication">
+                        Back to Authentication Options
+                    </button>
+                </div>
+            </t>
+
+            <!-- =====================================================
+                 LOCKED SCREEN
+            ====================================================== -->
+            <t t-if="state.mode === 'locked'">
+                <div class="locker-kiosk-header">
+                    <h1>Authentication Locked</h1>
+                    <p>Too many incorrect OTP attempts</p>
+                </div>
+
+                <div class="locker-result-card locker-qr-auth-card">
+                    <div class="locker-auth-icon">
+                        <i class="fa fa-lock"/>
+                    </div>
+
+                    <h2>Access Temporarily Locked</h2>
+                    <p>You have already used the maximum number of OTP attempts.</p>
+
+                    <div class="locker-message danger">
+                        <t t-esc="state.message or 'Please try again after 10 minutes.'"/>
+                    </div>
+
+                    <p>Please wait until the lock period ends before trying again.</p>
+
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="backToPersonSearch">
+                        Back to Person Search
+                    </button>
+                </div>
+            </t>
+
+            <!-- =====================================================
+                 RESULT
+            ====================================================== -->
+            <t t-if="state.mode === 'result'">
+                <div class="locker-kiosk-header">
+                    <h1>Identity Verified</h1>
+                    <p>Authentication successful</p>
+                </div>
+
+                <div class="locker-result-card locker-result-compact">
+                    <div class="locker-success-icon">
+                        <i class="fa fa-check-circle"/>
+                    </div>
+
+                    <div class="locker-authenticated-person">
+                        <span>Authenticated Person</span>
+                        <h2><t t-esc="state.allocation.authenticated_partner_name"/></h2>
+                    </div>
+
+                    <div class="locker-information">
+                        <div class="locker-info-row">
+                            <span>Allocation Partner</span>
+                            <strong><t t-esc="state.allocation.partner_name"/></strong>
+                        </div>
+                        <div class="locker-info-row">
+                            <span>Locker</span>
+                            <strong><t t-esc="state.allocation.locker_name"/></strong>
+                        </div>
+                        <div class="locker-info-row">
+                            <span>Locker Profile</span>
+                            <strong><t t-esc="state.allocation.profile_name"/></strong>
+                        </div>
+                        <div class="locker-info-row">
+                            <span>Access Method</span>
+                            <strong><t t-esc="state.allocation.access_method"/></strong>
+                        </div>
+                    </div>
+
+                    <div class="locker-check-actions">
+                        <button type="button"
+                                class="btn btn-primary locker-check-button"
+                                t-on-click="checkIn"
+                                t-if="state.allocation.can_check_in"
+                                t-att-disabled="state.loading">
+                            <i class="fa fa-sign-in me-2"/>
+                            <t t-if="state.loading">Processing...</t>
+                            <t t-else="">Check In</t>
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-danger locker-check-button"
+                                t-on-click="checkOut"
+                                t-if="state.allocation.can_check_out"
+                                t-att-disabled="state.loading">
+                            <i class="fa fa-sign-out me-2"/>
+                            <t t-if="state.loading">Processing...</t>
+                            <t t-else="">Check Out</t>
+                        </button>
+                    </div>
+
+                    <t t-if="state.message">
+                        <div t-att-class="'locker-message ' + state.messageType">
+                            <t t-esc="state.message"/>
+                        </div>
+                    </t>
+
+                    <button type="button"
+                            class="btn btn-link locker-reset-button"
+                            t-on-click="resetScreen">
+                        Start New Authentication
+                    </button>
+                </div>
             </t>
 
         </div>
-
     </t>
 
 </templates>

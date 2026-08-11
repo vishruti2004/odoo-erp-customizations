@@ -1,55 +1,314 @@
 # -*- coding: utf-8 -*-
 
+import base64
+import hashlib
+import logging
+import secrets
+import time
+import cv2
+import numpy as np
 from odoo import http
 from odoo.http import request
 
+_logger = logging.getLogger(__name__)
 
 class LockerAccessController(http.Controller):
+    _face_app = None
 
-    # Find person endpoint
+    @classmethod
+    def _get_face_app(cls):
+        if cls._face_app is None:
+            from insightface.app import FaceAnalysis
+            cls._face_app = FaceAnalysis(
+                name="buffalo_sc",
+                providers=["CPUExecutionProvider"],
+            )
+            cls._face_app.prepare(
+                ctx_id=0,
+                det_size=(320, 320),
+            )
+        return cls._face_app
+
+    # ----------------------------------------
+    # COMMON HELPERS
+    # ----------------------------------------
+
+    def _get_allocation_payload(
+        self,
+        allocation,
+        partner,
+        access_method=None,
+    ):
+        Access = request.env["locker.access"].sudo()
+        active_access = Access.search(
+            [
+                ("allocation_id", "=", allocation.id),
+                ("authenticated_partner_id", "=", partner.id),
+                ("state", "=", "checked_in"),
+            ],
+            limit=1,
+            order="id desc",
+        )
+        if active_access:
+            access_status = "Checked In"
+            can_check_in = False
+            can_check_out = True
+        else:
+            access_status = "Checked Out"
+            can_check_in = True
+            can_check_out = False
+        return {
+            "id": allocation.id,
+            "partner_id": allocation.partner_id.id,
+            "partner_name": allocation.partner_id.display_name,
+            "authenticated_partner_id": partner.id,
+            "authenticated_partner_name": partner.display_name,
+            "locker_id": allocation.locker_id.id,
+            "locker_name": allocation.locker_id.display_name,
+            "profile_id": allocation.profile_id.id,
+            "profile_name": allocation.profile_id.display_name,
+            "access_method": access_method or allocation.access_method,
+            "access_status": access_status,
+            "can_check_in": can_check_in,
+            "can_check_out": can_check_out,
+        }
+
+    def _get_credential(self, partner_id, allocation_id):
+        Credential = request.env["locker.access.credential"].sudo()
+        return Credential.search(
+            [
+                ("allocation_id", "=", int(allocation_id)),
+                ("partner_id", "=", int(partner_id)),
+                ("active", "=", True),
+            ],
+            limit=1,
+        )
+
+    def _clear_pending_authentication(self):
+        request.session.pop("locker_pending_auth", None)
+
+    def _set_pending_authentication(self, credential, partner, allocation):
+        request.session["locker_pending_auth"] = {
+            "credential_id": credential.id,
+            "partner_id": partner.id,
+            "allocation_id": allocation.id,
+        }
+
+    def _get_pending_authentication(self):
+        data = request.session.get("locker_pending_auth")
+        if not data:
+            return None
+        try:
+            credential_id = int(data.get("credential_id"))
+            partner_id = int(data.get("partner_id"))
+            allocation_id = int(data.get("allocation_id"))
+        except (TypeError, ValueError):
+            self._clear_pending_authentication()
+            return None
+        return {
+            "credential_id": credential_id,
+            "partner_id": partner_id,
+            "allocation_id": allocation_id,
+        }
+
+    def _get_pending_records(self):
+        pending = self._get_pending_authentication()
+        if not pending:
+            return None
+        Partner = request.env["res.partner"].sudo()
+        Allocation = request.env["locker.allocation"].sudo()
+        Credential = request.env["locker.access.credential"].sudo()
+        partner = Partner.browse(pending["partner_id"]).exists()
+        allocation = Allocation.browse(pending["allocation_id"]).exists()
+        credential = Credential.browse(pending["credential_id"]).exists()
+        if not partner or not allocation or not credential:
+            self._clear_pending_authentication()
+            return None
+        if not credential.active:
+            self._clear_pending_authentication()
+            return None
+        if allocation.state != "allocated":
+            self._clear_pending_authentication()
+            return None
+        if credential.allocation_id.id != allocation.id:
+            self._clear_pending_authentication()
+            return None
+        if credential.partner_id.id != partner.id:
+            self._clear_pending_authentication()
+            return None
+        allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
+        if partner.id not in allowed_partner_ids:
+            self._clear_pending_authentication()
+            return None
+        return {
+            "partner": partner,
+            "allocation": allocation,
+            "credential": credential,
+        }
+
+    def _mask_phone(self, phone):
+        phone = str(phone or "").strip()
+        if not phone:
+            return ""
+        if len(phone) <= 4:
+            return "*" * len(phone)
+        return "*" * (len(phone) - 4) + phone[-4:]
+
+    def _hash_otp(self, otp):
+        return hashlib.sha256(str(otp).encode("utf-8")).hexdigest()
+
+    def _get_face_embedding(self, image_bytes):
+        try:
+            image_array = np.frombuffer(image_bytes, dtype=np.uint8)
+            image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+            if image is None:
+                _logger.warning("Face image could not be decoded.")
+                return None
+            faces = self._get_face_app().get(image)
+            if not faces:
+                _logger.info("No face detected in image.")
+                return None
+            if len(faces) != 1:
+                _logger.info("Expected exactly one face, found %s.", len(faces))
+                return None
+            face = faces[0]
+            if face.kps is None:
+                _logger.info("Face landmarks were not detected.")
+                return None
+            if not hasattr(face, "embedding"):
+                _logger.info("Face embedding was not generated.")
+                return None
+            embedding = face.embedding
+            if embedding is None:
+                return None
+            norm = np.linalg.norm(embedding)
+            if not np.isfinite(norm) or norm == 0:
+                _logger.info("Invalid face embedding.")
+                return None
+            return embedding / norm
+        except Exception:
+            _logger.exception("Failed to generate face embedding.")
+            return None
+
+    def _compare_faces(self, reference_bytes, live_bytes):
+        reference_embedding = self._get_face_embedding(reference_bytes)
+        live_embedding = self._get_face_embedding(live_bytes)
+        if reference_embedding is None or live_embedding is None:
+            return False, 0.0
+        similarity = float(np.dot(reference_embedding, live_embedding))
+        _logger.info("Locker face similarity: %.4f", similarity)
+        return similarity >= 0.45, similarity
+
+    def _get_person_method_key(self, partner_id, access_method):
+        # Attempts are isolated by BOTH authentication method and person.
+        return f"{str(access_method or 'unknown').strip().lower()}:{int(partner_id)}"
+
+    def _get_person_method_auth_state(self, partner_id, access_method):
+        key = self._get_person_method_key(partner_id, access_method)
+        states = dict(request.session.get("locker_person_method_auth_states_v2") or {})
+        state = dict(states.get(key) or {})
+        attempts = min(3, max(0, int(state.get("attempts", 0) or 0)))
+        locked_until = float(state.get("locked_until", 0) or 0)
+        if locked_until and time.time() >= locked_until:
+            states.pop(key, None)
+            request.session["locker_person_method_auth_states_v2"] = dict(states)
+            return {"attempts": 0, "remaining": 3, "locked": False, "locked_until": 0}
+        locked = bool(locked_until and time.time() < locked_until)
+        return {
+            "attempts": attempts,
+            "remaining": max(0, 3 - attempts),
+            "locked": locked,
+            "locked_until": locked_until if locked else 0,
+        }
+
+    def _record_person_method_failure(self, partner_id, access_method):
+        key = self._get_person_method_key(partner_id, access_method)
+        states = dict(request.session.get("locker_person_method_auth_states_v2") or {})
+        state = dict(states.get(key) or {})
+        current_attempts = max(0, int(state.get("attempts", 0) or 0))
+        attempts = min(3, current_attempts + 1)
+        locked_until = time.time() + 600 if attempts >= 3 else 0
+        states[key] = {
+            "attempts": attempts,
+            "locked_until": locked_until,
+        }
+        request.session["locker_person_method_auth_states_v2"] = dict(states)
+        _logger.info(
+            "Locker auth failure: method=%s partner_id=%s attempts=%s remaining=%s locked=%s",
+            access_method,
+            partner_id,
+            attempts,
+            max(0, 3 - attempts),
+            attempts >= 3,
+        )
+        return {
+            "attempts": attempts,
+            "remaining": max(0, 3 - attempts),
+            "locked": attempts >= 3,
+            "locked_until": locked_until,
+        }
+
+    def _reset_person_method_attempts(self, partner_id, access_method):
+        key = self._get_person_method_key(partner_id, access_method)
+        states = dict(request.session.get("locker_person_method_auth_states_v2") or {})
+        states.pop(key, None)
+        request.session["locker_person_method_auth_states_v2"] = dict(states)
+
+    def _get_auth_lock_state(self, credential=None):
+        if not credential:
+            return False, 0
+        state = self._get_person_method_auth_state(
+            credential.partner_id.id,
+            credential.access_method,
+        )
+        return state["locked"], state["locked_until"] if state["locked"] else 0
+
+    # ----------------------------------------
+    # FIND PERSON
+    # ----------------------------------------
+
     @http.route("/locker/access/find_person", type="json", auth="user", methods=["POST"])
     def find_person(self, identity=None):
         if not identity:
             return {"success": False, "message": "Please enter name, email or phone number."}
-
         identity = str(identity).strip()
         if not identity:
             return {"success": False, "message": "Please enter name, email or phone number."}
-
         Partner = request.env["res.partner"].sudo()
         Allocation = request.env["locker.allocation"].sudo()
         Credential = request.env["locker.access.credential"].sudo()
-
         partners = Partner.search([
-            "|", "|",
+            "|",
+            "|",
             ("name", "ilike", identity),
             ("email", "ilike", identity),
             ("phone", "ilike", identity),
         ])
-
         if not partners:
             return {"success": False, "message": "No person found."}
-
         allocations = Allocation.search([
             ("state", "=", "allocated"),
             "|",
             ("partner_id", "in", partners.ids),
             ("authorized_partner_ids", "in", partners.ids),
         ])
-
         if not allocations:
             return {"success": False, "message": "No active locker allocation found for this person."}
-
         persons = []
         for allocation in allocations:
             allowed_partners = allocation.partner_id | allocation.authorized_partner_ids
             for partner in allowed_partners:
-                credential = Credential.search([
-                    ("allocation_id", "=", allocation.id),
-                    ("partner_id", "=", partner.id),
-                    ("active", "=", True),
-                ], limit=1)
-
+                credential = Credential.search(
+                    [
+                        ("allocation_id", "=", allocation.id),
+                        ("partner_id", "=", partner.id),
+                        ("active", "=", True),
+                    ],
+                    limit=1,
+                )
+                is_otp_locked, locked_until = self._get_auth_lock_state(credential)
+                method = credential.access_method if credential else allocation.access_method
+                auth_state = self._get_person_method_auth_state(partner.id, method)
                 persons.append({
                     "partner_id": partner.id,
                     "partner_name": partner.display_name,
@@ -62,205 +321,416 @@ class LockerAccessController(http.Controller):
                     "profile_name": allocation.profile_id.display_name,
                     "access_method": allocation.access_method,
                     "has_credential": bool(credential),
+                    "otp_locked": is_otp_locked,
+                    "otp_locked_until": locked_until if is_otp_locked else 0,
+                    "auth_attempts": auth_state["attempts"],
+                    "auth_attempts_remaining": auth_state["remaining"],
                 })
-
         if not persons:
             return {"success": False, "message": "No authorized person found."}
-
         return {"success": True, "persons": persons}
 
-    # Authenticate endpoint
-    @http.route("/locker/access/authenticate", type="json", auth="user", methods=["POST"])
-    def authenticate(self, identity=None, partner_id=None, allocation_id=None):
-        if not identity:
-            return {"success": False, "message": "Please enter or scan your authentication credential."}
+    # ----------------------------------------
+    # VERIFY QR
+    # ----------------------------------------
 
+    @http.route("/locker/access/verify_qr", type="json", auth="user", methods=["POST"])
+    def verify_qr(self, qr_token=None, partner_id=None, allocation_id=None):
         if not partner_id:
-            return {"success": False, "message": "Please select a person first."}
-
+            return {"success": False, "message": "Person is required."}
+        try:
+            partner_id = int(partner_id)
+        except (TypeError, ValueError):
+            return {"success": False, "message": "Invalid person."}
         if not allocation_id:
             return {"success": False, "message": "Locker allocation is required."}
-
-        identity = str(identity).strip()
-        if not identity:
-            return {"success": False, "message": "Please enter or scan your authentication credential."}
-
+        try:
+            allocation_id = int(allocation_id)
+        except (TypeError, ValueError):
+            return {"success": False, "message": "Invalid locker allocation."}
         Partner = request.env["res.partner"].sudo()
         Allocation = request.env["locker.allocation"].sudo()
         Credential = request.env["locker.access.credential"].sudo()
-        Access = request.env["locker.access"].sudo()
-
-        partner = Partner.browse(int(partner_id)).exists()
-        allocation = Allocation.browse(int(allocation_id)).exists()
-
+        partner = Partner.browse(partner_id).exists()
+        allocation = Allocation.browse(allocation_id).exists()
         if not partner:
             return {"success": False, "message": "Person not found."}
-
         if not allocation:
             return {"success": False, "message": "Locker allocation not found."}
 
+        auth_state = self._get_person_method_auth_state(partner.id, "qr")
+        if auth_state["locked"]:
+            remaining_seconds = max(0, int(auth_state["locked_until"] - time.time()))
+            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            return {
+                "success": False,
+                "locked": True,
+                "locked_until": auth_state["locked_until"],
+                "attempts_remaining": 0,
+                "message": f"You have used all 3 QR attempts. Please try again after {remaining_minutes} minutes.",
+            }
+
+        def qr_failure(message):
+            result = self._record_person_method_failure(partner.id, "qr")
+            if result["locked"]:
+                return {
+                    "success": False,
+                    "locked": True,
+                    "locked_until": result["locked_until"],
+                    "attempts_remaining": 0,
+                    "message": "QR verification failed. You have used all 3 QR attempts. Please try again after 10 minutes.",
+                }
+            return {
+                "success": False,
+                "locked": False,
+                "attempts_remaining": result["remaining"],
+                "message": f"{message} {result['remaining']} attempts remaining.",
+            }
+
+        if not qr_token or not str(qr_token).strip():
+            return qr_failure("QR token is required.")
         if allocation.state != "allocated":
-            return {"success": False, "message": "This locker is not currently allocated."}
-
-        allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
-
-        if partner.id not in allowed_partner_ids:
-            return {"success": False, "message": "This person is not authorized for this locker."}
-
-        credential = Credential.search([
-            ("allocation_id", "=", allocation.id),
-            ("partner_id", "=", partner.id),
-            ("active", "=", True),
-        ], limit=1)
-
+            return qr_failure("This locker is not currently allocated.")
+        qr_token = str(qr_token).strip()
+        credential = Credential.search(
+            [
+                ("qr_token", "=", qr_token),
+                ("active", "=", True),
+            ],
+            limit=1,
+        )
         if not credential:
-            return {"success": False, "message": "No active authentication credential found for this person."}
+            return qr_failure("Invalid QR code.")
+        if credential.allocation_id.id != allocation.id:
+            return qr_failure("This QR code does not belong to this locker allocation.")
+        if credential.partner_id.id != partner.id:
+            return qr_failure("This QR code does not belong to the selected person.")
+        allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
+        if partner.id not in allowed_partner_ids:
+            return qr_failure("This person is not authorized for this locker.")
+        if credential.access_method != "qr":
+            return qr_failure("QR authentication is not configured for this credential.")
 
-        access_method = credential.access_method
-        credential_valid = False
-
-        if access_method == "pin":
-            credential_valid = credential.pin_code == identity
-        elif access_method == "rfid":
-            credential_valid = credential.rfid_uid == identity
-        elif access_method == "qr":
-            credential_valid = credential.qr_token == identity
-        elif access_method == "biometric":
-            credential_valid = credential.biometric_id == identity
-        elif access_method == "physical_key":
-            credential_valid = True
-
-        if not credential_valid:
-            return {"success": False, "message": "Invalid authentication credential."}
-
-        active_access = Access.search([
-            ("allocation_id", "=", allocation.id),
-            ("authenticated_partner_id", "=", partner.id),
-            ("state", "=", "checked_in"),
-        ], limit=1, order="id desc")
-
-        if active_access:
-            access_status = "Checked In"
-            can_check_in = False
-            can_check_out = True
-        else:
-            access_status = "Checked Out"
-            can_check_in = True
-            can_check_out = False
-
+        self._reset_person_method_attempts(partner.id, "qr")
+        self._set_pending_authentication(credential, partner, allocation)
         return {
             "success": True,
-            "message": "Identity verified successfully.",
-            "allocation": {
-                "id": allocation.id,
-                "partner_id": allocation.partner_id.id,
-                "partner_name": allocation.partner_id.display_name,
-                "authenticated_partner_id": partner.id,
-                "authenticated_partner_name": partner.display_name,
-                "locker_id": allocation.locker_id.id,
-                "locker_name": allocation.locker_id.display_name,
-                "profile_id": allocation.profile_id.id,
-                "profile_name": allocation.profile_id.display_name,
-                "access_method": access_method,
-                "access_status": access_status,
-                "can_check_in": can_check_in,
-                "can_check_out": can_check_out,
-            },
+            "locked": False,
+            "attempts_remaining": 3,
+            "message": "QR code verified successfully. Please choose an authentication method.",
+            "partner_name": partner.display_name,
+            "has_otp": True,
         }
 
-    # Action endpoint (Check In / Check Out)
+    # ----------------------------------------
+    # START FACE AUTHENTICATION
+    # ----------------------------------------
+
+    @http.route("/locker/access/start_face", type="json", auth="user", methods=["POST"])
+    def start_face(self, partner_id=None, allocation_id=None):
+        if not partner_id or not allocation_id:
+            return {"success": False, "message": "Person and locker allocation are required."}
+        Partner = request.env["res.partner"].sudo()
+        Allocation = request.env["locker.allocation"].sudo()
+        partner = Partner.browse(int(partner_id)).exists()
+        allocation = Allocation.browse(int(allocation_id)).exists()
+        if not partner:
+            return {"success": False, "message": "Person not found."}
+        if not allocation:
+            return {"success": False, "message": "Locker allocation not found."}
+        if allocation.state != "allocated":
+            return {"success": False, "message": "This locker is not currently allocated."}
+        allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
+        if partner.id not in allowed_partner_ids:
+            return {"success": False, "message": "This person is not authorized for this locker."}
+        credential = self._get_credential(partner.id, allocation.id)
+        if not credential:
+            return {"success": False, "message": "No active access credential was found for this person."}
+        is_locked, locked_until = self._get_auth_lock_state(credential)
+        if is_locked:
+            remaining_seconds = max(0, int(locked_until - time.time()))
+            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            return {
+                "success": False,
+                "locked": True,
+                "locked_until": locked_until,
+                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+            }
+        self._set_pending_authentication(credential, partner, allocation)
+        return {
+            "success": True,
+            "message": "Face authentication started.",
+            "partner_name": partner.display_name,
+        }
+
+    # ----------------------------------------
+    # VERIFY FACE
+    # ----------------------------------------
+
+    @http.route("/locker/access/verify_face", type="json", auth="user", methods=["POST"])
+    def verify_face(self, image=None):
+        if not image:
+            return {"success": False, "message": "Face image is required."}
+        pending = self._get_pending_records()
+        if not pending:
+            return {"success": False, "message": "Face authentication session expired. Please select the person again."}
+        partner = pending["partner"]
+        allocation = pending["allocation"]
+        credential = pending["credential"]
+        is_locked, locked_until = self._get_auth_lock_state(credential)
+        if is_locked:
+            remaining_seconds = max(0, int(locked_until - time.time()))
+            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            return {
+                "success": False,
+                "locked": True,
+                "locked_until": locked_until,
+                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+            }
+        if not partner.image_1920:
+            return {"success": False, "message": "No profile photo is available for this person."}
+        try:
+            if "," in image:
+                image = image.split(",", 1)[1]
+            live_bytes = base64.b64decode(image, validate=True)
+            reference_bytes = base64.b64decode(partner.image_1920, validate=True)
+        except Exception:
+            return {"success": False, "message": "Invalid face image."}
+        matched, similarity = self._compare_faces(reference_bytes, live_bytes)
+        if not matched:
+            result = self._record_person_method_failure(partner.id, credential.access_method)
+            if result["locked"]:
+                return {
+                    "success": False,
+                    "locked": True,
+                    "locked_until": result["locked_until"],
+                    "message": "Face verification failed. You have used all 3 attempts. Please try again after 10 minutes.",
+                }
+            return {
+                "success": False,
+                "locked": False,
+                "message": f"Face does not match. {result['remaining']} attempts remaining.",
+                "attempts_remaining": result["remaining"],
+            }
+        self._reset_person_method_attempts(partner.id, credential.access_method)
+        request.session.pop("locker_otp", None)
+        self._clear_pending_authentication()
+        return {
+            "success": True,
+            "locked": False,
+            "message": "Face verified successfully.",
+            "similarity": similarity,
+            "allocation": self._get_allocation_payload(
+                allocation,
+                partner,
+                credential.access_method,
+            ),
+        }
+
+    # ----------------------------------------
+    # SEND OTP
+    # ----------------------------------------
+
+    @http.route("/locker/access/send_otp", type="json", auth="user", methods=["POST"])
+    def send_otp(self):
+        pending = self._get_pending_records()
+        if not pending:
+            return {"success": False, "message": "QR authentication session expired. Please scan the QR code again."}
+        current_time = time.time()
+        partner = pending["partner"]
+        credential = pending["credential"]
+        auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
+        if auth_state["locked"]:
+            remaining_seconds = max(0, int(auth_state["locked_until"] - current_time))
+            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            return {
+                "success": False,
+                "locked": True,
+                "locked_until": auth_state["locked_until"],
+                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+            }
+        email = (partner.email or "").strip()
+        if not email:
+            return {"success": False, "message": "No email address is available for this person."}
+        otp = str(secrets.randbelow(900000) + 100000)
+        otp_hash = self._hash_otp(otp)
+        request.session["locker_otp"] = {
+            "credential_id": credential.id,
+            "otp_hash": otp_hash,
+            "expires_at": time.time() + 300,
+        }
+        _logger.info("==================================================")
+        _logger.info("LOCKER OTP GENERATED")
+        _logger.info("Partner : %s", partner.display_name)
+        _logger.info("Email   : %s", email)
+        _logger.info("OTP     : %s", otp)
+        _logger.info("Valid For : 5 Minutes")
+        _logger.info("==================================================")
+        try:
+            mail_template = request.env.ref(
+                "iPredict_locker_management.mail_template_locker_authentication_otp",
+                raise_if_not_found=False,
+            )
+            if not mail_template:
+                request.session.pop("locker_otp", None)
+                _logger.error("Locker OTP email template was not found.")
+                return {"success": False, "message": "Locker OTP email template is not configured."}
+            mail_template.sudo().with_context(otp=otp).send_mail(
+                credential.id,
+                email_values={
+                    "email_to": email,
+                    "email_from": request.env.company.email_formatted or request.env.user.email_formatted,
+                },
+                force_send=False,
+            )
+        except Exception:
+            request.session.pop("locker_otp", None)
+            _logger.exception("Failed to send locker OTP email to %s", email)
+            return {"success": False, "message": "Unable to send OTP email. Please check the email configuration."}
+        return {"success": True, "message": "OTP has been sent to your registered email address."}
+
+    # ----------------------------------------
+    # VERIFY OTP
+    # ----------------------------------------
+
+    @http.route("/locker/access/verify_otp", type="json", auth="user", methods=["POST"])
+    def verify_otp(self, otp=None):
+        if not otp:
+            return {"success": False, "message": "Please enter the OTP."}
+        pending = self._get_pending_records()
+        if not pending:
+            return {"success": False, "message": "QR authentication session expired. Please scan the QR code again."}
+        otp_data = request.session.get("locker_otp")
+        if not otp_data:
+            return {"success": False, "message": "No OTP request found. Please request a new OTP."}
+        if int(otp_data.get("credential_id", 0)) != pending["credential"].id:
+            request.session.pop("locker_otp", None)
+            return {"success": False, "message": "Invalid OTP session."}
+        current_time = time.time()
+        partner = pending["partner"]
+        credential = pending["credential"]
+        auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
+        if auth_state["locked"]:
+            remaining_seconds = max(0, int(auth_state["locked_until"] - current_time))
+            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            return {
+                "success": False,
+                "locked": True,
+                "locked_until": auth_state["locked_until"],
+                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+            }
+        if current_time > float(otp_data.get("expires_at", 0)):
+            request.session.pop("locker_otp", None)
+            return {"success": False, "message": "OTP has expired. Please request a new OTP."}
+        otp = str(otp).strip()
+        if not otp.isdigit() or len(otp) != 6:
+            result = self._record_person_method_failure(partner.id, credential.access_method)
+            if result["locked"]:
+                return {
+                    "success": False,
+                    "locked": True,
+                    "locked_until": result["locked_until"],
+                    "message": "You have already used all 3 attempts. Please try again after 10 minutes.",
+                }
+            return {
+                "success": False,
+                "locked": False,
+                "message": f"OTP must contain exactly 6 digits. {result['remaining']} attempts remaining.",
+            }
+        entered_hash = self._hash_otp(otp)
+        if not secrets.compare_digest(entered_hash, otp_data.get("otp_hash", "")):
+            result = self._record_person_method_failure(partner.id, credential.access_method)
+            if result["locked"]:
+                return {
+                    "success": False,
+                    "locked": True,
+                    "locked_until": result["locked_until"],
+                    "message": "You have already used all 3 attempts. Please try again after 10 minutes.",
+                }
+            return {
+                "success": False,
+                "locked": False,
+                "message": f"Invalid OTP. {result['remaining']} attempts remaining.",
+            }
+        self._reset_person_method_attempts(partner.id, credential.access_method)
+        request.session.pop("locker_otp", None)
+        allocation = pending["allocation"]
+        partner = pending["partner"]
+        credential = pending["credential"]
+        self._clear_pending_authentication()
+        return {
+            "success": True,
+            "locked": False,
+            "message": "OTP verified successfully.",
+            "allocation": self._get_allocation_payload(
+                allocation,
+                partner,
+                credential.access_method,
+            ),
+        }
+
+    # ----------------------------------------
+    # CHECK IN / CHECK OUT
+    # ----------------------------------------
+
     @http.route("/locker/access/action", type="json", auth="user", methods=["POST"])
     def access_action(self, allocation_id=None, action=None, authenticated_partner_id=None):
         if not allocation_id:
             return {"success": False, "message": "Locker allocation is required."}
-
         if action not in ("check_in", "check_out"):
             return {"success": False, "message": "Invalid access action."}
-
         if not authenticated_partner_id:
             return {"success": False, "message": "Authenticated person is required."}
-
         Allocation = request.env["locker.allocation"].sudo()
         Access = request.env["locker.access"].sudo()
-
         allocation = Allocation.browse(int(allocation_id)).exists()
-
         if not allocation:
             return {"success": False, "message": "Locker allocation not found."}
-
         if allocation.state != "allocated":
             return {"success": False, "message": "This locker is not currently allocated."}
-
         partner = request.env["res.partner"].sudo().browse(int(authenticated_partner_id)).exists()
-
         if not partner:
             return {"success": False, "message": "Authenticated person not found."}
-
         allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
-
         if partner.id not in allowed_partner_ids:
             return {"success": False, "message": "This person is not authorized for this locker."}
-
-        active_access = Access.search([
-            ("allocation_id", "=", allocation.id),
-            ("authenticated_partner_id", "=", partner.id),
-            ("state", "=", "checked_in"),
-        ], limit=1, order="id desc")
-
+        active_access = Access.search(
+            [
+                ("allocation_id", "=", allocation.id),
+                ("authenticated_partner_id", "=", partner.id),
+                ("state", "=", "checked_in"),
+            ],
+            limit=1,
+            order="id desc",
+        )
         if action == "check_in":
             if active_access:
                 return {"success": False, "message": "This person is already checked in."}
-
             access = Access.create({
                 "partner_id": allocation.partner_id.id,
                 "authenticated_partner_id": partner.id,
                 "allocation_id": allocation.id,
                 "state": "checked_out",
             })
-
             access.action_check_in()
-
             return {
                 "success": True,
                 "message": "Check In successful.",
-                "allocation": {
-                    "id": allocation.id,
-                    "partner_id": allocation.partner_id.id,
-                    "partner_name": allocation.partner_id.display_name,
-                    "authenticated_partner_id": partner.id,
-                    "authenticated_partner_name": partner.display_name,
-                    "locker_id": allocation.locker_id.id,
-                    "locker_name": allocation.locker_id.display_name,
-                    "profile_id": allocation.profile_id.id,
-                    "profile_name": allocation.profile_id.display_name,
-                    "access_method": allocation.access_method,
-                    "access_status": "Checked In",
-                    "can_check_in": False,
-                    "can_check_out": True,
-                },
+                "allocation": self._get_allocation_payload(
+                    allocation,
+                    partner,
+                    allocation.access_method,
+                ),
             }
-
         if not active_access:
             return {"success": False, "message": "This person is not currently checked in."}
-
         active_access.action_check_out()
-
         return {
             "success": True,
             "message": "Check Out successful.",
-            "allocation": {
-                "id": allocation.id,
-                "partner_id": allocation.partner_id.id,
-                "partner_name": allocation.partner_id.display_name,
-                "authenticated_partner_id": partner.id,
-                "authenticated_partner_name": partner.display_name,
-                "locker_id": allocation.locker_id.id,
-                "locker_name": allocation.locker_id.display_name,
-                "profile_id": allocation.profile_id.id,
-                "profile_name": allocation.profile_id.display_name,
-                "access_method": allocation.access_method,
-                "access_status": "Checked Out",
-                "can_check_in": True,
-                "can_check_out": False,
-            },
+            "allocation": self._get_allocation_payload(
+                allocation,
+                partner,
+                allocation.access_method,
+            ),
         }

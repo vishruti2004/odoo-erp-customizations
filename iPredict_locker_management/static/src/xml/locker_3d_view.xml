@@ -54,7 +54,6 @@
                     </div>
                 </div>
 
-                <!-- RIGHT: Edit Button (only if admin and lockers exist) -->
                 <div class="o_locker_header_right">
                     <button t-if="state.hasLockers and state.isAdmin" 
                             class="btn btn-sm btn-primary" 

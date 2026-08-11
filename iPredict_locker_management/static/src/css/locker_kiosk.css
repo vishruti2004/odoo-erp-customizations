@@ -1,509 +1,572 @@
-/* ================= LOCKER KIOSK - MAIN ================= */
+/* MAIN CONTAINER ONLY */
 .locker-kiosk {
-    min-height: calc(100vh - 100px);
-    padding: 35px 30px 45px;
+    width: 100%;
+    max-height: calc(100vh - 100px);
+    padding: 20px;
     background: linear-gradient(135deg, #f4f3fb, #ffffff);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     box-sizing: border-box;
+    overflow-y: auto;
 }
 
-/* ================= PAGE HEADER ================= */
-.locker-kiosk-header {
+/* HEADER */
+.locker-kiosk .locker-kiosk-header {
     width: 100%;
     text-align: center;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
 }
-.locker-kiosk-header h1 {
-    font-size: 36px;
+.locker-kiosk .locker-kiosk-header h1 {
+    font-size: 32px;
     line-height: 1.2;
     font-weight: 600;
-    margin: 0 0 7px;
+    margin: 0 0 6px;
     color: #2c2c3a;
 }
-.locker-kiosk-header p {
-    font-size: 16px;
+.locker-kiosk .locker-kiosk-header p {
+    font-size: 15px;
     line-height: 1.4;
     margin: 0;
     color: #6c6c7a;
 }
 
-/* ================= MAIN AUTHENTICATION CARD ================= */
-.locker-authentication-card {
+.locker-kiosk .locker-authentication-card,
+.locker-kiosk .locker-person-selection-card,
+.locker-kiosk .locker-result-card {
     width: 100%;
-    max-width: 600px;
+    max-width: 580px;
     background: #ffffff;
     border-radius: 18px;
-    padding: 30px 38px;
+    padding: 28px 32px;
     text-align: center;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
     box-sizing: border-box;
+    margin-bottom: 20px;
 }
 
-/* ================= AUTH ICON ================= */
-.locker-auth-icon {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 14px;
+.locker-kiosk .locker-auth-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 12px;
     border-radius: 50%;
     background: #eeeafa;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
-.locker-auth-icon i {
-    font-size: 30px;
+.locker-kiosk .locker-auth-icon i {
+    font-size: 28px;
     color: #714b67;
 }
 
-/* ================= CARD TITLE ================= */
-.locker-authentication-card h2 {
-    font-size: 25px;
+.locker-kiosk .locker-authentication-card h2,
+.locker-kiosk .locker-person-selection-card h2 {
+    font-size: 24px;
     line-height: 1.3;
     font-weight: 600;
-    margin: 0 0 7px;
+    margin: 0 0 6px;
     color: #2c2c3a;
 }
-.locker-authentication-card p {
-    font-size: 15px;
+.locker-kiosk .locker-authentication-card p {
+    font-size: 14px;
     line-height: 1.4;
     color: #777;
-    margin: 0 0 20px;
+    margin: 0 0 18px;
 }
 
-/* ================= PERSON SEARCH INPUT ================= */
-.locker-person-search-input {
+.locker-kiosk .locker-person-search-input,
+.locker-kiosk .locker-authentication-input {
     display: block;
     width: 100%;
-    height: 52px;
+    height: 48px;
     padding: 0 16px;
     margin: 0 0 12px;
     border: 1px solid #d6d6df !important;
     border-radius: 9px !important;
     background: #ffffff !important;
     color: #2c2c3a !important;
-    font-size: 16px;
+    font-size: 15px;
     outline: none !important;
     box-shadow: none !important;
     box-sizing: border-box;
 }
-.locker-person-search-input::placeholder {
+.locker-kiosk .locker-person-search-input::placeholder,
+.locker-kiosk .locker-authentication-input::placeholder {
     color: #a5a5b0;
     opacity: 1;
 }
-.locker-person-search-input:focus {
+.locker-kiosk .locker-person-search-input:focus,
+.locker-kiosk .locker-authentication-input:focus {
     border-color: #714b67 !important;
     box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12) !important;
 }
 
-/* ================= FIND PERSON BUTTON ================= */
-.locker-authenticate-button {
+.locker-kiosk .locker-authenticate-button,
+.locker-kiosk .locker-action-button {
     display: block;
     width: 100%;
-    height: 50px;
+    height: 48px;
     padding: 0 18px;
     margin: 0;
     border: none !important;
     border-radius: 9px !important;
     background: #714b67 !important;
     color: #ffffff !important;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     box-shadow: none !important;
 }
-.locker-authenticate-button:hover {
+.locker-kiosk .locker-authenticate-button:hover,
+.locker-kiosk .locker-action-button:hover {
     background: #604057 !important;
 }
-.locker-authenticate-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
 
-/* ================= PERSON SELECTION PAGE ================= */
-.locker-person-selection-card {
-    width: 100%;
-    max-width: 620px;
-    background: #ffffff;
-    border-radius: 18px;
-    padding: 25px 28px;
-    text-align: center;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-    box-sizing: border-box;
-}
-
-/* ================= PERSON SELECTION HEADER ================= */
-.locker-person-selection-header {
+.locker-kiosk .locker-person-selection-header {
     width: 100%;
     text-align: center;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
 }
-.locker-person-selection-header h1 {
-    font-size: 30px;
+.locker-kiosk .locker-person-selection-header h1 {
+    font-size: 28px;
     line-height: 1.2;
     font-weight: 600;
     margin: 0 0 5px;
     color: #2c2c3a;
 }
-.locker-person-selection-header p {
-    font-size: 15px;
+.locker-kiosk .locker-person-selection-header p {
+    font-size: 14px;
     margin: 0;
     color: #777;
 }
 
-/* ================= PERSON SELECTION CARD ICON ================= */
-.locker-person-selection-card .locker-auth-icon {
-    width: 58px;
-    height: 58px;
-    margin: 0 auto 11px;
-}
-.locker-person-selection-card .locker-auth-icon i {
-    font-size: 27px;
-}
-
-/* ================= AUTHORIZED PERSONS TITLE ================= */
-.locker-person-selection-card h2 {
-    font-size: 22px;
-    line-height: 1.3;
-    font-weight: 600;
-    margin: 0 0 16px;
-    color: #2c2c3a;
-}
-
-/* ================= PERSON LIST ================= */
-.locker-person-list {
+/* PERSON LIST SCROLLABLE */
+.locker-kiosk .locker-person-list {
     width: 100%;
-    margin: 0;
-    padding: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0 0 10px;
+    padding: 2px 6px 2px 2px;
     text-align: left;
+    box-sizing: border-box;
+}
+.locker-kiosk .locker-person-list::-webkit-scrollbar {
+    width: 5px;
+}
+.locker-kiosk .locker-person-list::-webkit-scrollbar-track {
+    background: #f1f1f5;
+    border-radius: 10px;
+}
+.locker-kiosk .locker-person-list::-webkit-scrollbar-thumb {
+    background: #c3c3d0;
+    border-radius: 10px;
 }
 
-/* ================= PERSON OPTION ================= */
-.locker-person-option {
+/* PERSON OPTION */
+.locker-kiosk .locker-person-option {
     width: 100%;
-    min-height: 68px;
+    min-height: 62px;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 11px 14px;
-    margin: 0 0 9px;
+    padding: 10px 14px;
+    margin: 0 0 10px;
     border: 1px solid #e5e5ea !important;
     border-radius: 10px !important;
     background: #ffffff !important;
     color: #2c2c3a !important;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
     box-sizing: border-box;
 }
-.locker-person-option:last-child {
-    margin-bottom: 0;
-}
-.locker-person-option:hover {
+.locker-kiosk .locker-person-option:hover {
     border-color: #714b67 !important;
     background: #faf8fb !important;
-    transform: translateY(-1px);
 }
-
-/* ================= PERSON ICON ================= */
-.locker-person-option-icon {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
+.locker-kiosk .locker-person-option-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
     border-radius: 50%;
     background: #eeeafa;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.locker-person-option-icon i {
-    font-size: 18px;
+.locker-kiosk .locker-person-option-icon i {
+    font-size: 16px;
     color: #714b67;
 }
-
-/* ================= PERSON DETAILS ================= */
-.locker-person-option-info {
+.locker-kiosk .locker-person-option-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+    gap: 1px;
 }
-.locker-person-option-info strong {
-    font-size: 15px;
-    line-height: 1.3;
+.locker-kiosk .locker-person-option-info strong {
+    font-size: 14px;
     font-weight: 600;
     color: #2c2c3a;
 }
-.locker-person-option-info span {
-    font-size: 13px;
-    line-height: 1.35;
+.locker-kiosk .locker-person-option-info span {
+    font-size: 12px;
     color: #777;
 }
 
-/* ================= PERSON ARROW ================= */
-.locker-person-option-arrow {
-    font-size: 14px;
-    color: #714b67;
-    flex-shrink: 0;
-}
-
-/* ================= BACK / RESET BUTTON ================= */
-.locker-reset-button {
+/* RESET BUTTON */
+.locker-kiosk .locker-reset-button {
     display: inline-block;
-    margin-top: 13px;
+    margin-top: 10px;
     padding: 0;
     border: none !important;
     background: transparent !important;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #714b67 !important;
     cursor: pointer;
     box-shadow: none !important;
 }
-.locker-reset-button:hover {
-    color: #604057 !important;
-    text-decoration: underline;
-}
 
-/* ================= CREDENTIAL CARD ================= */
-.locker-credential-card {
-    max-width: 620px;
-}
-
-/* ================= AUTHENTICATION INPUT ================= */
-.locker-authentication-input {
-    display: block;
-    width: 100%;
-    height: 52px;
-    padding: 0 16px;
-    margin: 0 0 12px;
-    border: 1px solid #d6d6df !important;
-    border-radius: 9px !important;
-    background: #ffffff !important;
-    color: #2c2c3a !important;
-    font-size: 17px;
-    outline: none !important;
-    box-shadow: none !important;
-    box-sizing: border-box;
-}
-.locker-authentication-input::placeholder {
-    color: #a5a5b0;
-}
-.locker-authentication-input:focus {
-    border-color: #714b67 !important;
-    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12) !important;
-}
-
-/* ================= CREDENTIAL SECTION ================= */
-.locker-credential-section {
-    margin-top: 18px;
-}
-.locker-credential-section p {
-    margin: 0 0 10px;
-    font-size: 15px;
-    color: #444;
-}
-
-/* ================= GENERAL RESULT CARD ================= */
-.locker-result-card {
-    width: 100%;
-    max-width: 650px;
-    background: #ffffff;
-    border-radius: 18px;
-    padding: 30px 38px;
-    text-align: center;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-    box-sizing: border-box;
-}
-
-/* ================= SUCCESS ICON ================= */
-.locker-success-icon {
-    margin: 0 0 8px;
-}
-.locker-success-icon i {
-    font-size: 52px;
+/* RESULT CARD */
+.locker-kiosk .locker-success-icon i {
+    font-size: 46px;
     color: #28a745;
 }
-
-/* ================= RESULT PERSON ================= */
-.locker-authenticated-person {
-    margin: 0 0 16px;
-}
-.locker-authenticated-person span {
+.locker-kiosk .locker-authenticated-person span {
     display: block;
-    font-size: 13px;
+    font-size: 12px;
     color: #777;
-    margin-bottom: 2px;
 }
-.locker-authenticated-person h2 {
-    font-size: 27px;
-    line-height: 1.25;
+.locker-kiosk .locker-authenticated-person h2 {
+    font-size: 22px;
     font-weight: 600;
     margin: 0;
     color: #2c2c3a;
 }
-
-/* ================= RESULT CARD COMPACT ================= */
-.locker-result-compact {
-    max-width: 620px;
-    padding: 25px 32px !important;
-}
-
-/* ================= LOCKER INFORMATION ================= */
-.locker-information {
+.locker-kiosk .locker-information {
     width: 100%;
     text-align: left;
     border: 1px solid #e5e5ea;
-    border-radius: 11px;
+    border-radius: 10px;
     overflow: hidden;
-    margin: 0 0 16px;
+    margin: 10px 0 14px;
 }
-.locker-info-row {
-    min-height: 40px;
+.locker-kiosk .locker-info-row {
+    min-height: 36px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 18px;
+    padding: 8px 14px;
     border-bottom: 1px solid #eeeeee;
-    gap: 20px;
+    gap: 16px;
     box-sizing: border-box;
 }
-.locker-info-row:last-child {
+.locker-kiosk .locker-info-row:last-child {
     border-bottom: none;
 }
-.locker-info-row span {
+.locker-kiosk .locker-info-row span {
     color: #777;
-    font-size: 14px;
-    line-height: 1.3;
+    font-size: 13px;
 }
-.locker-info-row strong {
+.locker-kiosk .locker-info-row strong {
     color: #2c2c3a;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    text-align: right;
-    line-height: 1.3;
 }
 
-/* ================= CHECK IN / CHECK OUT ACTIONS ================= */
-.locker-check-actions {
+/* ACTION BUTTONS */
+.locker-kiosk .locker-check-actions {
     display: flex;
     width: 100%;
     gap: 10px;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
 }
-.locker-check-button {
+.locker-kiosk .locker-check-button {
     flex: 1;
-    height: 48px;
+    height: 46px;
     padding: 0 15px;
     border-radius: 9px !important;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    margin: 0 !important;
     border: none !important;
     box-sizing: border-box;
 }
-
-/* Check In */
-.locker-check-button.btn-primary {
+.locker-kiosk .locker-check-button.btn-primary {
     background: #714b67 !important;
-    border-color: #714b67 !important;
     color: #ffffff !important;
 }
-.locker-check-button.btn-primary:hover {
-    background: #604057 !important;
-    border-color: #604057 !important;
-}
-
-/* Check Out */
-.locker-check-button.btn-danger {
+.locker-kiosk .locker-check-button.btn-danger {
     background: #dc3545 !important;
-    border-color: #dc3545 !important;
     color: #ffffff !important;
 }
-.locker-check-button.btn-danger:hover {
-    background: #bb2d3b !important;
-    border-color: #bb2d3b !important;
-}
 
-/* ================= MESSAGES ================= */
-.locker-message {
+/* MESSAGES */
+.locker-kiosk .locker-message {
     width: 100%;
-    margin: 12px 0 0;
-    padding: 10px 13px;
+    margin: 10px 0 0;
+    padding: 8px 12px;
     border-radius: 7px;
     font-size: 13px;
-    line-height: 1.4;
     text-align: center;
     box-sizing: border-box;
 }
-.locker-message.success {
+.locker-kiosk .locker-message.success {
     background: #e8f7ed;
     color: #218838;
 }
-.locker-message.danger {
+.locker-kiosk .locker-message.danger {
     background: #fdeaea;
     color: #c62828;
 }
 
-/* ================= RESPONSIVE ================= */
+/* =========================================================
+   AUTHENTICATION METHOD UI
+   ========================================================= */
+
+.locker-kiosk .locker-credential-card {
+    max-width: 580px;
+}
+
+.locker-kiosk .locker-credential-section {
+    width: 100%;
+    margin-top: 12px;
+}
+
+.locker-kiosk .locker-method-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    background: #eeeafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.locker-kiosk .locker-method-icon i {
+    font-size: 24px;
+    color: #714b67;
+}
+
+.locker-kiosk .locker-method-title {
+    font-size: 20px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: #2c2c3a;
+    margin: 0 0 6px;
+}
+
+.locker-kiosk .locker-credential-section > p {
+    font-size: 13px;
+    color: #777;
+    margin: 0 0 14px;
+}
+
+
+/* =========================================================
+   RFID
+   ========================================================= */
+
+.locker-kiosk .locker-rfid-input {
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   QR SCANNER
+   ========================================================= */
+
+.locker-kiosk .locker-qr-scanner {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    height: 250px;
+    margin: 12px auto 10px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #171717;
+    border: 1px solid #dedee5;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12);
+}
+
+.locker-kiosk .locker-qr-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #171717;
+}
+
+.locker-kiosk .locker-qr-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 170px;
+    height: 170px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+
+/* QR CORNERS */
+
+.locker-kiosk .qr-corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: #ffffff;
+    border-style: solid;
+}
+
+.locker-kiosk .qr-top-left {
+    top: 0;
+    left: 0;
+    border-width: 4px 0 0 4px;
+    border-radius: 6px 0 0 0;
+}
+
+.locker-kiosk .qr-top-right {
+    top: 0;
+    right: 0;
+    border-width: 4px 4px 0 0;
+    border-radius: 0 6px 0 0;
+}
+
+.locker-kiosk .qr-bottom-left {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 4px 4px;
+    border-radius: 0 0 0 6px;
+}
+
+.locker-kiosk .qr-bottom-right {
+    bottom: 0;
+    right: 0;
+    border-width: 0 4px 4px 0;
+    border-radius: 0 0 6px 0;
+}
+
+
+/* QR SCANNING LINE */
+
+.locker-kiosk .qr-scan-line {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 50%;
+    height: 2px;
+    background: #714b67;
+    box-shadow: 0 0 8px rgba(113, 75, 103, 0.8);
+    animation: lockerQrScan 2s ease-in-out infinite;
+}
+
+@keyframes lockerQrScan {
+    0% {
+        transform: translateY(-70px);
+        opacity: 0.4;
+    }
+
+    50% {
+        transform: translateY(70px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-70px);
+        opacity: 0.4;
+    }
+}
+
+
+/* QR CAMERA OVERLAY */
+
+.locker-kiosk .locker-qr-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(20, 20, 20, 0.55);
+    color: #ffffff;
+    pointer-events: none;
+}
+
+.locker-kiosk .locker-qr-overlay i {
+    font-size: 38px;
+}
+
+.locker-kiosk .locker-qr-overlay span {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+
+/* QR STATUS */
+
+.locker-kiosk .locker-qr-status {
+    min-height: 18px;
+    margin: 6px 0 12px !important;
+    font-size: 13px !important;
+    color: #777;
+}
+
+
 @media (max-width: 768px) {
+
     .locker-kiosk {
-        padding: 28px 16px 35px;
+        padding: 16px;
     }
-    .locker-kiosk-header {
-        margin-bottom: 18px;
+
+    .locker-kiosk .locker-authentication-card,
+    .locker-kiosk .locker-person-selection-card,
+    .locker-kiosk .locker-result-card {
+        padding: 22px 20px;
     }
-    .locker-kiosk-header h1 {
-        font-size: 30px;
+
+    .locker-kiosk .locker-qr-scanner {
+        max-width: 290px;
+        height: 230px;
     }
-    .locker-kiosk-header p {
-        font-size: 15px;
+
+    .locker-kiosk .locker-qr-frame {
+        width: 155px;
+        height: 155px;
     }
-    .locker-authentication-card,
-    .locker-result-card,
-    .locker-person-selection-card {
-        padding: 22px 18px;
-        border-radius: 15px;
-    }
-    .locker-authentication-card h2 {
-        font-size: 23px;
-    }
-    .locker-person-selection-header h1 {
-        font-size: 27px;
-    }
-    .locker-person-selection-header p {
-        font-size: 14px;
-    }
-    .locker-person-selection-card h2 {
-        font-size: 21px;
-    }
-    .locker-person-option {
-        min-height: 64px;
-        padding: 10px 12px;
-    }
-    .locker-person-option-info strong {
-        font-size: 14px;
-    }
-    .locker-person-option-info span {
-        font-size: 12px;
-    }
-    .locker-result-compact {
-        padding: 22px 18px !important;
-    }
-    .locker-check-actions {
+
+    .locker-kiosk .locker-check-actions {
         flex-direction: column;
         gap: 8px;
     }
-    .locker-check-button {
+
+    .locker-kiosk .locker-check-button {
         width: 100%;
     }
-    .locker-info-row {
-        padding: 9px 14px;
-    }
-    .locker-info-row span,
-    .locker-info-row strong {
-        font-size: 13px;
-    }
+}
+
+.locker-face-scanner {
+    position: relative;
+    width: 420px;
+    height: 300px;
+    max-width: 100%;
+    margin: 20px auto;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.locker-face-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 12px;
 }
