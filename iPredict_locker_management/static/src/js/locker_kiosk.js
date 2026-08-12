@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
+import {Component,onMounted,onWillUnmount,useState,} from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 
@@ -20,6 +20,7 @@ export class LockerKiosk extends Component {
             message: "",
             messageType: "",
             loading: false,
+            // QR AUTHENTICATION
             qrScanning: false,
             qrSupported: false,
             qrAuthOptions: false,
@@ -28,36 +29,212 @@ export class LockerKiosk extends Component {
             otpSent: false,
             lockedUntil: null,
             faceScanning: false,
-            faceVerifying: false,
+            // CURRENTLY CHECKED-IN PEOPLE
+            currentCheckedIn: [],
+            currentCheckedInSearch: "",
+            currentCheckedInPage: 1,
+            currentCheckedInPageSize: 2,
+            currentCheckedInLoading: false,
+            companionCount: 0,
         });
+
+        // QR CAMERA VARIABLES
         this.qrStream = null;
         this.qrVideo = null;
         this.qrCanvas = null;
         this.qrContext = null;
         this.qrAnimationFrame = null;
         this.qrScanInProgress = false;
+
+        // FACE CAMERA VARIABLES
         this.faceStream = null;
         this.faceVideo = null;
         this.faceCanvas = null;
         this.faceContext = null;
+
         this.selectPerson = this.selectPerson.bind(this);
-        onMounted(() => { this.focusCurrentInput(); });
-        onWillUnmount(() => { this.stopQRScanner(); this.stopFaceScanner(); });
+
+        onMounted(() => {
+            this.focusCurrentInput();
+            this.loadCurrentCheckedIn();
+        });
+        onWillUnmount(() => {
+            this.stopQRScanner();
+            this.stopFaceScanner();
+        });
+    }
+
+    async loadCurrentCheckedIn() {
+        this.state.currentCheckedInLoading = true;
+
+        try {
+            const result = await rpc("/locker/access/current_checked_in",{});
+
+            if (!result.success) {
+                console.error(
+                    "Unable to load currently checked-in people:",
+                    result.message
+                );
+                return;
+            }
+
+            this.state.currentCheckedIn = (result.people || []).map((person) => ({
+                ...person,
+                access_method_label: this.getAccessMethodLabel(person.access_method),
+                formatted_check_in_time: this.formatCheckInTime(person.check_in_time),
+                companion_count: person.companion_count || 0,
+                total_people: person.total_people || 1,
+            }));
+
+            const totalPages = this.getCurrentCheckedInTotalPages();
+
+            if (this.state.currentCheckedInPage > totalPages) {
+                this.state.currentCheckedInPage = totalPages;
+            }
+
+            if (this.state.currentCheckedInPage < 1) {
+                this.state.currentCheckedInPage = 1;
+            }
+
+        } catch (error) {
+            console.error(
+                "Current checked-in people error:",
+                error
+            );
+        } finally {
+            this.state.currentCheckedInLoading = false;
+        }
+    }
+
+    onCurrentCheckedInSearchChange(ev) {
+        this.state.currentCheckedInSearch = ev.target.value;
+        this.state.currentCheckedInPage = 1;
+    }
+
+    getFilteredCurrentCheckedIn() {
+        const search = this.state.currentCheckedInSearch.trim().toLowerCase();
+
+        if (!search) {
+            return this.state.currentCheckedIn;
+        }
+
+        return this.state.currentCheckedIn.filter((person) => {
+            return (
+                (person.partner_name || "").toLowerCase().includes(search) ||
+                (person.locker_name || "").toLowerCase().includes(search) ||
+                (person.access_method_label || "").toLowerCase().includes(search)
+            );
+        });
+    }
+
+    getAccessMethodLabel(method) {
+        const labels = {
+            pin: "PIN Code",
+            qr: "QR Code",
+            rfid: "RFID Card",
+            physical_key: "Physical Key",
+            biometric: "Biometric",
+        };
+
+        return labels[method] || method || "Unknown";
+    }
+
+    formatCheckInTime(value) {
+        if (!value) {
+            return "Not Available";
+        }
+
+        try {
+            let date;
+
+            if (typeof value === "string") {
+                if (value.includes("T")) {
+                    date = new Date(value);
+                } else {
+                    date = new Date(value.replace(" ", "T") + "Z");
+                }
+            } else {
+                date = new Date(value);
+            }
+
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+
+            return date.toLocaleString("en-IN", {
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+            });
+        } catch (error) {
+            console.error("Check-in time formatting error:", error);
+            return value;
+        }
+    }
+
+    getCurrentCheckedInTotalPages() {
+        const total = this.getFilteredCurrentCheckedIn().length;
+
+        return Math.max(
+            1,
+            Math.ceil(total / this.state.currentCheckedInPageSize)
+        );
+    }
+
+    getCurrentCheckedInPageData() {
+        const people = this.getFilteredCurrentCheckedIn();
+
+        const start = (this.state.currentCheckedInPage - 1) * this.state.currentCheckedInPageSize;
+
+        return people.slice(
+            start,
+            start + this.state.currentCheckedInPageSize
+        );
+    }
+
+    previousCurrentCheckedInPage() {
+        if (this.state.currentCheckedInPage > 1) {
+            this.state.currentCheckedInPage -= 1;
+        }
+    }
+
+    nextCurrentCheckedInPage() {
+        const totalPages = this.getCurrentCheckedInTotalPages();
+
+        if (this.state.currentCheckedInPage < totalPages) {
+            this.state.currentCheckedInPage += 1;
+        }
     }
 
     focusCurrentInput() {
         setTimeout(() => {
             let selector = null;
+
             if (this.state.mode === "person_search") {
                 selector = ".locker-person-search-input";
-            } else if (this.state.mode === "credential" && this.state.selectedPerson?.access_method !== "qr" && this.state.selectedPerson?.access_method !== "biometric") {
+            } else if (
+                this.state.mode === "credential" &&
+                this.state.selectedPerson?.access_method !== "qr" &&
+                this.state.selectedPerson?.access_method !== "biometric"
+            ) {
                 selector = ".locker-authentication-input";
             } else if (this.state.mode === "otp") {
                 selector = ".locker-otp-input";
             }
-            if (!selector) return;
+
+            if (!selector) {
+                return;
+            }
+
             const input = document.querySelector(selector);
-            if (input) { input.focus(); input.select(); }
+            if (input) {
+                input.focus();
+                input.select();
+            }
         }, 100);
     }
 
@@ -71,6 +248,7 @@ export class LockerKiosk extends Component {
         this.state.messageType = "";
     }
 
+    // RESET QR AUTHENTICATION STATE
     resetQRAuthenticationState() {
         this.state.qrAuthOptions = false;
         this.state.qrHasOTP = false;
@@ -79,12 +257,14 @@ export class LockerKiosk extends Component {
         this.state.lockedUntil = null;
     }
 
+    // RESET FACE AUTHENTICATION STATE
     resetFaceAuthenticationState() {
         this.state.faceScanning = false;
         this.state.faceVerifying = false;
         this.stopFaceScanner();
     }
 
+    // PERSON SEARCH
     onPersonSearchChange(ev) {
         this.state.personSearch = ev.target.value;
         this.clearMessage();
@@ -92,349 +272,587 @@ export class LockerKiosk extends Component {
 
     async findPerson() {
         const value = this.state.personSearch.trim();
+
         if (!value) {
-            this.showMessage("Please enter name, email or phone number.", "danger");
+            this.showMessage(
+                "Please enter name, email or phone number.",
+                "danger"
+            );
             return;
         }
+
         this.state.loading = true;
         this.clearMessage();
+
         this.state.persons = [];
         this.state.selectedPerson = null;
         this.state.authentication = "";
         this.state.allocation = null;
+
         this.resetQRAuthenticationState();
         this.resetFaceAuthenticationState();
         this.stopQRScanner();
+
         try {
-            const result = await rpc("/locker/access/find_person", { identity: value });
+            const result = await rpc(
+                "/locker/access/find_person",
+                {
+                    identity: value,
+                }
+            );
+
             if (!result.success) {
-                this.showMessage(result.message || "No person found.", "danger");
+                this.showMessage(
+                    result.message || "No person found.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.persons = result.persons || [];
+
             if (!this.state.persons.length) {
-                this.showMessage("No authorized person found.", "danger");
+                this.showMessage(
+                    "No authorized person found.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.mode = "person_selection";
+
         } catch (error) {
-            console.error("Locker person search error:", error);
-            this.showMessage("Unable to find person. Please try again.", "danger");
+            console.error(
+                "Locker person search error:",
+                error
+            );
+            this.showMessage(
+                "Unable to find person. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
         }
     }
 
+    // PERSON SELECTION
     selectPerson(person) {
         if (!person) {
-            console.error("No person received in selectPerson()");
+            console.error(
+                "No person received in selectPerson()"
+            );
             return;
         }
-        console.log("Selected Person:", person);
-        console.log("Access Method:", person.access_method);
+
+        console.log(
+            "Selected Person:",
+            person
+        );
+
+        console.log(
+            "Access Method:",
+            person.access_method
+        );
+
+        // Stop previous cameras
         this.stopQRScanner();
         this.stopFaceScanner();
+
+        // Set selected person
         this.state.selectedPerson = person;
+
         this.state.authentication = "";
         this.state.allocation = null;
+        this.state.companionCount = 0;
+
         this.clearMessage();
+
         this.resetQRAuthenticationState();
+
+        // OTP LOCK
         if (person.otp_locked) {
             this.state.lockedUntil = person.otp_locked_until || null;
             this.state.mode = "locked";
-            this.showMessage("You have already used all 3 authentication attempts. Please try again after 10 minutes.", "danger");
+            this.showMessage(
+                "You have already used all 3 authentication attempts. Please try again after 10 minutes.",
+                "danger"
+            );
             return;
         }
-        this.state.mode = "credential";
-        if (person.access_method === "pin") {
-            setTimeout(() => this.focusCurrentInput(), 200);
-            return;
-        }
-        if (person.access_method === "rfid") {
-            setTimeout(() => this.focusCurrentInput(), 200);
-            return;
-        }
-        if (person.access_method === "qr") {
-            setTimeout(() => this.startQRScanner(), 500);
-            return;
-        }
-        if (person.access_method === "biometric") {
-            setTimeout(() => this.startFaceScanner(), 500);
-            return;
-        }
-        setTimeout(() => this.focusCurrentInput(), 200);
+
+        // Companion Selection
+        this.state.mode = "companion_selection";
     }
 
+    // BACK TO PERSON SEARCH
     backToPersonSearch() {
         this.stopQRScanner();
         this.stopFaceScanner();
+
         this.state.mode = "person_search";
         this.state.personSearch = "";
         this.state.persons = [];
         this.state.selectedPerson = null;
         this.state.authentication = "";
         this.state.allocation = null;
+
         this.resetQRAuthenticationState();
         this.clearMessage();
         this.state.loading = false;
         this.focusCurrentInput();
     }
 
+    // CREDENTIAL INPUT
     onInputChange(ev) {
         this.state.authentication = ev.target.value;
         this.clearMessage();
     }
 
+    // NORMAL AUTHENTICATION (PIN / RFID)
     async authenticate() {
-        const value = this.state.authentication.trim();
-        if (!value) {
-            this.showMessage("Please enter or scan your authentication credential.", "danger");
+        if (!this.state.selectedPerson) {
+            this.showMessage(
+                "Please select a person first.",
+                "danger"
+            );
             return;
         }
-        if (!this.state.selectedPerson) {
-            this.showMessage("Please select a person first.", "danger");
+
+        const isPhysicalKey = this.state.selectedPerson.access_method === "physical_key";
+        const value = this.state.authentication.trim();
+
+        // Physical Key does not require credential input.
+        if (!isPhysicalKey && !value) {
+            this.showMessage(
+                "Please enter or scan your authentication credential.",
+                "danger"
+            );
             return;
         }
         if (this.state.selectedPerson.access_method === "qr") {
-            this.showMessage("Please scan the QR code first.", "danger");
+            this.showMessage(
+                "Please scan the QR code first.",
+                "danger"
+            );
             return;
         }
         if (this.state.selectedPerson.access_method === "biometric") {
-            this.showMessage("Please use face recognition.", "danger");
+            this.showMessage(
+                "Please use face recognition.",
+                "danger"
+            );
             return;
         }
         this.state.loading = true;
         this.clearMessage();
         this.state.allocation = null;
+
         try {
-            const result = await rpc("/locker/access/authenticate", {
-                identity: value,
-                partner_id: this.state.selectedPerson.partner_id,
-                allocation_id: this.state.selectedPerson.allocation_id,
-            });
+            const result = await rpc(
+                "/locker/access/authenticate",
+                {
+                    identity: value,
+                    partner_id: this.state.selectedPerson.partner_id,
+                    allocation_id: this.state.selectedPerson.allocation_id,
+                }
+            );
+
             if (!result.success) {
-                this.showMessage(result.message || "Authentication failed.", "danger");
+                this.showMessage(
+                    result.message || "Authentication failed.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.allocation = result.allocation;
             this.state.mode = "result";
-            this.showMessage("Identity verified successfully.", "success");
+            this.showMessage(
+                "Identity verified successfully.",
+                "success"
+            );
+
         } catch (error) {
-            console.error("Locker authentication error:", error);
-            this.showMessage("Unable to authenticate. Please try again.", "danger");
+            console.error(
+                "Locker authentication error:",
+                error
+            );
+            this.showMessage(
+                "Unable to authenticate. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
         }
     }
 
+    // FACE RECOGNITION
     async startFaceScanner() {
-        if (!this.state.selectedPerson || this.state.selectedPerson.access_method !== "biometric") return;
+        if (!this.state.selectedPerson || this.state.selectedPerson.access_method !== "biometric") {
+            return;
+        }
+
         this.stopFaceScanner();
         this.clearMessage();
         this.state.faceScanning = false;
         this.state.faceVerifying = false;
+
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            this.showMessage("Camera access is not supported by this browser.", "danger");
+            this.showMessage(
+                "Camera access is not supported by this browser.",
+                "danger"
+            );
             return;
         }
+
         try {
-            const pendingResult = await rpc("/locker/access/start_face", {
-                partner_id: this.state.selectedPerson.partner_id,
-                allocation_id: this.state.selectedPerson.allocation_id,
-            });
+            const pendingResult = await rpc(
+                "/locker/access/start_face",
+                {
+                    partner_id: this.state.selectedPerson.partner_id,
+                    allocation_id: this.state.selectedPerson.allocation_id,
+                }
+            );
+
             if (!pendingResult.success) {
                 if (pendingResult.locked) {
                     this.state.lockedUntil = pendingResult.locked_until || null;
                     this.state.mode = "locked";
                 }
-                this.showMessage(pendingResult.message || "Unable to start face authentication.", "danger");
+                this.showMessage(
+                    pendingResult.message || "Unable to start face authentication.",
+                    "danger"
+                );
                 return;
             }
+
             const video = document.querySelector(".locker-face-video");
             if (!video) {
                 console.error("Face video element not found.");
-                this.showMessage("Unable to initialize face camera.", "danger");
+                this.showMessage(
+                    "Unable to initialize face camera.",
+                    "danger"
+                );
                 return;
             }
+
             this.faceVideo = video;
             this.faceCanvas = document.createElement("canvas");
             this.faceContext = this.faceCanvas.getContext("2d");
+
             if (!this.faceContext) {
-                this.showMessage("Unable to initialize face camera.", "danger");
+                this.showMessage(
+                    "Unable to initialize face camera.",
+                    "danger"
+                );
                 return;
             }
+
             this.faceStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: {
+                    facingMode: { ideal: "user" },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
                 audio: false,
             });
+
             this.faceVideo.srcObject = this.faceStream;
             this.faceVideo.setAttribute("playsinline", "true");
             this.faceVideo.setAttribute("autoplay", "true");
             this.faceVideo.muted = true;
             await this.faceVideo.play();
+
             this.state.faceScanning = true;
+            console.log("[FACE] Camera started successfully.");
+
         } catch (error) {
             console.error("Face scanner initialization error:", error);
             this.state.faceScanning = false;
+
             if (error.name === "NotAllowedError") {
-                this.showMessage("Camera permission was denied. Please allow camera access.", "danger");
+                this.showMessage(
+                    "Camera permission was denied. Please allow camera access.",
+                    "danger"
+                );
             } else if (error.name === "NotFoundError") {
-                this.showMessage("No camera was found on this device.", "danger");
+                this.showMessage(
+                    "No camera was found on this device.",
+                    "danger"
+                );
             } else if (error.name === "NotReadableError") {
-                this.showMessage("Camera is already being used by another application.", "danger");
+                this.showMessage(
+                    "Camera is already being used by another application.",
+                    "danger"
+                );
             } else {
-                this.showMessage("Unable to start face camera. Please try again.", "danger");
+                this.showMessage(
+                    "Unable to start face camera. Please try again.",
+                    "danger"
+                );
             }
         }
     }
 
+    // VERIFY FACE
     async verifyFace() {
         if (!this.state.selectedPerson || !this.faceVideo || !this.state.faceScanning) {
-            this.showMessage("Please start the camera first.", "danger");
+            this.showMessage(
+                "Please start the camera first.",
+                "danger"
+            );
             return;
         }
-        if (this.state.faceVerifying) return;
+
+        if (this.state.faceVerifying) {
+            return;
+        }
+
         const video = this.faceVideo;
+
         if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-            this.showMessage("Camera is not ready yet. Please wait.", "danger");
+            this.showMessage(
+                "Camera is not ready yet. Please wait.",
+                "danger"
+            );
             return;
         }
+
         const videoWidth = video.videoWidth;
         const videoHeight = video.videoHeight;
+
         if (!videoWidth || !videoHeight) {
-            this.showMessage("Unable to capture the camera image. Please try again.", "danger");
+            this.showMessage(
+                "Unable to capture the camera image. Please try again.",
+                "danger"
+            );
             return;
         }
+
         this.faceCanvas.width = videoWidth;
         this.faceCanvas.height = videoHeight;
         this.faceContext.drawImage(video, 0, 0, videoWidth, videoHeight);
+
         const image = this.faceCanvas.toDataURL("image/jpeg", 0.85);
+
         this.state.faceVerifying = true;
         this.state.loading = true;
         this.clearMessage();
+
         try {
-            const result = await rpc("/locker/access/verify_face", { image: image });
+            const result = await rpc(
+                "/locker/access/verify_face",
+                { image: image }
+            );
+
             if (!result.success) {
                 if (result.locked) {
                     this.state.lockedUntil = result.locked_until || null;
                     this.state.mode = "locked";
                     this.stopFaceScanner();
-                    this.showMessage(result.message || "Too many incorrect authentication attempts.", "danger");
+                    this.showMessage(
+                        result.message || "Too many incorrect authentication attempts.",
+                        "danger"
+                    );
                     return;
                 }
-                this.showMessage(result.message || "Face verification failed.", "danger");
+                this.showMessage(
+                    result.message || "Face verification failed.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.allocation = result.allocation;
             this.state.mode = "result";
             this.stopFaceScanner();
-            this.showMessage(result.message || "Face verified successfully.", "success");
+            this.showMessage(
+                "Identity verified successfully.",
+                "success"
+            );
+
         } catch (error) {
             console.error("Face verification error:", error);
-            this.showMessage("Unable to verify face. Please try again.", "danger");
+            this.showMessage(
+                "Unable to verify face. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.faceVerifying = false;
             this.state.loading = false;
         }
     }
 
+    // STOP FACE CAMERA
     stopFaceScanner() {
         this.state.faceScanning = false;
         this.state.faceVerifying = false;
+
         if (this.faceStream) {
-            this.faceStream.getTracks().forEach((track) => { track.stop(); });
+            this.faceStream.getTracks().forEach((track) => {
+                track.stop();
+            });
             this.faceStream = null;
         }
+
         if (this.faceVideo) {
-            try { this.faceVideo.pause(); } catch (error) { console.warn("Unable to pause face video:", error); }
+            try {
+                this.faceVideo.pause();
+            } catch (error) {
+                console.warn("Unable to pause face video:", error);
+            }
             this.faceVideo.srcObject = null;
             this.faceVideo = null;
         }
+
         this.faceCanvas = null;
         this.faceContext = null;
     }
 
+    // QR SCANNER
     async startQRScanner() {
-        if (!this.state.selectedPerson || this.state.selectedPerson.access_method !== "qr") return;
+        if (!this.state.selectedPerson || this.state.selectedPerson.access_method !== "qr") {
+            return;
+        }
+
         this.stopQRScanner();
         this.clearMessage();
+
         this.state.qrScanning = false;
         this.state.qrSupported = false;
         this.qrScanInProgress = false;
+
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            this.showMessage("Camera access is not supported by this browser.", "danger");
+            this.showMessage(
+                "Camera access is not supported by this browser.",
+                "danger"
+            );
             return;
         }
+
         if (typeof window.jsQR !== "function") {
             console.error("jsQR library is not loaded.");
-            this.showMessage("QR scanner library is not loaded. Please refresh the page.", "danger");
+            this.showMessage(
+                "QR scanner library is not loaded. Please refresh the page.",
+                "danger"
+            );
             return;
         }
+
         this.state.qrSupported = true;
+
         try {
             const video = document.querySelector(".locker-qr-video");
             if (!video) {
                 console.error("QR video element not found.");
-                this.showMessage("Unable to initialize QR scanner.", "danger");
+                this.showMessage(
+                    "Unable to initialize QR scanner.",
+                    "danger"
+                );
                 return;
             }
+
             this.qrVideo = video;
             this.qrCanvas = document.createElement("canvas");
             this.qrCanvas.width = 640;
             this.qrCanvas.height = 480;
             this.qrContext = this.qrCanvas.getContext("2d", { willReadFrequently: true });
+
             if (!this.qrContext) {
-                this.showMessage("Unable to initialize QR scanner.", "danger");
+                this.showMessage(
+                    "Unable to initialize QR scanner.",
+                    "danger"
+                );
                 return;
             }
+
             this.qrStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: {
+                    facingMode: { ideal: "environment" },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
                 audio: false,
             });
+
             this.qrVideo.srcObject = this.qrStream;
             this.qrVideo.setAttribute("playsinline", "true");
             this.qrVideo.setAttribute("autoplay", "true");
             this.qrVideo.muted = true;
             await this.qrVideo.play();
+
             this.state.qrScanning = true;
             this.scanQRCode();
+
         } catch (error) {
             console.error("QR scanner initialization error:", error);
             this.state.qrScanning = false;
+
             if (error.name === "NotAllowedError") {
-                this.showMessage("Camera permission was denied. Please allow camera access.", "danger");
+                this.showMessage(
+                    "Camera permission was denied. Please allow camera access.",
+                    "danger"
+                );
             } else if (error.name === "NotFoundError") {
-                this.showMessage("No camera was found on this device.", "danger");
+                this.showMessage(
+                    "No camera was found on this device.",
+                    "danger"
+                );
             } else if (error.name === "NotReadableError") {
-                this.showMessage("Camera is already being used by another application.", "danger");
+                this.showMessage(
+                    "Camera is already being used by another application.",
+                    "danger"
+                );
             } else {
-                this.showMessage("Unable to start QR scanner. Please try again.", "danger");
+                this.showMessage(
+                    "Unable to start QR scanner. Please try again.",
+                    "danger"
+                );
             }
         }
     }
 
+    // SCAN QR
     async scanQRCode() {
-        if (!this.state.qrScanning || !this.qrVideo || !this.qrCanvas || !this.qrContext) return;
-        if (this.qrScanInProgress) return;
+        if (!this.state.qrScanning || !this.qrVideo || !this.qrCanvas || !this.qrContext) {
+            return;
+        }
+
+        if (this.qrScanInProgress) {
+            return;
+        }
+
         try {
             const video = this.qrVideo;
+
             if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
                 this.scheduleNextQRScan();
                 return;
             }
+
             const videoWidth = video.videoWidth;
             const videoHeight = video.videoHeight;
+
             if (!videoWidth || !videoHeight) {
                 this.scheduleNextQRScan();
                 return;
             }
+
             if (this.qrCanvas.width !== videoWidth || this.qrCanvas.height !== videoHeight) {
                 this.qrCanvas.width = videoWidth;
                 this.qrCanvas.height = videoHeight;
             }
+
             this.qrContext.drawImage(video, 0, 0, videoWidth, videoHeight);
             const imageData = this.qrContext.getImageData(0, 0, videoWidth, videoHeight);
-            const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
+
+            const code = window.jsQR(
+                imageData.data,
+                imageData.width,
+                imageData.height,
+                { inversionAttempts: "attemptBoth" }
+            );
+
             if (code && code.data) {
                 const qrValue = code.data.trim();
                 if (qrValue) {
@@ -446,121 +864,202 @@ export class LockerKiosk extends Component {
                     return;
                 }
             }
+
         } catch (error) {
             console.error("QR scanning error:", error);
         }
+
         this.scheduleNextQRScan();
     }
 
+    // VERIFY QR
     async verifyQRCode(qrToken) {
         if (!this.state.selectedPerson) {
-            this.showMessage("Please select a person first.", "danger");
+            this.showMessage(
+                "Please select a person first.",
+                "danger"
+            );
             return;
         }
+
         this.state.loading = true;
         this.clearMessage();
+
         try {
-            const result = await rpc("/locker/access/verify_qr", {
-                qr_token: qrToken,
-                partner_id: this.state.selectedPerson.partner_id,
-                allocation_id: this.state.selectedPerson.allocation_id,
-            });
+            const result = await rpc(
+                "/locker/access/verify_qr",
+                {
+                    qr_token: qrToken,
+                    partner_id: this.state.selectedPerson.partner_id,
+                    allocation_id: this.state.selectedPerson.allocation_id,
+                }
+            );
+
             if (!result.success) {
-                this.showMessage(result.message || "Invalid QR code.", "danger");
+                this.showMessage(
+                    result.message || "Invalid QR code.",
+                    "danger"
+                );
                 this.qrScanInProgress = false;
                 return;
             }
+
             this.state.qrHasOTP = !!result.has_otp;
             this.state.qrAuthOptions = true;
             this.state.mode = "qr_verification";
+
             if (this.state.qrHasOTP) {
-                this.showMessage("QR code verified. Please continue with OTP authentication.", "success");
+                this.showMessage(
+                    "QR code verified. Please continue with OTP authentication.",
+                    "success"
+                );
             } else {
-                this.showMessage("OTP authentication is not available for this person.", "danger");
+                this.showMessage(
+                    "OTP authentication is not available for this person.",
+                    "danger"
+                );
             }
+
         } catch (error) {
             console.error("QR verification error:", error);
-            this.showMessage("Unable to verify QR code. Please try again.", "danger");
+            this.showMessage(
+                "Unable to verify QR code. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
             this.qrScanInProgress = false;
         }
     }
 
+    // SEND OTP
     async chooseOTP() {
         if (!this.state.qrHasOTP) {
-            this.showMessage("OTP authentication is not available for this person.", "danger");
+            this.showMessage(
+                "OTP authentication is not available for this person.",
+                "danger"
+            );
             return;
         }
+
         this.state.loading = true;
         this.clearMessage();
+
         try {
-            const result = await rpc("/locker/access/send_otp", {});
+            const result = await rpc(
+                "/locker/access/send_otp",
+                {}
+            );
+
             if (!result.success) {
                 if (result.locked) {
                     this.state.lockedUntil = result.locked_until || null;
                     this.state.mode = "locked";
                 }
-                this.showMessage(result.message || "Unable to send OTP.", "danger");
+                this.showMessage(
+                    result.message || "Unable to send OTP.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.otp = "";
             this.state.otpSent = true;
             this.state.mode = "otp";
-            this.showMessage(result.message || "OTP has been sent to the registered email address.", "success");
-            setTimeout(() => { this.focusCurrentInput(); }, 200);
+            this.showMessage(
+                result.message || "OTP has been sent to the registered email address.",
+                "success"
+            );
+
+            setTimeout(() => {
+                this.focusCurrentInput();
+            }, 200);
+
         } catch (error) {
             console.error("Send OTP error:", error);
-            this.showMessage("Unable to send OTP. Please try again.", "danger");
+            this.showMessage(
+                "Unable to send OTP. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
         }
     }
 
+    // OTP INPUT
     onOTPChange(ev) {
         this.state.otp = ev.target.value.replace(/\D/g, "").slice(0, 6);
         this.clearMessage();
     }
 
+    // VERIFY OTP
     async verifyOTP() {
         const otp = this.state.otp.trim();
+
         if (!otp) {
-            this.showMessage("Please enter the OTP.", "danger");
+            this.showMessage(
+                "Please enter the OTP.",
+                "danger"
+            );
             return;
         }
+
         if (otp.length !== 6) {
-            this.showMessage("OTP must contain exactly 6 digits.", "danger");
+            this.showMessage(
+                "OTP must contain exactly 6 digits.",
+                "danger"
+            );
             return;
         }
+
         this.state.loading = true;
         this.clearMessage();
+
         try {
-            const result = await rpc("/locker/access/verify_otp", { otp: otp });
+            const result = await rpc(
+                "/locker/access/verify_otp",
+                { otp: otp }
+            );
+
             if (!result.success) {
                 if (result.locked) {
                     this.state.otp = "";
                     this.state.otpSent = false;
                     this.state.lockedUntil = result.locked_until || null;
                     this.state.mode = "locked";
-                    this.showMessage(result.message || "Too many incorrect attempts.", "danger");
+                    this.showMessage(
+                        result.message || "Too many incorrect attempts.",
+                        "danger"
+                    );
                     return;
                 }
-                this.showMessage(result.message || "Invalid OTP.", "danger");
+                this.showMessage(
+                    result.message || "Invalid OTP.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.allocation = result.allocation;
             this.state.mode = "result";
-            this.state.otp = "";
-            this.state.otpSent = false;
-            this.showMessage(result.message || "OTP verified successfully.", "success");
+            this.stopFaceScanner();
+            this.showMessage(
+                "Identity verified successfully.",
+                "success"
+            );
+
         } catch (error) {
             console.error("OTP verification error:", error);
-            this.showMessage("Unable to verify OTP. Please try again.", "danger");
+            this.showMessage(
+                "Unable to verify OTP. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
         }
     }
 
+    // BACK TO QR AUTHENTICATION
     backToQRAuthentication() {
         this.state.otp = "";
         this.state.otpSent = false;
@@ -568,90 +1067,236 @@ export class LockerKiosk extends Component {
         this.state.mode = "qr_verification";
     }
 
+    // QR NEXT FRAME
     scheduleNextQRScan() {
-        if (!this.state.qrScanning) return;
-        this.qrAnimationFrame = requestAnimationFrame(() => { this.scanQRCode(); });
+        if (!this.state.qrScanning) {
+            return;
+        }
+
+        this.qrAnimationFrame = requestAnimationFrame(() => {
+            this.scanQRCode();
+        });
     }
 
+    // STOP QR CAMERA
     stopQRScanner() {
         this.state.qrScanning = false;
         this.qrScanInProgress = false;
+
         if (this.qrAnimationFrame) {
             cancelAnimationFrame(this.qrAnimationFrame);
             this.qrAnimationFrame = null;
         }
+
         if (this.qrStream) {
-            this.qrStream.getTracks().forEach((track) => { track.stop(); });
+            this.qrStream.getTracks().forEach((track) => {
+                track.stop();
+            });
             this.qrStream = null;
         }
+
         if (this.qrVideo) {
-            try { this.qrVideo.pause(); } catch (error) { console.warn("Unable to pause QR video:", error); }
+            try {
+                this.qrVideo.pause();
+            } catch (error) {
+                console.warn("Unable to pause QR video:", error);
+            }
             this.qrVideo.srcObject = null;
             this.qrVideo = null;
         }
+
         this.qrCanvas = null;
         this.qrContext = null;
     }
 
+    // RFID INPUT
     startRFIDInput() {
         setTimeout(() => {
             const input = document.querySelector(".locker-rfid-input") || document.querySelector(".locker-authentication-input");
-            if (input) { input.focus(); input.select(); }
+            if (input) {
+                input.focus();
+                input.select();
+            }
         }, 100);
     }
 
+    setCompanionCount(count) {
+        const value = parseInt(count, 10);
+        if (Number.isNaN(value) || value < 0) {
+            return;
+        }
+        this.state.companionCount = value;
+    }
+
+    increaseCompanionCount() {
+        this.state.companionCount += 1;
+    }
+
+    decreaseCompanionCount() {
+        if (this.state.companionCount > 0) {
+            this.state.companionCount -= 1;
+        }
+    }
+
+    confirmCompanionCount() {
+        this.state.mode = "credential";
+        this.clearMessage();
+
+        const person = this.state.selectedPerson;
+
+        if (!person) {
+            return;
+        }
+
+        if (person.access_method === "physical_key") {
+            this.state.authentication = "physical_key";
+            setTimeout(() => {
+                this.authenticate();
+            }, 100);
+            return;
+        }
+
+        if (person.access_method === "pin") {
+            setTimeout(() => {
+                this.focusCurrentInput();
+            }, 200);
+            return;
+        }
+
+        if (person.access_method === "rfid") {
+            setTimeout(() => {
+                this.focusCurrentInput();
+            }, 200);
+            return;
+        }
+
+        if (person.access_method === "qr") {
+            setTimeout(() => {
+                this.startQRScanner();
+            }, 500);
+            return;
+        }
+
+        if (person.access_method === "biometric") {
+            setTimeout(() => {
+                this.startFaceScanner();
+            }, 500);
+            return;
+        }
+
+        setTimeout(() => {
+            this.focusCurrentInput();
+        }, 200);
+    }
+
+    checkOutCurrentPerson = async (person) => {
+        if (!person) {
+            return;
+        }
+
+        this.state.allocation = {
+            id: person.allocation_id,
+            authenticated_partner_id: person.partner_id,
+            can_check_in: false,
+            can_check_out: true,
+            authenticated_partner_name: person.partner_name,
+            partner_name: person.partner_name,
+            locker_name: person.locker_name,
+            access_method: person.access_method,
+        };
+
+        await this.performAccess("check_out");
+    };
+
+    // CHECK IN
     async checkIn() {
-        if (!this.state.allocation) return;
+        if (!this.state.allocation) {
+            return;
+        }
         await this.performAccess("check_in");
     }
 
+    // CHECK OUT
     async checkOut() {
-        if (!this.state.allocation) return;
+        if (!this.state.allocation) {
+            return;
+        }
         await this.performAccess("check_out");
     }
 
+    // ACCESS ACTION
     async performAccess(action) {
-        if (!this.state.allocation) return;
+        if (!this.state.allocation) {
+            return;
+        }
+
         this.state.loading = true;
         this.clearMessage();
+
         try {
             const result = await rpc("/locker/access/action", {
                 allocation_id: this.state.allocation.id,
                 action: action,
                 authenticated_partner_id: this.state.allocation.authenticated_partner_id,
+                companion_count: action === "check_in" ? this.state.companionCount : 0,
             });
+
             if (!result.success) {
-                this.showMessage(result.message || "Unable to perform action.", "danger");
+                this.showMessage(
+                    result.message || "Unable to perform action.",
+                    "danger"
+                );
                 return;
             }
+
             this.state.allocation = result.allocation;
-            this.showMessage(result.message, "success");
+            await this.loadCurrentCheckedIn();
+            this.showMessage(
+                result.message,
+                "success"
+            );
+
         } catch (error) {
             console.error("Locker access action error:", error);
-            this.showMessage("Something went wrong. Please try again.", "danger");
+            this.showMessage(
+                "Something went wrong. Please try again.",
+                "danger"
+            );
         } finally {
             this.state.loading = false;
         }
     }
 
+    // RESET SCREEN
     resetScreen() {
         this.stopQRScanner();
         this.stopFaceScanner();
+
         this.state.mode = "person_search";
         this.state.personSearch = "";
         this.state.persons = [];
         this.state.selectedPerson = null;
         this.state.authentication = "";
         this.state.allocation = null;
+
         this.resetQRAuthenticationState();
+
         this.clearMessage();
+
         this.state.loading = false;
+        this.state.companionCount = 0;
+
         this.state.qrScanning = false;
         this.state.qrSupported = false;
         this.state.faceScanning = false;
         this.state.faceVerifying = false;
+
         this.focusCurrentInput();
     }
 }
 
-registry.category("actions").add("locker_kiosk_action", LockerKiosk);
+// REGISTER ACTION
+registry.category("actions").add(
+    "locker_kiosk_action",
+    LockerKiosk
+);

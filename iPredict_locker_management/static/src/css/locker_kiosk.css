@@ -1,4 +1,5 @@
-/* MAIN CONTAINER ONLY */
+
+/* ----- MAIN CONTAINER ----- */
 .locker-kiosk {
     width: 100%;
     max-height: calc(100vh - 100px);
@@ -12,7 +13,7 @@
     overflow-y: auto;
 }
 
-/* HEADER */
+/* ----- HEADER ----- */
 .locker-kiosk .locker-kiosk-header {
     width: 100%;
     text-align: center;
@@ -33,6 +34,7 @@
     color: #6c6c7a;
 }
 
+/* ----- CARDS (Authentication, Person Selection, Result) ----- */
 .locker-kiosk .locker-authentication-card,
 .locker-kiosk .locker-person-selection-card,
 .locker-kiosk .locker-result-card {
@@ -47,6 +49,7 @@
     margin-bottom: 20px;
 }
 
+/* ----- AUTH ICON ----- */
 .locker-kiosk .locker-auth-icon {
     width: 60px;
     height: 60px;
@@ -63,6 +66,7 @@
     color: #714b67;
 }
 
+/* ----- HEADINGS & PARAGRAPHS ----- */
 .locker-kiosk .locker-authentication-card h2,
 .locker-kiosk .locker-person-selection-card h2 {
     font-size: 24px;
@@ -78,6 +82,7 @@
     margin: 0 0 18px;
 }
 
+/* ----- INPUTS ----- */
 .locker-kiosk .locker-person-search-input,
 .locker-kiosk .locker-authentication-input {
     display: block;
@@ -105,6 +110,7 @@
     box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12) !important;
 }
 
+/* ----- BUTTONS (Authenticate / Action) ----- */
 .locker-kiosk .locker-authenticate-button,
 .locker-kiosk .locker-action-button {
     display: block;
@@ -126,6 +132,7 @@
     background: #604057 !important;
 }
 
+/* ----- PERSON SELECTION HEADER ----- */
 .locker-kiosk .locker-person-selection-header {
     width: 100%;
     text-align: center;
@@ -145,7 +152,7 @@
     color: #777;
 }
 
-/* PERSON LIST SCROLLABLE */
+/* ----- PERSON LIST (SCROLLABLE) ----- */
 .locker-kiosk .locker-person-list {
     width: 100%;
     max-height: 240px;
@@ -167,7 +174,7 @@
     border-radius: 10px;
 }
 
-/* PERSON OPTION */
+/* ----- PERSON OPTION ----- */
 .locker-kiosk .locker-person-option {
     width: 100%;
     min-height: 62px;
@@ -218,7 +225,7 @@
     color: #777;
 }
 
-/* RESET BUTTON */
+/* ----- RESET BUTTON ----- */
 .locker-kiosk .locker-reset-button {
     display: inline-block;
     margin-top: 10px;
@@ -232,7 +239,7 @@
     box-shadow: none !important;
 }
 
-/* RESULT CARD */
+/* ----- RESULT CARD ----- */
 .locker-kiosk .locker-success-icon i {
     font-size: 46px;
     color: #28a745;
@@ -279,7 +286,7 @@
     font-weight: 600;
 }
 
-/* ACTION BUTTONS */
+/* ----- ACTION BUTTONS (Check In / Check Out) ----- */
 .locker-kiosk .locker-check-actions {
     display: flex;
     width: 100%;
@@ -305,7 +312,7 @@
     color: #ffffff !important;
 }
 
-/* MESSAGES */
+/* ----- MESSAGES ----- */
 .locker-kiosk .locker-message {
     width: 100%;
     margin: 10px 0 0;
@@ -324,19 +331,14 @@
     color: #c62828;
 }
 
-/* =========================================================
-   AUTHENTICATION METHOD UI
-   ========================================================= */
-
+/* ----- AUTHENTICATION METHOD UI ----- */
 .locker-kiosk .locker-credential-card {
     max-width: 580px;
 }
-
 .locker-kiosk .locker-credential-section {
     width: 100%;
     margin-top: 12px;
 }
-
 .locker-kiosk .locker-method-icon {
     width: 52px;
     height: 52px;
@@ -347,12 +349,10 @@
     align-items: center;
     justify-content: center;
 }
-
 .locker-kiosk .locker-method-icon i {
     font-size: 24px;
     color: #714b67;
 }
-
 .locker-kiosk .locker-method-title {
     font-size: 20px;
     line-height: 1.3;
@@ -360,28 +360,19 @@
     color: #2c2c3a;
     margin: 0 0 6px;
 }
-
 .locker-kiosk .locker-credential-section > p {
     font-size: 13px;
     color: #777;
     margin: 0 0 14px;
 }
 
-
-/* =========================================================
-   RFID
-   ========================================================= */
-
+/* ----- RFID ----- */
 .locker-kiosk .locker-rfid-input {
     text-align: center;
     letter-spacing: 1px;
 }
 
-
-/* =========================================================
-   QR SCANNER
-   ========================================================= */
-
+/* ----- QR SCANNER ----- */
 .locker-kiosk .locker-qr-scanner {
     position: relative;
     width: 100%;
@@ -394,7 +385,6 @@
     border: 1px solid #dedee5;
     box-shadow: 0 5px 18px rgba(0, 0, 0, 0.12);
 }
-
 .locker-kiosk .locker-qr-video {
     position: absolute;
     inset: 0;
@@ -403,7 +393,6 @@
     object-fit: cover;
     background: #171717;
 }
-
 .locker-kiosk .locker-qr-frame {
     position: absolute;
     top: 50%;
@@ -413,10 +402,6 @@
     transform: translate(-50%, -50%);
     pointer-events: none;
 }
-
-
-/* QR CORNERS */
-
 .locker-kiosk .qr-corner {
     position: absolute;
     width: 32px;
@@ -424,38 +409,30 @@
     border-color: #ffffff;
     border-style: solid;
 }
-
 .locker-kiosk .qr-top-left {
     top: 0;
     left: 0;
     border-width: 4px 0 0 4px;
     border-radius: 6px 0 0 0;
 }
-
 .locker-kiosk .qr-top-right {
     top: 0;
     right: 0;
     border-width: 4px 4px 0 0;
     border-radius: 0 6px 0 0;
 }
-
 .locker-kiosk .qr-bottom-left {
     bottom: 0;
     left: 0;
     border-width: 0 0 4px 4px;
     border-radius: 0 0 0 6px;
 }
-
 .locker-kiosk .qr-bottom-right {
     bottom: 0;
     right: 0;
     border-width: 0 4px 4px 0;
     border-radius: 0 0 6px 0;
 }
-
-
-/* QR SCANNING LINE */
-
 .locker-kiosk .qr-scan-line {
     position: absolute;
     left: 8px;
@@ -466,27 +443,20 @@
     box-shadow: 0 0 8px rgba(113, 75, 103, 0.8);
     animation: lockerQrScan 2s ease-in-out infinite;
 }
-
 @keyframes lockerQrScan {
     0% {
         transform: translateY(-70px);
         opacity: 0.4;
     }
-
     50% {
         transform: translateY(70px);
         opacity: 1;
     }
-
     100% {
         transform: translateY(-70px);
         opacity: 0.4;
     }
 }
-
-
-/* QR CAMERA OVERLAY */
-
 .locker-kiosk .locker-qr-overlay {
     position: absolute;
     inset: 0;
@@ -500,19 +470,13 @@
     color: #ffffff;
     pointer-events: none;
 }
-
 .locker-kiosk .locker-qr-overlay i {
     font-size: 38px;
 }
-
 .locker-kiosk .locker-qr-overlay span {
     font-size: 13px;
     font-weight: 500;
 }
-
-
-/* QR STATUS */
-
 .locker-kiosk .locker-qr-status {
     min-height: 18px;
     margin: 6px 0 12px !important;
@@ -520,39 +484,7 @@
     color: #777;
 }
 
-
-@media (max-width: 768px) {
-
-    .locker-kiosk {
-        padding: 16px;
-    }
-
-    .locker-kiosk .locker-authentication-card,
-    .locker-kiosk .locker-person-selection-card,
-    .locker-kiosk .locker-result-card {
-        padding: 22px 20px;
-    }
-
-    .locker-kiosk .locker-qr-scanner {
-        max-width: 290px;
-        height: 230px;
-    }
-
-    .locker-kiosk .locker-qr-frame {
-        width: 155px;
-        height: 155px;
-    }
-
-    .locker-kiosk .locker-check-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .locker-kiosk .locker-check-button {
-        width: 100%;
-    }
-}
-
+/* ----- FACE SCANNER ----- */
 .locker-face-scanner {
     position: relative;
     width: 420px;
@@ -562,11 +494,962 @@
     overflow: hidden;
     border-radius: 12px;
 }
-
 .locker-face-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
     border-radius: 12px;
+}
+
+/* ----- TWO COLUMN LAYOUT ----- */
+.locker-kiosk .locker-checkin-layout {
+    width: 100%;
+    max-width: 1250px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+.locker-kiosk .locker-checkin-column {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+}
+.locker-kiosk .locker-checkin-card {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+}
+
+/* ----- LEFT CARD (Find Person) ----- */
+.locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+    min-height: 430px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ----- RIGHT CARD (Currently Checked In) ----- */
+.locker-kiosk .locker-current-card {
+    width: 100% !important;
+    min-height: 430px;
+    display: flex !important;
+    flex-direction: column !important;
+    text-align: left !important;
+    box-sizing: border-box;
+}
+
+/* ----- CURRENT HEADER ----- */
+.locker-kiosk .locker-current-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.locker-kiosk .locker-current-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+}
+.locker-kiosk .locker-current-header p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #777;
+}
+.locker-kiosk .locker-current-count {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f3edf2;
+    color: #714B67;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* ----- SEARCH ----- */
+.locker-kiosk .locker-current-card .locker-current-search {
+    width: 100% !important;
+    height: 44px;
+    padding: 0 14px;
+    margin-bottom: 14px;
+    border: 1px solid #d6d6df !important;
+    border-radius: 9px !important;
+    background: #fff !important;
+    box-sizing: border-box;
+    outline: none !important;
+}
+.locker-kiosk .locker-current-card .locker-current-search:focus {
+    border-color: #714B67 !important;
+    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.12) !important;
+}
+
+/* ----- CHECKED-IN LIST (SCROLLS INSIDE CARD ON DESKTOP) ----- */
+.locker-kiosk .locker-current-card .locker-current-list {
+    flex: 1;
+    min-height: 0;
+    height: 360px;
+    max-height: 360px;
+    overflow: hidden;
+    padding-right: 3px;
+    box-sizing: border-box;
+}
+
+/* ----- PERSON ROW ----- */
+.locker-kiosk .locker-current-person {
+    padding: 13px;
+    margin-bottom: 9px;
+    border: 1px solid #e8e3e7;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+.locker-kiosk .locker-current-person:hover {
+    border-color: #714B67;
+    box-shadow: 0 4px 14px rgba(113, 75, 103, 0.10);
+}
+.locker-kiosk .locker-current-person-main {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.locker-kiosk .locker-current-person-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f3edf2;
+    color: #714B67;
+}
+.locker-kiosk .locker-current-person-icon i.fa-user {
+    color: #714B67 !important;
+    font-size: 16px;
+}
+.locker-kiosk .locker-current-person-info {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+.locker-kiosk .locker-current-person-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 700;
+    color: #252525;
+}
+.locker-kiosk .locker-current-person-locker {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ----- ACCESS METHOD BADGE ----- */
+.locker-kiosk .locker-access-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: #f3edf2;
+    color: #714B67;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.locker-kiosk .locker-access-badge i {
+    color: #714B67;
+}
+
+/* ----- CHECK-IN TIME ----- */
+.locker-kiosk .locker-checkin-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #777;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.locker-kiosk .locker-checkin-time i {
+    color: #714B67;
+}
+
+/* ----- COMPANION INFO ----- */
+.locker-kiosk .locker-current-person-companions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 9px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: #faf7fa;
+    color: #714B67;
+    font-size: 11px;
+    font-weight: 600;
+}
+.locker-kiosk .locker-current-person-companions > i {
+    font-size: 12px;
+}
+.locker-kiosk .locker-total-people {
+    margin-left: auto;
+    color: #666;
+    font-weight: 500;
+}
+.locker-kiosk .locker-total-people strong {
+    color: #714B67;
+    font-weight: 700;
+}
+
+/* ----- CHECKOUT BUTTON ----- */
+.locker-kiosk .locker-current-checkout-button {
+    height: 32px;
+    min-width: 90px;
+    padding: 0 11px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    border: 0 !important;
+    border-radius: 7px !important;
+    background: #dc3545 !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+.locker-kiosk .locker-current-checkout-button:hover {
+    background: #c82333 !important;
+    box-shadow: 0 3px 8px rgba(220, 53, 69, 0.18) !important;
+    transform: translateY(-1px);
+}
+.locker-kiosk .locker-current-checkout-button:active {
+    transform: translateY(0);
+}
+.locker-kiosk .locker-current-checkout-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ----- PERSON FOOTER----- */
+.locker-kiosk .locker-current-person-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid #f0edf0;
+}
+
+/* ----- EMPTY STATE ----- */
+.locker-kiosk .locker-current-empty {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    color: #777;
+}
+.locker-kiosk .locker-current-empty i {
+    margin-bottom: 6px;
+    color: #714B67;
+    font-size: 30px;
+}
+.locker-kiosk .locker-current-empty strong {
+    color: #444;
+    font-size: 14px;
+}
+
+/* ----- PAGINATION (Hidden) ----- */
+.locker-kiosk .locker-current-card .locker-pagination {
+    display: none !important;
+}
+
+/* ----- ACCESS INFORMATION ----- */
+.locker-kiosk .locker-access-info {
+    margin-top: 24px;
+    padding: 15px;
+    border: 1px solid #eee6ed;
+    border-radius: 10px;
+    background: #f8f5f8;
+}
+.locker-kiosk .locker-access-info-title {
+    color: #714B67;
+    font-size: 14px;
+    font-weight: 700;
+}
+.locker-kiosk .locker-access-info-text {
+    margin-top: 5px;
+    color: #777;
+    font-size: 12px;
+}
+.locker-kiosk .locker-access-features {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px 22px;
+    margin-top: 10px;
+}
+.locker-kiosk .locker-access-features span {
+    color: #666;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.locker-kiosk .locker-access-features i {
+    color: #198754;
+}
+
+/* ----- COMPANION SELECTION ----- */
+.locker-kiosk .locker-companion-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 430px;
+    padding: 35px 40px;
+    box-sizing: border-box;
+    text-align: center;
+}
+.locker-kiosk .locker-companion-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f3edf2;
+    color: #714B67;
+}
+.locker-kiosk .locker-companion-icon i {
+    font-size: 28px;
+    color: #714B67;
+}
+.locker-kiosk .locker-companion-card h2 {
+    margin: 0;
+    font-size: 25px;
+    font-weight: 700;
+    color: #252525;
+}
+.locker-kiosk .locker-companion-description {
+    max-width: 420px;
+    margin: 8px 0 25px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #777;
+}
+.locker-kiosk .locker-companion-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+.locker-kiosk .locker-companion-btn {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d8cbd6;
+    border-radius: 10px;
+    background: #fff;
+    color: #714B67;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.locker-kiosk .locker-companion-btn:hover:not(:disabled) {
+    background: #714B67;
+    border-color: #714B67;
+    color: #fff;
+    transform: translateY(-1px);
+}
+.locker-kiosk .locker-companion-btn:disabled {
+    background: #f5f5f5;
+    border-color: #e5e5e5;
+    color: #bdbdbd;
+    cursor: not-allowed;
+}
+.locker-kiosk .locker-companion-count {
+    width: 125px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.locker-kiosk .locker-companion-count strong {
+    font-size: 28px;
+    line-height: 1;
+    font-weight: 700;
+    color: #714B67;
+}
+.locker-kiosk .locker-companion-count span {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #777;
+}
+.locker-kiosk .locker-companion-total {
+    width: 100%;
+    max-width: 330px;
+    min-height: 44px;
+    margin-bottom: 18px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    border: 1px solid #eee6ed;
+    border-radius: 9px;
+    background: #faf7fa;
+    color: #714B67;
+    font-size: 13px;
+    font-weight: 600;
+}
+.locker-kiosk .locker-companion-total i {
+    font-size: 14px;
+}
+.locker-kiosk .locker-companion-total strong {
+    margin-left: 3px;
+    font-size: 15px;
+    color: #714B67;
+}
+.locker-kiosk .locker-companion-confirm {
+    width: 100%;
+    max-width: 330px;
+    height: 44px;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: #714B67 !important;
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: none !important;
+}
+.locker-kiosk .locker-companion-confirm:hover {
+    background: #623f59 !important;
+}
+.locker-kiosk .locker-companion-cancel {
+    margin-top: 10px;
+    padding: 5px 12px;
+    color: #714B67 !important;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none !important;
+}
+.locker-kiosk .locker-companion-cancel:hover {
+    color: #543448 !important;
+}
+
+
+/* ============================================================
+   ====== MEDIA QUERIES (FIXED) ======
+   ============================================================ */
+
+/* ----- TABLET (≤1100px) ----- */
+@media (max-width: 1100px) {
+    .locker-kiosk .locker-checkin-layout {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .locker-kiosk .locker-checkin-card {
+        min-height: auto !important;
+    }
+    .locker-kiosk .locker-current-card {
+        min-height: auto !important;
+    }
+    .locker-kiosk .locker-current-card .locker-current-list {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .locker-kiosk .locker-current-person-main {
+        grid-template-columns: 34px minmax(100px, 1fr) auto auto auto;
+        gap: 8px;
+    }
+    .locker-kiosk .locker-current-person-icon {
+        width: 34px !important;
+        height: 34px !important;
+        min-width: 34px !important;
+    }
+    .locker-kiosk .locker-current-checkout-button {
+        min-width: 82px;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+    .locker-kiosk .locker-access-features {
+        justify-content: center !important;
+    }
+}
+
+/* ----- MOBILE (≤900px) - STATIC PAGE, ONLY LIST SCROLLS ----- */
+@media (max-width: 900px) {
+    /* Make the whole container fixed height, no page scroll */
+    .locker-kiosk {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        padding: 12px !important;
+    }
+
+    .locker-kiosk .locker-kiosk-header {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 0 10px !important;
+        flex-shrink: 0 !important;
+    }
+    .locker-kiosk .locker-kiosk-header h1 {
+        font-size: 22px !important;
+    }
+    .locker-kiosk .locker-kiosk-header p {
+        font-size: 13px !important;
+    }
+
+    .locker-kiosk .locker-checkin-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: auto !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        gap: 12px !important;
+        overflow: hidden !important;
+    }
+
+    .locker-kiosk .locker-checkin-column {
+        display: block !important;
+        overflow: hidden !important;
+        height: auto !important;
+        min-height: 0 !important;
+        flex: 0 1 auto !important;
+    }
+
+    /* Left card: fixed height, no scroll */
+    .locker-kiosk .locker-checkin-column:first-child {
+        flex: 0 0 auto !important;
+        min-height: 0 !important;
+    }
+    .locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 16px 14px !important;
+        justify-content: center !important;
+    }
+
+    /* Right card: takes remaining space, with scrollable list */
+    .locker-kiosk .locker-current-column {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+    .locker-kiosk .locker-current-card {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: hidden !important;
+        padding: 14px 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* List takes remaining space and scrolls */
+    .locker-kiosk .locker-current-card .locker-current-list {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding-right: 4px !important;
+        margin: 0 -4px 0 0 !important;
+    }
+
+    /* Person row - compact but show all info */
+    .locker-kiosk .locker-current-person-main {
+        display: grid !important;
+        grid-template-columns: 32px minmax(0, 1fr) auto auto auto !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .locker-kiosk .locker-current-person-icon {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+    }
+    .locker-kiosk .locker-current-person-name {
+        font-size: 13px !important;
+    }
+    .locker-kiosk .locker-current-person-locker {
+        font-size: 10px !important;
+    }
+    .locker-kiosk .locker-access-badge {
+        display: inline-flex !important;
+        font-size: 9px !important;
+        padding: 3px 6px !important;
+    }
+    .locker-kiosk .locker-checkin-time {
+        display: inline-flex !important;
+        font-size: 9px !important;
+        white-space: nowrap !important;
+    }
+    .locker-kiosk .locker-current-checkout-button {
+        height: 28px !important;
+        min-width: 72px !important;
+        font-size: 9px !important;
+        padding: 0 6px !important;
+    }
+
+    .locker-kiosk .locker-current-person-footer {
+        display: none !important;
+    }
+    .locker-kiosk .locker-current-person-companions {
+        display: none !important;
+    }
+    .locker-kiosk .locker-pagination {
+        display: none !important;
+    }
+
+    .locker-kiosk .locker-current-empty {
+        min-height: 120px !important;
+    }
+
+    .locker-kiosk .locker-access-features {
+        justify-content: center !important;
+        gap: 4px 12px !important;
+    }
+    .locker-kiosk .locker-access-features span {
+        font-size: 10px !important;
+    }
+
+    /* QR & Face scanner */
+    .locker-kiosk .locker-qr-scanner {
+        max-width: 220px !important;
+        height: 165px !important;
+    }
+    .locker-kiosk .locker-qr-frame {
+        width: 120px !important;
+        height: 120px !important;
+    }
+    .locker-kiosk .qr-corner {
+        width: 20px !important;
+        height: 20px !important;
+    }
+    .locker-kiosk .locker-face-scanner {
+        max-width: 260px !important;
+        height: 190px !important;
+    }
+}
+
+/* ----- SMALL MOBILE (≤550px) - further compact ----- */
+@media (max-width: 550px) {
+    .locker-kiosk {
+        padding: 8px !important;
+    }
+    .locker-kiosk .locker-kiosk-header h1 {
+        font-size: 20px !important;
+    }
+    .locker-kiosk .locker-kiosk-header p {
+        font-size: 12px !important;
+    }
+    .locker-kiosk .locker-checkin-layout {
+        gap: 10px !important;
+    }
+    .locker-kiosk .locker-current-header h2 {
+        font-size: 17px !important;
+    }
+    .locker-kiosk .locker-current-header p {
+        font-size: 10px !important;
+    }
+    .locker-kiosk .locker-current-count {
+        width: 34px !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        font-size: 13px !important;
+    }
+    .locker-kiosk .locker-current-person {
+        padding: 8px !important;
+        margin-bottom: 6px !important;
+    }
+    .locker-kiosk .locker-current-person-main {
+        grid-template-columns: 30px minmax(0, 1fr) auto auto !important;
+        gap: 5px !important;
+    }
+    .locker-kiosk .locker-current-person-icon {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+    }
+    .locker-kiosk .locker-current-person-name {
+        font-size: 12px !important;
+    }
+    .locker-kiosk .locker-current-person-locker {
+        font-size: 9px !important;
+    }
+    .locker-kiosk .locker-access-badge {
+        font-size: 8px !important;
+        padding: 2px 5px !important;
+    }
+    .locker-kiosk .locker-checkin-time {
+        font-size: 8px !important;
+    }
+    .locker-kiosk .locker-current-checkout-button {
+        min-width: 66px !important;
+        font-size: 8px !important;
+        padding: 0 4px !important;
+        height: 26px !important;
+    }
+    .locker-kiosk .locker-checkin-card,
+    .locker-kiosk .locker-current-card {
+        padding: 12px 10px !important;
+    }
+    .locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+        padding: 14px 10px !important;
+    }
+    .locker-kiosk .locker-companion-card {
+        padding: 16px 12px !important;
+    }
+
+    .locker-kiosk .locker-qr-scanner {
+        max-width: 180px !important;
+        height: 140px !important;
+    }
+    .locker-kiosk .locker-qr-frame {
+        width: 100px !important;
+        height: 100px !important;
+    }
+    .locker-kiosk .qr-corner {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    .locker-kiosk .locker-face-scanner {
+        max-width: 220px !important;
+        height: 165px !important;
+    }
+
+    .locker-kiosk .locker-companion-counter {
+        gap: 10px !important;
+    }
+    .locker-kiosk .locker-companion-btn {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 13px !important;
+    }
+    .locker-kiosk .locker-companion-count {
+        width: 90px !important;
+    }
+    .locker-kiosk .locker-companion-count strong {
+        font-size: 22px !important;
+    }
+}
+
+/* ----- EXTRA SMALL (≤380px) - method & time in footer ----- */
+@media (max-width: 380px) {
+    .locker-kiosk {
+        padding: 6px !important;
+    }
+    .locker-kiosk .locker-checkin-layout {
+        gap: 8px !important;
+    }
+
+    .locker-kiosk .locker-current-person-main {
+        grid-template-columns: 28px minmax(0, 1fr) auto !important;
+        gap: 4px !important;
+    }
+    .locker-kiosk .locker-current-person-icon {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+    }
+    .locker-kiosk .locker-current-person-name {
+        font-size: 11px !important;
+    }
+    .locker-kiosk .locker-current-person-locker {
+        font-size: 8px !important;
+    }
+    .locker-kiosk .locker-current-checkout-button {
+        min-width: 58px !important;
+        font-size: 7px !important;
+        padding: 0 3px !important;
+        height: 24px !important;
+    }
+
+    /* Hide method & time from main row, show in footer */
+    .locker-kiosk .locker-current-person-main .locker-access-badge,
+    .locker-kiosk .locker-current-person-main .locker-checkin-time {
+        display: none !important;
+    }
+
+    .locker-kiosk .locker-current-person-footer {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+        margin-top: 4px !important;
+        padding-top: 4px !important;
+        border-top: 1px solid #eee !important;
+    }
+    .locker-kiosk .locker-current-person-footer .locker-access-badge {
+        display: inline-flex !important;
+        font-size: 7px !important;
+        padding: 2px 4px !important;
+    }
+    .locker-kiosk .locker-current-person-footer .locker-checkin-time {
+        display: inline-flex !important;
+        font-size: 7px !important;
+        white-space: nowrap !important;
+    }
+
+    .locker-kiosk .locker-checkin-card,
+    .locker-kiosk .locker-current-card {
+        padding: 10px 8px !important;
+    }
+    .locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+        padding: 12px 8px !important;
+    }
+
+    .locker-kiosk .locker-qr-scanner {
+        max-width: 160px !important;
+        height: 120px !important;
+    }
+    .locker-kiosk .locker-qr-frame {
+        width: 90px !important;
+        height: 90px !important;
+    }
+    .locker-kiosk .qr-corner {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    .locker-kiosk .locker-face-scanner {
+        max-width: 180px !important;
+        height: 140px !important;
+    }
+
+    .locker-kiosk .locker-companion-card {
+        padding: 14px 10px !important;
+    }
+    .locker-kiosk .locker-companion-counter {
+        gap: 6px !important;
+    }
+    .locker-kiosk .locker-companion-btn {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 11px !important;
+    }
+    .locker-kiosk .locker-companion-count {
+        width: 70px !important;
+    }
+    .locker-kiosk .locker-companion-count strong {
+        font-size: 18px !important;
+    }
+    .locker-kiosk .locker-companion-total {
+        font-size: 10px !important;
+        min-height: 30px !important;
+    }
+    .locker-kiosk .locker-companion-confirm {
+        height: 32px !important;
+        font-size: 11px !important;
+    }
+}
+
+
+
+.locker-kiosk {
+    overflow: hidden !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 0 !important;
+}
+
+.locker-kiosk .locker-checkin-layout {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+.locker-kiosk .locker-current-column {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+.locker-kiosk .locker-current-card {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* ✅ ONLY THIS SCROLLS */
+.locker-kiosk .locker-current-card .locker-current-list {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+.locker-kiosk .locker-checkin-column:first-child {
+    overflow: hidden !important;
+}
+.locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+    overflow: hidden !important;
+}
+
+.locker-kiosk .locker-current-person-footer {
+    display: none !important;
+}
+.locker-kiosk .locker-current-person-companions {
+    display: none !important;
+}
+.locker-kiosk .locker-pagination {
+    display: none !important;
 }

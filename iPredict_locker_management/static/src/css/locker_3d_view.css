@@ -439,25 +439,312 @@
         bottom: 20px !important;
     }
 }
+/* =========================================================
+   SEARCH BAR + HEADER
+   ========================================================= */
 
-.o_locker_search {
-    flex: 1 1 180px !important;  /* grow, shrink, basis */
-    min-width: 180px !important;
-    max-width: 380px !important;
-    margin: 0 12px !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Header should not wrap unexpectedly */
 .o_locker_header {
+    position: relative !important;
+
     display: flex !important;
-    flex-wrap: nowrap !important;
     align-items: center !important;
+    justify-content: space-between !important;
+
+    width: 100% !important;
+    height: 58px !important;
+    min-height: 58px !important;
+
+    padding: 0 20px !important;
     gap: 10px !important;
+
+    box-sizing: border-box !important;
+    flex-wrap: nowrap !important;
 }
 
-/* If still hidden, check the input group */
+
+/* Search Bar - Always Center */
+.o_locker_search {
+    position: absolute !important;
+
+    left: 50% !important;
+    top: 50% !important;
+
+    transform: translate(-50%, -50%) !important;
+
+    width: 380px !important;
+    max-width: 380px !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    display: block !important;
+
+    z-index: 20 !important;
+    box-sizing: border-box !important;
+}
+
+
+/* Search Input Group */
 .o_locker_search .input-group {
     width: 100% !important;
+    height: 38px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    background: #ffffff !important;
+
+    border: 1px solid #d6d6df !important;
+    border-radius: 10px !important;
+
+    overflow: hidden !important;
+
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+}
+
+
+/* Focus */
+.o_locker_search .input-group:focus-within {
+    border-color: #714B67 !important;
+    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.10) !important;
+}
+
+
+/* Search Icon */
+.o_locker_search .input-group-text {
+    height: 36px !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    background: #ffffff !important;
+
+    border: none !important;
+
+    padding: 0 10px !important;
+
+    color: #6c757d !important;
+}
+
+
+/* Search Input */
+.o_locker_search .form-control {
+    height: 36px !important;
+
+    flex: 1 !important;
+
+    background: #ffffff !important;
+
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+
+    padding: 0 10px !important;
+
+    font-size: 13px !important;
+    color: #333 !important;
+}
+
+
+.o_locker_search .form-control:focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+
+/* Placeholder */
+.o_locker_search .form-control::placeholder {
+    color: #adb5bd !important;
+}
+
+
+/* Clear Button */
+.o_locker_search .btn-outline-secondary {
+    height: 36px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background: #ffffff !important;
+
+    border: none !important;
+
+    padding: 0 10px !important;
+
+    color: #8a8a8a !important;
+
+    border-radius: 0 !important;
+}
+
+
+/* Clear Button Hover */
+.o_locker_search .btn-outline-secondary:hover {
+    background: #f8f5f8 !important;
+    color: #714B67 !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .o_locker_header {
+        height: auto !important;
+        min-height: 58px !important;
+
+        flex-direction: column !important;
+
+        padding: 10px 16px !important;
+    }
+
+    .o_locker_search {
+        position: relative !important;
+
+        left: auto !important;
+        top: auto !important;
+
+        transform: none !important;
+
+        width: 100% !important;
+        max-width: 100% !important;
+
+        margin: 0 !important;
+    }
+}
+
+/* =========================================================
+   FIX BOTH CHECK-IN CARDS
+   ========================================================= */
+
+.locker-kiosk .locker-checkin-layout {
+    width: 100%;
+    max-width: 1250px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+    box-sizing: border-box;
+}
+
+
+/* Both columns same fixed card position */
+.locker-kiosk .locker-checkin-column {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+
+/* LEFT CARD */
+.locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
+    width: 100% !important;
+    height: 548px !important;
+    min-height: 548px !important;
+    max-height: 548px !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    overflow: hidden !important;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+
+/* RIGHT CARD */
+.locker-kiosk .locker-current-card {
+    width: 100% !important;
+    height: 548px !important;
+    min-height: 548px !important;
+    max-height: 548px !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+
+    display: flex !important;
+    flex-direction: column !important;
+    text-align: left !important;
+    overflow: hidden !important;
+}
+
+
+/* =========================================================
+   RIGHT SIDE ONLY LIST SCROLL
+   ========================================================= */
+
+.locker-kiosk .locker-current-list {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+
+/* Keep header/search/pagination fixed */
+.locker-kiosk .locker-current-header {
+    flex-shrink: 0 !important;
+}
+
+.locker-kiosk .locker-current-search {
+    flex-shrink: 0 !important;
+}
+
+.locker-kiosk .locker-pagination {
+    flex-shrink: 0 !important;
+}
+
+
+/* =========================================================
+   COMPANION CARD ALSO STAYS SAME POSITION
+   ========================================================= */
+
+.locker-kiosk .locker-companion-card {
+    width: 100% !important;
+    height: 548px !important;
+    min-height: 548px !important;
+    max-height: 548px !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    overflow: hidden !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .locker-kiosk .locker-checkin-layout {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .locker-kiosk .locker-checkin-column {
+        height: auto !important;
+        display: flex;
+    }
+
+    .locker-kiosk .locker-checkin-column:first-child .locker-checkin-card,
+    .locker-kiosk .locker-current-card,
+    .locker-kiosk .locker-companion-card {
+        height: auto !important;
+        min-height: 430px !important;
+        max-height: none !important;
+    }
+
+    .locker-kiosk .locker-current-list {
+        max-height: 360px !important;
+        overflow-y: auto !important;
+    }
 }

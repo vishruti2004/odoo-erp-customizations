@@ -1,14 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_locker_profile_user,locker.profile.user,model_locker_profile,iPredict_locker_management.group_locker_user,1,0,0,0
-access_locker_profile_manager,locker.profile.manager,model_locker_profile,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_profile_user,locker.profile.user,model_locker_profile,iPredict_locker_management.group_locker_user,1,1,1,0
 access_locker_profile_admin,locker.profile.admin,model_locker_profile,iPredict_locker_management.group_locker_admin,1,1,1,1
 
-access_locker_locker_user,locker.locker.user,model_locker_locker,iPredict_locker_management.group_locker_user,1,0,0,0
-access_locker_locker_manager,locker.locker.manager,model_locker_locker,iPredict_locker_management.group_locker_manager,1,1,1,0
+access_locker_locker_user,locker.locker.user,model_locker_locker,iPredict_locker_management.group_locker_user,1,1,1,0
 access_locker_locker_admin,locker.locker.admin,model_locker_locker,iPredict_locker_management.group_locker_admin,1,1,1,1
 
 access_locker_allocation_user,locker.allocation.user,model_locker_allocation,iPredict_locker_management.group_locker_user,1,1,1,0
-access_locker_allocation_manager,locker.allocation.manager,model_locker_allocation,iPredict_locker_management.group_locker_manager,1,1,1,0
 access_locker_allocation_admin,locker.allocation.admin,model_locker_allocation,iPredict_locker_management.group_locker_admin,1,1,1,1
 
 access_locker_location_user,locker.location.user,model_locker_location,base.group_user,1,1,1,1
@@ -16,9 +13,7 @@ access_locker_location_user,locker.location.user,model_locker_location,base.grou
 access_locker_location_line_user,locker.location.line.user,model_locker_location_line,base.group_user,1,1,1,1
 
 access_locker_access_user,access.locker.access.user,model_locker_access,iPredict_locker_management.group_locker_user,1,1,1,0
-access_locker_access_manager,access.locker.access.manager,model_locker_access,iPredict_locker_management.group_locker_manager,1,1,1,1
 access_locker_access_admin,access.locker.access.admin,model_locker_access,iPredict_locker_management.group_locker_admin,1,1,1,1
 
 access_locker_access_credential_user,locker.access.credential.user,model_locker_access_credential,iPredict_locker_management.group_locker_user,1,1,1,0
-access_locker_access_credential_manager,locker.access.credential.manager,model_locker_access_credential,iPredict_locker_management.group_locker_manager,1,1,1,0
 access_locker_access_credential_admin,locker.access.credential.admin,model_locker_access_credential,iPredict_locker_management.group_locker_admin,1,1,1,1

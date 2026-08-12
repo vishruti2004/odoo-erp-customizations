@@ -1,0 +1,1 @@
+from .face_antispoof import FaceAntiSpoof, get_face_anti_spoof
