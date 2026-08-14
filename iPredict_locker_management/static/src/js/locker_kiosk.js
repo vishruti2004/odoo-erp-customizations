@@ -32,13 +32,11 @@ export class LockerKiosk extends Component {
             // CURRENTLY CHECKED-IN PEOPLE
             currentCheckedIn: [],
             currentCheckedInSearch: "",
-            currentCheckedInPage: 1,
-            currentCheckedInPageSize: 2,
             currentCheckedInLoading: false,
             companionCount: 0,
         });
 
-        // QR CAMERA VARIABLES
+        // QR CAMERA 
         this.qrStream = null;
         this.qrVideo = null;
         this.qrCanvas = null;
@@ -46,7 +44,7 @@ export class LockerKiosk extends Component {
         this.qrAnimationFrame = null;
         this.qrScanInProgress = false;
 
-        // FACE CAMERA VARIABLES
+        // FACE CAMERA 
         this.faceStream = null;
         this.faceVideo = null;
         this.faceCanvas = null;
@@ -86,15 +84,6 @@ export class LockerKiosk extends Component {
                 total_people: person.total_people || 1,
             }));
 
-            const totalPages = this.getCurrentCheckedInTotalPages();
-
-            if (this.state.currentCheckedInPage > totalPages) {
-                this.state.currentCheckedInPage = totalPages;
-            }
-
-            if (this.state.currentCheckedInPage < 1) {
-                this.state.currentCheckedInPage = 1;
-            }
 
         } catch (error) {
             console.error(
@@ -108,7 +97,6 @@ export class LockerKiosk extends Component {
 
     onCurrentCheckedInSearchChange(ev) {
         this.state.currentCheckedInSearch = ev.target.value;
-        this.state.currentCheckedInPage = 1;
     }
 
     getFilteredCurrentCheckedIn() {
@@ -176,38 +164,10 @@ export class LockerKiosk extends Component {
         }
     }
 
-    getCurrentCheckedInTotalPages() {
-        const total = this.getFilteredCurrentCheckedIn().length;
-
-        return Math.max(
-            1,
-            Math.ceil(total / this.state.currentCheckedInPageSize)
+    isPersonCheckedIn(person) {
+        return this.state.currentCheckedIn.some(
+            (checkedPerson) => checkedPerson.partner_id === person.partner_id
         );
-    }
-
-    getCurrentCheckedInPageData() {
-        const people = this.getFilteredCurrentCheckedIn();
-
-        const start = (this.state.currentCheckedInPage - 1) * this.state.currentCheckedInPageSize;
-
-        return people.slice(
-            start,
-            start + this.state.currentCheckedInPageSize
-        );
-    }
-
-    previousCurrentCheckedInPage() {
-        if (this.state.currentCheckedInPage > 1) {
-            this.state.currentCheckedInPage -= 1;
-        }
-    }
-
-    nextCurrentCheckedInPage() {
-        const totalPages = this.getCurrentCheckedInTotalPages();
-
-        if (this.state.currentCheckedInPage < totalPages) {
-            this.state.currentCheckedInPage += 1;
-        }
     }
 
     focusCurrentInput() {
@@ -257,11 +217,31 @@ export class LockerKiosk extends Component {
         this.state.lockedUntil = null;
     }
 
-    // RESET FACE AUTHENTICATION STATE
     resetFaceAuthenticationState() {
-        this.state.faceScanning = false;
-        this.state.faceVerifying = false;
         this.stopFaceScanner();
+    }
+
+    resetSelectionState() {
+        this.state.persons = [];
+        this.state.selectedPerson = null;
+        this.state.authentication = "";
+        this.state.allocation = null;
+
+        this.resetQRAuthenticationState();
+        this.resetFaceAuthenticationState();
+        this.stopQRScanner();
+    }
+
+    // Common state reset shared by backToPersonSearch() and resetScreen().
+    resetNavigationState() {
+        this.resetSelectionState();
+
+        this.state.mode = "person_search";
+        this.state.personSearch = "";
+
+        this.clearMessage();
+        this.state.loading = false;
+        this.focusCurrentInput();
     }
 
     // PERSON SEARCH
@@ -284,14 +264,11 @@ export class LockerKiosk extends Component {
         this.state.loading = true;
         this.clearMessage();
 
-        this.state.persons = [];
-        this.state.selectedPerson = null;
-        this.state.authentication = "";
-        this.state.allocation = null;
+        // ---- ✅ REFRESH CHECKED-IN LIST BEFORE SEARCH ----
+        await this.loadCurrentCheckedIn();
+        // ------------------------------------------------
 
-        this.resetQRAuthenticationState();
-        this.resetFaceAuthenticationState();
-        this.stopQRScanner();
+        this.resetSelectionState();
 
         try {
             const result = await rpc(
@@ -338,21 +315,12 @@ export class LockerKiosk extends Component {
     // PERSON SELECTION
     selectPerson(person) {
         if (!person) {
-            console.error(
-                "No person received in selectPerson()"
-            );
+            console.error("No person received in selectPerson()");
             return;
         }
 
-        console.log(
-            "Selected Person:",
-            person
-        );
-
-        console.log(
-            "Access Method:",
-            person.access_method
-        );
+        console.log("Selected Person:", person);
+        console.log("Access Method:", person.access_method);
 
         // Stop previous cameras
         this.stopQRScanner();
@@ -366,10 +334,17 @@ export class LockerKiosk extends Component {
         this.state.companionCount = 0;
 
         this.clearMessage();
-
         this.resetQRAuthenticationState();
 
-        // OTP LOCK
+        // ---- Check if person is already checked in ----
+        if (this.isPersonCheckedIn(person)) {
+            this.showMessage(
+                "You are already checked in. Please check out first.",
+                "danger"
+            );
+            return;
+        }
+        // OTP LOCK (existing)
         if (person.otp_locked) {
             this.state.lockedUntil = person.otp_locked_until || null;
             this.state.mode = "locked";
@@ -386,20 +361,7 @@ export class LockerKiosk extends Component {
 
     // BACK TO PERSON SEARCH
     backToPersonSearch() {
-        this.stopQRScanner();
-        this.stopFaceScanner();
-
-        this.state.mode = "person_search";
-        this.state.personSearch = "";
-        this.state.persons = [];
-        this.state.selectedPerson = null;
-        this.state.authentication = "";
-        this.state.allocation = null;
-
-        this.resetQRAuthenticationState();
-        this.clearMessage();
-        this.state.loading = false;
-        this.focusCurrentInput();
+        this.resetNavigationState();
     }
 
     // CREDENTIAL INPUT
@@ -494,8 +456,6 @@ export class LockerKiosk extends Component {
 
         this.stopFaceScanner();
         this.clearMessage();
-        this.state.faceScanning = false;
-        this.state.faceVerifying = false;
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             this.showMessage(
@@ -718,9 +678,7 @@ export class LockerKiosk extends Component {
         this.stopQRScanner();
         this.clearMessage();
 
-        this.state.qrScanning = false;
         this.state.qrSupported = false;
-        this.qrScanInProgress = false;
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             this.showMessage(
@@ -1269,29 +1227,8 @@ export class LockerKiosk extends Component {
 
     // RESET SCREEN
     resetScreen() {
-        this.stopQRScanner();
-        this.stopFaceScanner();
-
-        this.state.mode = "person_search";
-        this.state.personSearch = "";
-        this.state.persons = [];
-        this.state.selectedPerson = null;
-        this.state.authentication = "";
-        this.state.allocation = null;
-
-        this.resetQRAuthenticationState();
-
-        this.clearMessage();
-
-        this.state.loading = false;
+        this.resetNavigationState();
         this.state.companionCount = 0;
-
-        this.state.qrScanning = false;
-        this.state.qrSupported = false;
-        this.state.faceScanning = false;
-        this.state.faceVerifying = false;
-
-        this.focusCurrentInput();
     }
 }
 

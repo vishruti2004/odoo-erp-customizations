@@ -40,4 +40,33 @@
         </field>
     </record>
 
+    <!-- Locker Profile -->
+    <record id="locker_profile_company_rule" model="ir.rule">
+        <field name="name">Locker Profile Multi Company</field>
+        <field name="model_id" ref="model_locker_profile"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+    <!-- Locker Allocation -->
+    <record id="locker_allocation_company_rule" model="ir.rule">
+        <field name="name">Locker Allocation Multi Company</field>
+        <field name="model_id" ref="model_locker_allocation"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [('company_id', 'in', company_ids)]
+        </field>
+    </record>
+        <!-- Locker Access / Access History -->
+    <record id="locker_access_company_rule" model="ir.rule">
+        <field name="name">Locker Access Multi Company</field>
+        <field name="model_id" ref="model_locker_access"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [('allocation_id.company_id', 'in', company_ids)]
+        </field>
+    </record>
+
 </odoo>

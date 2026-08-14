@@ -37,6 +37,7 @@ Features:
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/mail_template.xml",
+        "data/ir_cron_data.xml",
 
 
         # Views
@@ -45,9 +46,13 @@ Features:
         "views/locker_allocation_views.xml",
         "views/res_partner_views.xml",
         "views/locker_location_views.xml",
-        "views/res_company_views.xml",
         "views/locker_access_views.xml",
         "views/locker_access_credential_views.xml",
+        "views/locker_return_reason_views.xml",
+        "views/res_config_settings_views.xml",
+        "views/res_company_views.xml",  
+        "views/locker_penalty_views.xml",
+        "wizard/locker_return_wizard_views.xml",
 
         # Menus
         "views/locker_menus.xml",
@@ -70,6 +75,10 @@ Features:
             "iPredict_locker_management/static/src/css/locker_kiosk.css",
         ],
     },
+
+    'images': [
+        'static/description/icon.png',
+    ],
 
     "demo": [],
     "installable": True,

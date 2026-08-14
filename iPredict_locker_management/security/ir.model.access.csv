@@ -17,3 +17,9 @@ access_locker_access_admin,access.locker.access.admin,model_locker_access,iPredi
 
 access_locker_access_credential_user,locker.access.credential.user,model_locker_access_credential,iPredict_locker_management.group_locker_user,1,1,1,0
 access_locker_access_credential_admin,locker.access.credential.admin,model_locker_access_credential,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_return_wizard_user,access.locker.return.wizard.user,model_locker_return_wizard,base.group_user,1,1,1,1
+
+access_locker_return_reason_user,access.locker.return.reason.user,model_locker_return_reason,base.group_user,1,1,1,1
+
+access_locker_penalty_admin,access.locker.penalty.admin,model_locker_penalty,iPredict_locker_management.group_locker_admin,1,1,1,1

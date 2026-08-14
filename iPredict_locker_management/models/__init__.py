@@ -7,3 +7,6 @@ from . import stock_location
 from . import locker_location
 from . import locker_access
 from . import locker_access_credential
+from . import locker_return_reason
+from . import res_config_settings
+from . import locker_penalty

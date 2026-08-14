@@ -144,12 +144,12 @@
                     </t>
                     <t t-elif="state.mode === 'credential'">
                         <div class="locker-result-card locker-credential-card locker-checkin-card">
-                            <div class="locker-success-icon">
+                            <!-- <div class="locker-success-icon">
                                 <i class="fa fa-user"/>
                             </div>
                             <h2>
                                 <t t-esc="state.selectedPerson.partner_name"/>
-                            </h2>
+                            </h2> -->
                             <div class="locker-information">
                                 <div class="locker-info-row">
                                     <span>Locker</span>
@@ -268,9 +268,9 @@
                                     </t>
                                 </t>
                                 <t t-elif="state.selectedPerson.access_method === 'biometric'">
-                                    <div class="locker-method-icon">
+                                    <!-- <div class="locker-method-icon">
                                         <i class="fa fa-camera"/>
-                                    </div>
+                                    </div> -->
                                     <h3 class="locker-method-title">
                                         Face Recognition
                                     </h3>

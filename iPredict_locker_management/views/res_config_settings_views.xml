@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_locker_management" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.locker.management</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Locker Management" name="iPredict_locker_management" logo="/iPredict_locker_management/static/description/icon.png">
+
+                    <!-- LOCKER SETTINGS -->
+
+                    <block title="Locker Settings">
+                        <setting string="Available Locker Color" help="Set the color used for available lockers in the 3D view.">
+                            <field name="available_locker_color" widget="color"/>
+                        </setting>
+                        <setting string="Allocated Locker Color" help="Set the color used for allocated lockers in the 3D view.">
+                            <field name="allocated_locker_color" widget="color"/>
+                        </setting>
+                        <setting string="Renewal Reminder Days" help="Number of days before locker expiry when renewal becomes pending.">
+                            <field name="renewal_reminder_days"/>
+                        </setting>
+                    </block>
+
+                    <!-- PENALTY SETTINGS -->
+
+                    <block title="Penalty Settings">
+                        <setting string="Enable Penalty" help="Enable penalty calculation for expired locker allocations.">
+                            <field name="penalty_enabled"/>
+                        </setting>
+                        <setting string="Penalty Amount" help="Amount charged as penalty for an expired locker allocation." invisible="not penalty_enabled">
+                            <field name="penalty_amount" widget="monetary"/>
+                            <field name="penalty_currency_id" invisible="1"/>
+                        </setting>
+                        <setting string="Penalty Period" help="Define how often the penalty amount is applied." invisible="not penalty_enabled">
+                            <field name="penalty_period"/>
+                        </setting>
+                        <setting string="Penalty Start After" help="Number of days after the locker expiry before the penalty starts." invisible="not penalty_enabled">
+                            <field name="penalty_start_after_days"/>
+                        </setting>
+                    </block>
+
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

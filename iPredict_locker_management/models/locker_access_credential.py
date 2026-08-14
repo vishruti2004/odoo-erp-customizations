@@ -19,110 +19,31 @@ class LockerAccessCredential(models.Model):
     _order = "id desc"
 
     _sql_constraints = [
-        (
-            "pin_code_unique",
-            "UNIQUE(pin_code)",
-            "This PIN is already assigned to another locker credential.",
-        ),
-        (
-            "rfid_uid_unique",
-            "UNIQUE(rfid_uid)",
-            "This RFID UID is already assigned to another locker credential.",
-        ),
-        (
-            "qr_token_unique",
-            "UNIQUE(qr_token)",
-            "This QR Token is already assigned to another locker credential.",
-        ),
+        ("pin_code_unique", "UNIQUE(pin_code)", "This PIN is already assigned to another locker credential."),
+        ("rfid_uid_unique", "UNIQUE(rfid_uid)", "This RFID UID is already assigned to another locker credential."),
+        ("qr_token_unique", "UNIQUE(qr_token)", "This QR Token is already assigned to another locker credential."),
     ]
 
-    # ---------------------------------------------------------
-    # BASIC INFORMATION
-    # ---------------------------------------------------------
+    allocation_id = fields.Many2one("locker.allocation", string="Locker Allocation", required=True, ondelete="cascade", tracking=True)
+    partner_id = fields.Many2one("res.partner", string="Person", required=True, ondelete="restrict", tracking=True)
+    access_method = fields.Selection(related="allocation_id.access_method", string="Access Method", store=True, readonly=True)
+    active = fields.Boolean(string="Active", default=True, tracking=True)
 
-    allocation_id = fields.Many2one(
-        "locker.allocation",
-        string="Locker Allocation",
-        required=True,
-        ondelete="cascade",
-        tracking=True,
-    )
-
-    partner_id = fields.Many2one(
-        "res.partner",
-        string="Person",
-        required=True,
-        ondelete="restrict",
-        tracking=True,
-    )
-
-    access_method = fields.Selection(
-        related="allocation_id.access_method",
-        string="Access Method",
-        store=True,
-        readonly=True,
-    )
-
-    active = fields.Boolean(
-        string="Active",
-        default=True,
-        tracking=True,
-    )
-
-    # ---------------------------------------------------------
-    # AUTHENTICATION VALUES
-    # ---------------------------------------------------------
-
-    pin_code = fields.Char(
-        string="PIN Code",
-        copy=False,
-        tracking=True,
-    )
-
-    rfid_uid = fields.Char(
-        string="RFID UID",
-        copy=False,
-        tracking=True,
-    )
-
-    qr_token = fields.Char(
-        string="QR Token",
-        copy=False,
-        tracking=True,
-    )
-
-    qr_code = fields.Binary(
-        string="QR Code",
-        attachment=True,
-        copy=False,
-    )
-
-    biometric_id = fields.Char(
-        string="Biometric ID",
-        copy=False,
-        tracking=True,
-    )
-
-    # ---------------------------------------------------------
-    # DISPLAY NAME
-    # ---------------------------------------------------------
+    pin_code = fields.Char(string="PIN Code", copy=False, tracking=True)
+    rfid_uid = fields.Char(string="RFID UID", copy=False, tracking=True)
+    qr_token = fields.Char(string="QR Token", copy=False, tracking=True)
+    qr_code = fields.Binary(string="QR Code", attachment=True, copy=False)
+    biometric_id = fields.Char(string="Biometric ID", copy=False, tracking=True)
 
     @api.depends("partner_id", "allocation_id")
     def _compute_display_name(self):
         for rec in self:
             if rec.partner_id and rec.allocation_id:
-                rec.display_name = (
-                    f"{rec.partner_id.display_name} - "
-                    f"{rec.allocation_id.name}"
-                )
+                rec.display_name = f"{rec.partner_id.display_name} - {rec.allocation_id.name}"
             elif rec.partner_id:
                 rec.display_name = rec.partner_id.display_name
             else:
                 rec.display_name = _("New")
-
-    # ---------------------------------------------------------
-    # CREATE
-    # ---------------------------------------------------------
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -131,97 +52,49 @@ class LockerAccessCredential(models.Model):
             partner_id = vals.get("partner_id")
 
             if allocation_id and partner_id:
-                allocation = self.env[
-                    "locker.allocation"
-                ].browse(allocation_id)
-
+                allocation = self.env["locker.allocation"].browse(allocation_id)
                 if allocation.exists():
-                    allowed_partner_ids = (
-                        allocation.authorized_partner_ids.ids
-                        + [allocation.partner_id.id]
-                    )
-
+                    allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
                     if partner_id not in allowed_partner_ids:
-                        raise ValidationError(
-                            _(
-                                "This person is not authorized "
-                                "for this locker allocation."
-                            )
-                        )
+                        raise ValidationError(_("This person is not authorized for this locker allocation."))
 
         return super().create(vals_list)
 
-    # ---------------------------------------------------------
-    # GENERATE CREDENTIAL
-    # ---------------------------------------------------------
+    # CREDENTIAL ACTIONS
 
     def action_generate_credential(self):
-        """
-        Generate and save the credential according to the
-        access method configured on the locker profile.
-        """
-
+        """Generates credentials based on configured access method."""
         for rec in self:
             if not rec.allocation_id:
-                raise ValidationError(
-                    _("Locker Allocation is required.")
-                )
-
+                raise ValidationError(_("Locker Allocation is required."))
             if not rec.partner_id:
-                raise ValidationError(
-                    _("Person is required.")
-                )
+                raise ValidationError(_("Person is required."))
 
             access_method = rec.allocation_id.access_method
-
             if not access_method:
-                raise ValidationError(
-                    _(
-                        "Please configure Access Method "
-                        "on Locker Profile."
-                    )
-                )
+                raise ValidationError(_("Please configure Access Method on Locker Profile."))
 
             if access_method == "pin":
                 rec._generate_pin()
-
             elif access_method == "rfid":
                 rec._generate_rfid()
-
             elif access_method == "qr":
                 rec._generate_qr()
-
             elif access_method == "biometric":
-                raise ValidationError(
-                    _(
-                        "Biometric ID must be entered "
-                        "from the biometric device."
-                    )
-                )
-
+                raise ValidationError(_("Biometric ID must be entered from the biometric device."))
             elif access_method == "physical_key":
-                # Physical key has no digital credential.
                 rec.action_clear_credential()
 
-    # ---------------------------------------------------------
-    # PIN
-    # ---------------------------------------------------------
-
     def _generate_pin(self):
+        """Generates a unique 6-digit PIN code."""
         for rec in self:
             for _attempt in range(20):
-                pin = str(
-                    secrets.randbelow(900000) + 100000
-                )
-
-                existing = rec.search_count(
-                    [
-                        ("id", "!=", rec.id),
-                        ("active", "=", True),
-                        ("pin_code", "=", pin),
-                    ]
-                )
-
+                pin = str(secrets.randbelow(900000) + 100000)
+                existing = rec.search_count([
+                    ("id", "!=", rec.id),
+                    ("active", "=", True),
+                    ("pin_code", "=", pin),
+                ])
                 if not existing:
                     rec.write({
                         "pin_code": pin,
@@ -230,43 +103,22 @@ class LockerAccessCredential(models.Model):
                         "qr_code": False,
                         "biometric_id": False,
                     })
-
-                    # Keep legacy partner PIN synchronized if the
-                    # field exists on res.partner.
                     if "locker_pin" in rec.partner_id._fields:
-                        rec.partner_id.write({
-                            "locker_pin": pin,
-                        })
-
+                        rec.partner_id.write({"locker_pin": pin})
                     return
 
-            raise ValidationError(
-                _(
-                    "Unable to generate a unique PIN. "
-                    "Please try again."
-                )
-            )
-
-    # ---------------------------------------------------------
-    # RFID
-    # ---------------------------------------------------------
+            raise ValidationError(_("Unable to generate a unique PIN. Please try again."))
 
     def _generate_rfid(self):
+        """Generates a unique 10-digit RFID UID."""
         for rec in self:
             for _attempt in range(20):
-                rfid = str(
-                    secrets.randbelow(9000000000)
-                    + 1000000000
-                )
-
-                existing = rec.search_count(
-                    [
-                        ("id", "!=", rec.id),
-                        ("active", "=", True),
-                        ("rfid_uid", "=", rfid),
-                    ]
-                )
-
+                rfid = str(secrets.randbelow(9000000000) + 1000000000)
+                existing = rec.search_count([
+                    ("id", "!=", rec.id),
+                    ("active", "=", True),
+                    ("rfid_uid", "=", rfid),
+                ])
                 if not existing:
                     rec.write({
                         "pin_code": False,
@@ -277,30 +129,18 @@ class LockerAccessCredential(models.Model):
                     })
                     return
 
-            raise ValidationError(
-                _(
-                    "Unable to generate a unique RFID number. "
-                    "Please try again."
-                )
-            )
-
-    # ---------------------------------------------------------
-    # QR
-    # ---------------------------------------------------------
+            raise ValidationError(_("Unable to generate a unique RFID number. Please try again."))
 
     def _generate_qr(self):
+        """Generates a unique QR token and QR image."""
         for rec in self:
             for _attempt in range(20):
                 qr_token = str(uuid.uuid4())
-
-                existing = rec.search_count(
-                    [
-                        ("id", "!=", rec.id),
-                        ("active", "=", True),
-                        ("qr_token", "=", qr_token),
-                    ]
-                )
-
+                existing = rec.search_count([
+                    ("id", "!=", rec.id),
+                    ("active", "=", True),
+                    ("qr_token", "=", qr_token),
+                ])
                 if existing:
                     continue
 
@@ -310,19 +150,12 @@ class LockerAccessCredential(models.Model):
                     box_size=10,
                     border=4,
                 )
-
                 qr.add_data(qr_token)
                 qr.make(fit=True)
 
                 buffer = BytesIO()
-                qr.make_image().save(
-                    buffer,
-                    format="PNG",
-                )
-
-                qr_code_b64 = base64.b64encode(
-                    buffer.getvalue()
-                )
+                qr.make_image().save(buffer, format="PNG")
+                qr_code_b64 = base64.b64encode(buffer.getvalue())
 
                 rec.write({
                     "pin_code": False,
@@ -333,13 +166,7 @@ class LockerAccessCredential(models.Model):
                 })
                 return
 
-            raise ValidationError(
-                _("Unable to generate a unique QR token.")
-            )
-
-    # ---------------------------------------------------------
-    # CLEAR CREDENTIAL
-    # ---------------------------------------------------------
+            raise ValidationError(_("Unable to generate a unique QR token."))
 
     def action_clear_credential(self):
         self.write({
@@ -350,9 +177,7 @@ class LockerAccessCredential(models.Model):
             "biometric_id": False,
         })
 
-    # ---------------------------------------------------------
-    # VALIDATIONS
-    # ---------------------------------------------------------
+    # CONSTRAINS & VALIDATIONS
 
     @api.constrains("allocation_id", "partner_id")
     def _check_authorized_person(self):
@@ -364,27 +189,15 @@ class LockerAccessCredential(models.Model):
                 rec.allocation_id.authorized_partner_ids.ids
                 + [rec.allocation_id.partner_id.id]
             )
-
             if rec.partner_id.id not in allowed_partner_ids:
-                raise ValidationError(
-                    _(
-                        "The selected person is not authorized "
-                        "for this locker allocation."
-                    )
-                )
+                raise ValidationError(_("The selected person is not authorized for this locker allocation."))
 
     @api.constrains("pin_code")
     def _check_pin_code(self):
         for rec in self:
             if not rec.pin_code:
                 continue
-
             if not rec.pin_code.isdigit():
-                raise ValidationError(
-                    _("PIN Code must contain only numbers.")
-                )
-
+                raise ValidationError(_("PIN Code must contain only numbers."))
             if len(rec.pin_code) != 6:
-                raise ValidationError(
-                    _("PIN Code must contain exactly 6 digits.")
-                )
+                raise ValidationError(_("PIN Code must contain exactly 6 digits."))

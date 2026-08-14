@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Locker List View -->
     <record id="view_locker_list" model="ir.ui.view">
         <field name="name">locker.locker.list</field>
         <field name="model">locker.locker</field>
@@ -9,20 +10,24 @@
                 <field name="name"/>
                 <field name="profile_id"/>
                 <field name="locker_location_id"/>
-                <!-- <field name="location_id"/> -->
-                <field name="status" widget="badge" decoration-success="status == 'available'" decoration-danger="status == 'allocated'"/>
-                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="status"
+                       widget="badge"
+                       decoration-success="status == 'available'"
+                       decoration-danger="status == 'allocated'"/>
+                <field name="company_id"
+                       optional="hide"
+                       groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
 
+    <!-- Locker Form View -->
     <record id="view_locker_form" model="ir.ui.view">
         <field name="name">locker.locker.form</field>
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
-
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_allocations"
                                 type="object"
@@ -31,6 +36,7 @@
                             <span class="o_stat_text">History</span>
                         </button>
                     </div>
+
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Locker Number"/>
@@ -41,16 +47,18 @@
                         <group>
                             <field name="profile_id"/>
                             <field name="locker_location_id"/>
-                            <!-- <field name="location_id"/> -->
                             <field name="active" widget="boolean_toggle"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                         <group>
-                            <field name="status" widget="badge" readonly="1" decoration-success="status == 'available'" decoration-danger="status == 'allocated'"/>
+                            <field name="status"
+                                   widget="badge"
+                                   readonly="1"
+                                   decoration-success="status == 'available'"
+                                   decoration-danger="status == 'allocated'"/>
                         </group>
                     </group>
 
-                    <!-- Additional Details -->
                     <notebook>
                         <page string="Notes">
                             <field name="note"/>
@@ -72,21 +80,110 @@
                         </page>
                     </notebook>
                 </sheet>
-
-                <!-- <chatter/> -->
             </form>
         </field>
     </record>
 
+    <!-- Locker Kanban View -->
+    <record id="view_locker_kanban" model="ir.ui.view">
+        <field name="name">locker.locker.kanban</field>
+        <field name="model">locker.locker</field>
+        <field name="arch" type="xml">
+            <!-- <kanban default_group_by="status" class="o_kanban_mobile o_kanban_dashboard"> -->
+            <kanban default_group_by="status"
+        records_draggable="0"
+        groups_draggable="0">
+                <field name="name"/>
+                <field name="profile_id"/>
+                <field name="locker_location_id"/>
+                <field name="status"/>
+                <field name="company_id"/>
+
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 #{record.status.raw_value == 'allocated' ? 'border border-danger' : 'border border-success'}">
+                            
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong class="fs-5 fw-bold text-dark">
+                                    <field name="name"/>
+                                </strong>
+                                <t t-if="record.status.raw_value == 'allocated'">
+                                    <span class="badge text-bg-danger">Allocated</span>
+                                </t>
+                                <t t-else="">
+                                    <span class="badge text-bg-success">Available</span>
+                                </t>
+                            </div>
+
+                            <!-- Separator -->
+                            <div class="border-top mb-3"/>
+
+                            <!-- Locker Profile -->
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-archive me-1" title="Locker Profile"/>
+                                <strong>Profile: </strong>
+                                <field name="profile_id"/>
+                            </div>
+
+                            <!-- Locker Location -->
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-map-marker me-1" title="Locker Location"/>
+                                <strong>Location: </strong>
+                                <field name="locker_location_id"/>
+                            </div>
+
+                            <!-- Company -->
+                            <div class="text-muted small mb-2" groups="base.group_multi_company">
+                                <i class="fa fa-building me-1" title="Company"/>
+                                <strong>Company: </strong>
+                                <field name="company_id"/>
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Locker Search View -->
+    <record id="view_locker_search" model="ir.ui.view">
+        <field name="name">locker.locker.search</field>
+        <field name="model">locker.locker</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Locker"/>
+                <field name="locker_location_id" string="Location"/>
+                <field name="profile_id" string="Locker Profile"/>
+                <field name="status" string="Status"/>
+
+                <separator/>
+                <filter name="filter_available" string="Available" domain="[('status', '=', 'available')]"/>
+                <filter name="filter_allocated" string="Allocated" domain="[('status', '=', 'allocated')]"/>
+
+                <separator/>
+                <group>
+                    <filter name="group_profile" string="Locker Profile" context="{'group_by': 'profile_id'}"/>
+                    <filter name="group_location" string="Location" context="{'group_by': 'locker_location_id'}"/>
+                    <filter name="group_status" string="Status" context="{'group_by': 'status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- 3D Locker View Action -->
     <record id="action_locker_3d_view" model="ir.actions.client">
         <field name="name">3D Locker View</field>
         <field name="tag">locker_3d_view</field>
     </record>
 
+    <!-- Locker Window Action -->
     <record id="action_locker" model="ir.actions.act_window">
         <field name="name">Lockers</field>
         <field name="res_model">locker.locker</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_locker_search"/>
     </record>
 
 </odoo>

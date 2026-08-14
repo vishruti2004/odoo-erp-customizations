@@ -6,7 +6,6 @@
         <field name="model">locker.access</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
                 <field name="partner_id" string="Allocation Partner"/>
                 <field name="authenticated_partner_id" string="Authenticated Person"/>
                 <field name="allocation_id"/>

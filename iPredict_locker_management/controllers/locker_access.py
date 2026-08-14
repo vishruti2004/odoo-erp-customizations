@@ -2,7 +2,6 @@
 
 import base64
 import hashlib
-import logging
 import secrets
 import time
 import cv2
@@ -12,7 +11,6 @@ import onnxruntime as ort
 from odoo import http
 from odoo.http import request
 
-_logger = logging.getLogger(__name__)
 
 class LockerAccessController(http.Controller):
     _face_app = None
@@ -47,17 +45,9 @@ class LockerAccessController(http.Controller):
             )
 
             if not os.path.isfile(model_path):
-                _logger.error(
-                    "Face anti-spoof model not found: %s",
-                    model_path,
-                )
                 return None
 
             cls._anti_spoof_model_path = model_path
-            _logger.info(
-                "Loading face anti-spoof model: %s",
-                model_path,
-            )
 
             cls._anti_spoof_session = ort.InferenceSession(
                 model_path,
@@ -68,13 +58,6 @@ class LockerAccessController(http.Controller):
             )
             cls._anti_spoof_output_name = (
                 cls._anti_spoof_session.get_outputs()[0].name
-            )
-
-            _logger.info(
-                "Face anti-spoof model loaded successfully. "
-                "input=%s output=%s",
-                cls._anti_spoof_session.get_inputs()[0].shape,
-                cls._anti_spoof_session.get_outputs()[0].shape,
             )
 
         return cls._anti_spoof_session
@@ -120,40 +103,10 @@ class LockerAccessController(http.Controller):
             int(min(image_height, bottom)),
         )
 
-    @staticmethod
-    def _get_anti_spoof_face_crop(image, face):
-        if image is None or face is None or not hasattr(face, "bbox"):
-            return None
-
-        bbox = np.asarray(face.bbox, dtype=np.float32).reshape(-1)
-        if bbox.size < 4:
-            return None
-
-        x1, y1, x2, y2 = bbox[:4]
-        image_height, image_width = image.shape[:2]
-
-        crop_x1, crop_y1, crop_x2, crop_y2 = (
-            LockerAccessController._get_face_crop_box(
-                image_width, image_height, x1, y1, x2, y2, scale=2.7,
-            )
-        )
-
-        if crop_x2 <= crop_x1 or crop_y2 <= crop_y1:
-            return None
-
-        crop = image[crop_y1:crop_y2, crop_x1:crop_x2]
-        if crop.size == 0:
-            return None
-
-        return crop
-
     @classmethod
     def _check_face_liveness(cls, image_bytes):
         """Run face anti-spoofing using detection-only + MiniFASNetV2."""
         try:
-            _logger.info("==================================================")
-            _logger.info("[FACE-LIVENESS] CHECK STARTED")
-
             image_array = np.frombuffer(
                 image_bytes,
                 dtype=np.uint8,
@@ -164,28 +117,13 @@ class LockerAccessController(http.Controller):
             )
 
             if image is None:
-                _logger.warning(
-                    "[FACE-LIVENESS] Unable to decode camera image."
-                )
                 return False, 0.0, "Invalid face image."
-
-            _logger.info(
-                "[FACE-LIVENESS] Camera image shape: %s",
-                image.shape,
-            )
 
             face_app = cls._get_face_app()
             detector = getattr(face_app, "det_model", None)
 
             if detector is None:
-                _logger.error(
-                    "[FACE-LIVENESS] InsightFace detector is not available."
-                )
                 return False, 0.0, "Face detector is not available."
-
-            _logger.info(
-                "[FACE-LIVENESS] Running FACE DETECTION ONLY..."
-            )
 
             bboxes, kpss = detector.detect(
                 image,
@@ -193,21 +131,9 @@ class LockerAccessController(http.Controller):
             )
 
             if bboxes is None or len(bboxes) == 0:
-                _logger.warning(
-                    "[FACE-LIVENESS] NO FACE DETECTED."
-                )
                 return False, 0.0, "No face detected."
 
-            _logger.info(
-                "[FACE-LIVENESS] Faces detected: %s",
-                len(bboxes),
-            )
-
             if len(bboxes) != 1:
-                _logger.warning(
-                    "[FACE-LIVENESS] Expected exactly 1 face, detected %s.",
-                    len(bboxes),
-                )
                 return (
                     False,
                     0.0,
@@ -220,21 +146,9 @@ class LockerAccessController(http.Controller):
             ).reshape(-1)
 
             if bbox.size < 4:
-                _logger.error(
-                    "[FACE-LIVENESS] Invalid face bbox: %s",
-                    bbox,
-                )
                 return False, 0.0, "Invalid face detection."
 
             x1, y1, x2, y2 = bbox[:4]
-
-            _logger.info(
-                "[FACE-LIVENESS] Face bbox: x1=%.2f y1=%.2f x2=%.2f y2=%.2f",
-                x1,
-                y1,
-                x2,
-                y2,
-            )
 
             # MiniFASNetV2 2.7_80x80 expects a 2.7x crop around the detected face center, without alignment warp. NOTE: scale is auto-shrunk (never clipped) so the crop always stays centered on the face, even near frame edges or when the face is large relative to the frame.
             image_height, image_width = image.shape[:2]
@@ -242,18 +156,7 @@ class LockerAccessController(http.Controller):
                 image_width, image_height, x1, y1, x2, y2, scale=2.7,
             )
 
-            _logger.info(
-                "[FACE-LIVENESS] Crop: x1=%s y1=%s x2=%s y2=%s",
-                crop_x1,
-                crop_y1,
-                crop_x2,
-                crop_y2,
-            )
-
             if crop_x2 <= crop_x1 or crop_y2 <= crop_y1:
-                _logger.error(
-                    "[FACE-LIVENESS] Invalid face crop."
-                )
                 return (
                     False,
                     0.0,
@@ -263,35 +166,20 @@ class LockerAccessController(http.Controller):
             face_crop = image[crop_y1:crop_y2, crop_x1:crop_x2]
 
             if face_crop.size == 0:
-                _logger.error(
-                    "[FACE-LIVENESS] Empty face crop."
-                )
                 return (
                     False,
                     0.0,
                     "Unable to prepare the face for liveness check.",
                 )
 
-            _logger.info(
-                "[FACE-LIVENESS] Face crop shape: %s",
-                face_crop.shape,
-            )
-
             debug_crop_path = "/tmp/locker_anti_spoof_face.jpg"
             try:
-                saved = cv2.imwrite(
+                cv2.imwrite(
                     debug_crop_path,
                     face_crop,
                 )
-                _logger.info(
-                    "[FACE-LIVENESS] Debug crop saved: %s success=%s",
-                    debug_crop_path,
-                    saved,
-                )
             except Exception:
-                _logger.exception(
-                    "[FACE-LIVENESS] Failed to save debug face crop."
-                )
+                pass
 
             session = cls._get_anti_spoof_session()
             if session is None:
@@ -319,11 +207,6 @@ class LockerAccessController(http.Controller):
             )
             input_tensor = np.ascontiguousarray(input_tensor)
 
-            _logger.info(
-                "[FACE-LIVENESS] Model input shape: %s",
-                input_tensor.shape,
-            )
-
             output = session.run(
                 [cls._anti_spoof_output_name],
                 {
@@ -336,16 +219,7 @@ class LockerAccessController(http.Controller):
                 dtype=np.float32,
             ).reshape(-1)
 
-            _logger.info(
-                "[FACE-LIVENESS] RAW MODEL OUTPUT: %s",
-                scores,
-            )
-
             if scores.size != 3 or not np.all(np.isfinite(scores)):
-                _logger.error(
-                    "[FACE-LIVENESS] Unexpected model output: %s",
-                    scores,
-                )
                 return False, 0.0, "Invalid liveness model output."
 
             # This exported MiniFASNetV2 model returns [print, live, replay]. Class 1 is the LIVE/REAL class. If the output is logits rather than probabilities, softmax it.
@@ -364,30 +238,6 @@ class LockerAccessController(http.Controller):
 
             is_live = live_score >= cls._ANTI_SPOOF_THRESHOLD
 
-            _logger.info(
-                "[FACE-LIVENESS] PRINT  = %.4f",
-                print_score,
-            )
-            _logger.info(
-                "[FACE-LIVENESS] LIVE   = %.4f",
-                live_score,
-            )
-            _logger.info(
-                "[FACE-LIVENESS] REPLAY = %.4f",
-                replay_score,
-            )
-            _logger.info(
-                "[FACE-LIVENESS] THRESHOLD = %.2f",
-                cls._ANTI_SPOOF_THRESHOLD,
-            )
-            _logger.info(
-                "[FACE-LIVENESS] RESULT = %s",
-                "LIVE" if is_live else "SPOOF",
-            )
-            _logger.info(
-                "=================================================="
-            )
-
             if not is_live:
                 return (
                     False,
@@ -398,9 +248,6 @@ class LockerAccessController(http.Controller):
             return True, live_score, ""
 
         except Exception:
-            _logger.exception(
-                "[FACE-LIVENESS] Failed to perform face liveness check."
-            )
             return False, 0.0, "Face liveness check failed."
 
     # COMMON HELPERS
@@ -534,32 +381,25 @@ class LockerAccessController(http.Controller):
             image_array = np.frombuffer(image_bytes, dtype=np.uint8)
             image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             if image is None:
-                _logger.warning("Face image could not be decoded.")
                 return None
             faces = self._get_face_app().get(image)
             if not faces:
-                _logger.info("No face detected in image.")
                 return None
             if len(faces) != 1:
-                _logger.info("Expected exactly one face, found %s.", len(faces))
                 return None
             face = faces[0]
             if face.kps is None:
-                _logger.info("Face landmarks were not detected.")
                 return None
             if not hasattr(face, "embedding"):
-                _logger.info("Face embedding was not generated.")
                 return None
             embedding = face.embedding
             if embedding is None:
                 return None
             norm = np.linalg.norm(embedding)
             if not np.isfinite(norm) or norm == 0:
-                _logger.info("Invalid face embedding.")
                 return None
             return embedding / norm
         except Exception:
-            _logger.exception("Failed to generate face embedding.")
             return None
 
     def _compare_faces(self, reference_bytes, live_bytes):
@@ -568,7 +408,6 @@ class LockerAccessController(http.Controller):
         if reference_embedding is None or live_embedding is None:
             return False, 0.0
         similarity = float(np.dot(reference_embedding, live_embedding))
-        _logger.info("Locker face similarity: %.4f", similarity)
         return similarity >= 0.45, similarity
 
     def _get_person_method_key(self, partner_id, access_method):
@@ -605,14 +444,6 @@ class LockerAccessController(http.Controller):
             "locked_until": locked_until,
         }
         request.session["locker_person_method_auth_states_v2"] = dict(states)
-        _logger.info(
-            "Locker auth failure: method=%s partner_id=%s attempts=%s remaining=%s locked=%s",
-            access_method,
-            partner_id,
-            attempts,
-            max(0, 3 - attempts),
-            attempts >= 3,
-        )
         return {
             "attempts": attempts,
             "remaining": max(0, 3 - attempts),
@@ -634,6 +465,13 @@ class LockerAccessController(http.Controller):
             credential.access_method,
         )
         return state["locked"], state["locked_until"] if state["locked"] else 0
+
+    def _get_remaining_minutes(self, locked_until, now=None):
+        # Shared by every "X attempts left / try again in N minutes" lock
+        # message so the same rounding rule is used everywhere.
+        now = now if now is not None else time.time()
+        remaining_seconds = max(0, int(locked_until - now))
+        return max(1, (remaining_seconds + 59) // 60)
 
     # FIND PERSON
 
@@ -657,7 +495,7 @@ class LockerAccessController(http.Controller):
         if not partners:
             return {"success": False, "message": "No person found."}
         allocations = Allocation.search([
-            ("state", "=", "allocated"),
+            ("state", "in", ["allocated", "renewal_pending", "expired"]),
             "|",
             ("partner_id", "in", partners.ids),
             ("authorized_partner_ids", "in", partners.ids),
@@ -710,10 +548,13 @@ class LockerAccessController(http.Controller):
     )
     def current_checked_in(self):
         """Return people who are currently checked in and not checked out."""
-        Access = request.env["locker.access"].sudo()
+        Access = request.env["locker.access"]
 
         active_accesses = Access.search(
-            [("state", "=", "checked_in")],
+            [
+                ("state", "=", "checked_in"),
+                ("allocation_id.company_id", "=", request.env.company.id),
+            ],
             order="id desc",
         )
 
@@ -771,8 +612,7 @@ class LockerAccessController(http.Controller):
 
         auth_state = self._get_person_method_auth_state(partner.id, "qr")
         if auth_state["locked"]:
-            remaining_seconds = max(0, int(auth_state["locked_until"] - time.time()))
-            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"])
             return {
                 "success": False,
                 "locked": True,
@@ -861,8 +701,7 @@ class LockerAccessController(http.Controller):
         )
         if face_auth_state["locked"]:
             locked_until = face_auth_state["locked_until"]
-            remaining_seconds = max(0, int(locked_until - time.time()))
-            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            remaining_minutes = self._get_remaining_minutes(locked_until)
             return {
                 "success": False,
                 "locked": True,
@@ -894,8 +733,7 @@ class LockerAccessController(http.Controller):
         )
         if face_auth_state["locked"]:
             locked_until = face_auth_state["locked_until"]
-            remaining_seconds = max(0, int(locked_until - time.time()))
-            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            remaining_minutes = self._get_remaining_minutes(locked_until)
             return {
                 "success": False,
                 "locked": True,
@@ -987,8 +825,7 @@ class LockerAccessController(http.Controller):
         credential = pending["credential"]
         auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
         if auth_state["locked"]:
-            remaining_seconds = max(0, int(auth_state["locked_until"] - current_time))
-            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"], current_time)
             return {
                 "success": False,
                 "locked": True,
@@ -1005,13 +842,6 @@ class LockerAccessController(http.Controller):
             "otp_hash": otp_hash,
             "expires_at": time.time() + 300,
         }
-        _logger.info("==================================================")
-        _logger.info("LOCKER OTP GENERATED")
-        _logger.info("Partner : %s", partner.display_name)
-        _logger.info("Email   : %s", email)
-        _logger.info("OTP     : %s", otp)
-        _logger.info("Valid For : 5 Minutes")
-        _logger.info("==================================================")
         try:
             mail_template = request.env.ref(
                 "iPredict_locker_management.mail_template_locker_authentication_otp",
@@ -1019,7 +849,6 @@ class LockerAccessController(http.Controller):
             )
             if not mail_template:
                 request.session.pop("locker_otp", None)
-                _logger.error("Locker OTP email template was not found.")
                 return {"success": False, "message": "Locker OTP email template is not configured."}
             mail_template.sudo().with_context(otp=otp).send_mail(
                 credential.id,
@@ -1031,7 +860,6 @@ class LockerAccessController(http.Controller):
             )
         except Exception:
             request.session.pop("locker_otp", None)
-            _logger.exception("Failed to send locker OTP email to %s", email)
             return {"success": False, "message": "Unable to send OTP email. Please check the email configuration."}
         return {"success": True, "message": "OTP has been sent to your registered email address."}
 
@@ -1055,8 +883,7 @@ class LockerAccessController(http.Controller):
         credential = pending["credential"]
         auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
         if auth_state["locked"]:
-            remaining_seconds = max(0, int(auth_state["locked_until"] - current_time))
-            remaining_minutes = max(1, (remaining_seconds + 59) // 60)
+            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"], current_time)
             return {
                 "success": False,
                 "locked": True,
@@ -1122,7 +949,6 @@ class LockerAccessController(http.Controller):
         partner_id=None,
         allocation_id=None,
     ):
-        # Authenticate the selected person according to the allocation's configured access method. PIN / RFID / Biometric: - credential must match exactly - maximum 3 failed attempts - 60 second temporary lock after the 3rd failure Physical Key: - person selection itself is the authentication - no credential value is required - no attempt counter / lock is applied
 
         if not partner_id:
             return {
@@ -1204,15 +1030,8 @@ class LockerAccessController(http.Controller):
                 "message": "No active authentication credential found for this person.",
             }
 
-        # PHYSICAL KEY A physical key has no digital credential. Selecting the authorized person is sufficient.
+        # PHYSICAL KEY
         if access_method == "physical_key":
-            _logger.info(
-                "Locker physical-key authentication success: "
-                "partner_id=%s allocation_id=%s",
-                partner.id,
-                allocation.id,
-            )
-
             self._clear_pending_authentication()
 
             return {
@@ -1311,17 +1130,6 @@ class LockerAccessController(http.Controller):
                 access_method,
             )
 
-            _logger.warning(
-                "Locker authentication failed: "
-                "method=%s partner_id=%s allocation_id=%s "
-                "attempt=%s remaining=%s",
-                access_method,
-                partner.id,
-                allocation.id,
-                result["attempts"],
-                result["remaining"],
-            )
-
             if result["locked"]:
                 return {
                     "success": False,
@@ -1354,14 +1162,6 @@ class LockerAccessController(http.Controller):
         self._clear_pending_authentication()
         request.session.pop("locker_otp", None)
 
-        _logger.info(
-            "Locker authentication success: "
-            "method=%s partner_id=%s allocation_id=%s",
-            access_method,
-            partner.id,
-            allocation.id,
-        )
-
         return {
             "success": True,
             "locked": False,
@@ -1391,7 +1191,7 @@ class LockerAccessController(http.Controller):
             return {"success": False, "message": "Locker allocation not found."}
         if allocation.state != "allocated":
             return {"success": False, "message": "This locker is not currently allocated."}
-        partner = request.env["res.partner"].sudo().browse(int(authenticated_partner_id)).exists()
+        partner = request.env["res.partner"].browse(int(authenticated_partner_id)).exists()
         if not partner:
             return {"success": False, "message": "Authenticated person not found."}
         allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
