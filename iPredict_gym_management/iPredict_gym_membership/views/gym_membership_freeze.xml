@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ===================================================================== -->
+    <!-- FREEZE REQUEST LIST VIEW                                              -->
+    <!-- ===================================================================== -->
     <record id="view_gym_membership_freeze_list" model="ir.ui.view">
         <field name="name">gym.membership.freeze.list</field>
         <field name="model">gym.membership.freeze</field>
         <field name="arch" type="xml">
-            <list create="true" edit="true" delete="true">
-                <field name="partner_id"/>
-                <field name="membership_history_id"/>
-                <field name="freeze_start_date"/>
-                <field name="freeze_end_date"/>
+
+            <list create="false" edit="false" delete="false">
+                <field name="partner_id" string="Member"/>
+                <field name="membership_history_id" string="Membership"/>
+                <field name="membership_plan_id" string="Membership Plan"/>
+                <field name="freeze_start_date" string="Start Date"/>
+                <field name="freeze_end_date" string="End Date"/>
+                <field name="freeze_days" string="Freeze Days"/>
+
                 <field name="state"
                        widget="badge"
                        decoration-muted="state == 'draft'"
@@ -17,54 +24,134 @@
                        decoration-success="state == 'approved'"
                        decoration-danger="state == 'rejected'"/>
             </list>
+
         </field>
     </record>
 
-    <!-- Form View -->
+
+    <!-- ===================================================================== -->
+    <!-- FREEZE REQUEST FORM VIEW                                              -->
+    <!-- ===================================================================== -->
     <record id="view_gym_membership_freeze_form" model="ir.ui.view">
         <field name="name">gym.membership.freeze.form</field>
         <field name="model">gym.membership.freeze</field>
         <field name="arch" type="xml">
+
             <form string="Membership Freeze Request">
+
+                <!-- ========================================================= -->
+                <!-- HEADER                                                     -->
+                <!-- ========================================================= -->
                 <header>
-                    <button name="action_submit"
-                            type="object"
-                            string="Submit"
-                            class="btn-primary"
-                            invisible="state != 'draft'"/>
+
                     <button name="action_approve"
                             type="object"
                             string="Approve"
                             class="btn-primary"
+                            groups="iPredict_gym_base.group_gym_user,iPredict_gym_base.group_gym_admin"
                             invisible="state != 'pending'"/>
+
                     <button name="action_reject"
                             type="object"
                             string="Reject"
                             class="btn-secondary"
+                            groups="iPredict_gym_base.group_gym_user,iPredict_gym_base.group_gym_admin"
                             invisible="state != 'pending'"/>
+
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,pending,approved,rejected"/>
+
                 </header>
 
+
+                <!-- ========================================================= -->
+                <!-- SHEET                                                      -->
+                <!-- ========================================================= -->
                 <sheet>
-                    <group>
-                        <field name="partner_id"/>
-                        <field name="membership_history_id"/>
-                        <field name="freeze_start_date"/>
-                        <field name="freeze_end_date"/>
+
+                    <!-- ===================================================== -->
+                    <!-- MEMBER INFORMATION                                    -->
+                    <!-- ===================================================== -->
+                    <group string="Member Information">
+
+                        <group>
+                            <field name="partner_id"
+                                   string="Member"
+                                   readonly="1"/>
+
+                            <field name="membership_history_id"
+                                   string="Active Membership"
+                                   readonly="1"/>
+                        </group>
+
+                        <group>
+                            <field name="membership_plan_id"
+                                   string="Membership Plan"
+                                   readonly="1"/>
+
+                            <field name="company_id"
+                                   string="Company"
+                                   readonly="1"/>
+                        </group>
+
                     </group>
+
+
+                    <!-- ===================================================== -->
+                    <!-- FREEZE PERIOD                                          -->
+                    <!-- ===================================================== -->
+                    <separator string="Freeze Period"/>
+
+                    <group>
+
+                        <group>
+                            <field name="freeze_start_date"
+                                   string="Start Date"
+                                   readonly="1"/>
+
+                            <field name="freeze_days"
+                                   string="Freeze Days"
+                                   readonly="1"/>
+                        </group>
+
+                        <group>
+                            <field name="freeze_end_date"
+                                   string="End Date"
+                                   readonly="1"/>
+                        </group>
+
+                    </group>
+
+
+                    <!-- ===================================================== -->
+                    <!-- FREEZE REASON                                          -->
+                    <!-- ===================================================== -->
+                    <separator string="Freeze Reason"/>
+
+                    <group>
+                        <field name="reason"
+                               nolabel="1"
+                               readonly="1"
+                               placeholder="Reason for membership freeze..."/>
+                    </group>
+
                 </sheet>
+
             </form>
+
         </field>
     </record>
 
+
+    <!-- ===================================================================== -->
+    <!-- FREEZE REQUEST ACTION                                                 -->
+    <!-- ===================================================================== -->
     <record id="action_gym_membership_freeze" model="ir.actions.act_window">
         <field name="name">Membership Freeze Requests</field>
         <field name="res_model">gym.membership.freeze</field>
         <field name="view_mode">list,form</field>
-            <field name="context">{'create': True}</field>
-
+        <field name="context">{'create': False}</field>
     </record>
 
 </odoo>

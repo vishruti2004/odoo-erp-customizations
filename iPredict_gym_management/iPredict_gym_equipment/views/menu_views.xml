@@ -5,7 +5,7 @@
     <menuitem id="menu_gym_equipment_root"
               name="Equipment"
               parent="iPredict_gym_base.menu_gym_root"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_admin"
               sequence="50"/>
 
     <!-- Equipment -->
@@ -13,7 +13,7 @@
               name="Equipment"
               parent="menu_gym_equipment_root"
               action="maintenance.hr_equipment_action"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_trainer"
+              groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_user"
               sequence="1"/>
 
     <!-- Maintenance Requests -->
@@ -21,7 +21,7 @@
               name="Maintenance Requests"
               parent="menu_gym_equipment_root"
               action="maintenance.hr_equipment_request_action"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_trainer"
+              groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_user"
               sequence="2"/>
 
     <!-- Repair Orders -->
@@ -29,7 +29,7 @@
               name="Repair Orders"
               parent="menu_gym_equipment_root"
               action="repair.action_repair_order_tree"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_trainer"
+              groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_user"
               sequence="3"/>
 
 </odoo>

@@ -38,6 +38,8 @@ Features:
         "security/ir.model.access.csv",
         "data/mail_template.xml",
         "data/ir_cron_data.xml",
+        "data/locker_sequence.xml",
+
 
 
         # Views

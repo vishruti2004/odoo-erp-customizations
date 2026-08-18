@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Auto Expire Memberships -->
     <record id="ir_cron_gym_membership_expire" model="ir.cron">
         <field name="name">Gym: Auto-Expire Memberships</field>
         <field name="model_id" ref="model_gym_membership_history"/>
@@ -11,6 +12,7 @@
         <field name="active">True</field>
     </record>
 
+    <!-- Auto Freeze / Resume Memberships -->
     <record id="ir_cron_gym_membership_freeze_schedule" model="ir.cron">
         <field name="name">Gym: Auto Freeze / Resume Memberships</field>
         <field name="model_id" ref="model_gym_membership_freeze"/>
@@ -20,4 +22,5 @@
         <field name="interval_type">days</field>
         <field name="active">True</field>
     </record>
+
 </odoo>

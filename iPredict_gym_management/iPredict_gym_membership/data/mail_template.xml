@@ -5,19 +5,15 @@
         <record id="mail_template_membership_freeze_request" model="mail.template">
             <field name="model_id" ref="model_gym_membership_freeze"/>
             <field name="name">Membership Freeze Request</field>
-
-            <field name="subject">
-                Membership Freeze Request - {{ object.partner_id.member_code }}
-            </field>
-
+            <field name="subject">Membership Freeze Request - {{ object.partner_id.member_code or '' }}</field>
             <field name="email_from">{{ user.email_formatted }}</field>
-            <field name="email_to"></field>
-
+            <field name="email_to">{{ object.partner_id.email or '' }}</field>
             <field name="body_html" type="html">
+
                 <div style="margin:0; padding:30px; background:#f4f6f9; font-family:Arial,sans-serif;">
                     <div style="max-width:700px; margin:0 auto; background:#ffffff; border-radius:10px; overflow:hidden; border:1px solid #e5e5e5;">
 
-                        <!-- Header -->
+                        <!-- HEADER -->
                         <div style="background:#714B67; padding:30px; text-align:center;">
                             <h2 style="margin:0; color:#ffffff; font-size:26px;">
                                 Membership Freeze Request
@@ -27,18 +23,17 @@
                             </p>
                         </div>
 
-                        <!-- Body -->
+                        <!-- BODY -->
                         <div style="padding:35px;">
                             <p style="margin-top:0; font-size:15px; color:#444;">
-                                Dear Manager,
+                                Dear Trainer / Gym Administrator,
                             </p>
 
                             <p style="font-size:14px; color:#666; line-height:24px;">
-                                A gym member has submitted a request to temporarily freeze their membership.
-                                Please review the details below before taking further action.
+                                A gym member has submitted a request to temporarily freeze their membership. Please review the request details below and approve or reject the request.
                             </p>
 
-                            <!-- Member Information -->
+                            <!-- MEMBER INFORMATION -->
                             <div style="margin-top:30px; border:1px solid #ececec; border-radius:8px; padding:20px; background:#fafafa;">
                                 <h3 style="margin:0 0 18px; color:#714B67; font-size:18px;">
                                     Member Information
@@ -46,12 +41,12 @@
 
                                 <p style="margin:8px 0;">
                                     <strong>Member Name :</strong>
-                                    <t t-out="object.partner_id.name"/>
+                                    <t t-out="object.partner_id.name or ''"/>
                                 </p>
 
                                 <p style="margin:8px 0;">
                                     <strong>Member Code :</strong>
-                                    <t t-out="object.partner_id.member_code"/>
+                                    <t t-out="object.partner_id.member_code or ''"/>
                                 </p>
 
                                 <p style="margin:8px 0;">
@@ -60,42 +55,47 @@
                                 </p>
                             </div>
 
-                            <!-- Current Membership -->
+                            <!-- CURRENT MEMBERSHIP -->
                             <div style="margin-top:25px; border-left:5px solid #714B67; background:#f8f9fc; padding:20px; border-radius:6px;">
                                 <h3 style="margin:0; color:#714B67; font-size:18px;">
                                     Current Membership
                                 </h3>
 
                                 <p style="margin:15px 0 0; font-size:17px; font-weight:bold; color:#333;">
-                                    <t t-out="object.membership_history_id.membership_start_date"/>
+                                    <t t-out="format_date(object.membership_history_id.membership_start_date) or ''"/>
                                     -
-                                    <t t-out="object.membership_history_id.membership_end_date"/>
+                                    <t t-out="format_date(object.membership_history_id.membership_end_date) or ''"/>
                                 </p>
                             </div>
 
-                            <!-- Freeze Request -->
+                            <!-- FREEZE REQUEST -->
                             <div style="margin-top:20px; border-left:5px solid #f39c12; background:#fff8ee; padding:20px; border-radius:6px;">
                                 <h3 style="margin:0; color:#d68910; font-size:18px;">
                                     Requested Freeze Duration
                                 </h3>
 
                                 <p style="margin:15px 0 8px; font-size:17px; font-weight:bold; color:#333;">
-                                    <t t-out="object.freeze_start_date"/>
+                                    <t t-out="format_date(object.freeze_start_date) or ''"/>
                                     -
-                                    <t t-out="object.freeze_end_date"/>
+                                    <t t-out="format_date(object.freeze_end_date) or ''"/>
                                 </p>
 
                                 <p style="margin:0; color:#555;">
                                     <strong>Freeze Days :</strong>
-                                    <t t-out="object.freeze_days"/>
+                                    <t t-out="object.freeze_days or 0"/>
+                                </p>
+
+                                <p style="margin:12px 0 0; color:#555;">
+                                    <strong>Freeze Reason :</strong>
+                                    <t t-out="object.reason or ''"/>
                                 </p>
                             </div>
 
-                            <!-- Button -->
+                            <!-- REVIEW -->
                             <div style="text-align:center; margin-top:35px;">
-                                <a t-attf-href="#" style="background:#714B67; color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:6px; display:inline-block; font-size:15px; font-weight:bold;">
-                                    Review Membership
-                                </a>
+                                <p style="font-size:14px; color:#666;">
+                                    Please open Odoo and review the membership freeze request.
+                                </p>
                             </div>
 
                             <p style="margin-top:35px; font-size:14px; color:#666; line-height:22px;">
@@ -103,19 +103,20 @@
                             </p>
                         </div>
 
-                        <!-- Footer -->
+                        <!-- FOOTER -->
                         <div style="background:#fafafa; border-top:1px solid #ececec; padding:20px; text-align:center;">
                             <p style="margin:0; font-size:12px; color:#999;">
                                 This is an automated notification generated by Odoo.
                             </p>
 
                             <p style="margin-top:8px; font-size:14px; color:#714B67; font-weight:bold;">
-                                <t t-out="object.company_id.name"/>
+                                <t t-out="object.company_id.name or user.company_id.name or ''"/>
                             </p>
                         </div>
 
                     </div>
                 </div>
+
             </field>
         </record>
 

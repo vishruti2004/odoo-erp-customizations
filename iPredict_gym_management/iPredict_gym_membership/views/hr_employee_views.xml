@@ -21,15 +21,28 @@
             </xpath>
 
             <xpath expr="//div[hasclass('oe_title')]" position="after">
-                <div class="row mt-2">
-                    <div class="col-6">
-                        <field name="member_ids" widget="many2many_tags" 
-                               domain="[('is_gym_member', '=', True)]"
-                               placeholder="Select Members..."/>
-                    </div>
-                </div>
-                <field name="is_trainer" invisible="1"/>
-                <field name="trainer_code" readonly="1" invisible="1"/>
+
+                <group col="2" class="mt-2">
+
+                    <field name="is_trainer"/>
+
+                    <field name="trainer_code"
+                        readonly="1"
+                        invisible="not is_trainer"/>
+
+                    <field name="member_ids"
+                        widget="many2many_tags"
+                        string="Assigned Members"
+                        domain="[
+                            ('is_gym_member', '=', True),
+                            ('company_id', '=', company_id)
+                        ]"
+                        options="{'no_create': True}"
+                        invisible="not is_trainer"
+                        placeholder="Select Members..."/>
+
+                </group>
+
             </xpath>
 
         </field>

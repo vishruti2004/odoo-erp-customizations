@@ -14,7 +14,7 @@
         id="menu_gym_configuration"
         name="Configuration"
         parent="iPredict_gym_base.menu_gym_root"
-        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+        groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
         sequence="100"/>
 
     <!-- Membership Plans - Manager + Admin  -->
@@ -23,7 +23,7 @@
         name="Membership Plans"
         parent="menu_gym_configuration"
         action="action_gym_membership_plan"
-        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+        groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
         sequence="10"/>
 
     <!-- Frozen Members - Manager + Admin -->
@@ -32,7 +32,7 @@
         name="Frozen Members"
         parent="menu_gym_configuration"
         action="action_gym_frozen_members"
-        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+        groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
         sequence="20"/>
 
     <!-- Action -->
@@ -50,7 +50,7 @@
         name="Trainers"
         parent="iPredict_gym_base.menu_gym_root"
         action="action_gym_trainers"
-        groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+        groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
         sequence="20"/>
     
     <!-- Measurement - all -->
@@ -58,7 +58,7 @@
               name="Measurement History"
               parent="iPredict_gym_base.menu_gym_root"
               action="action_gym_measurement"
-              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_user,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
               sequence="40"/>
 
 </odoo>

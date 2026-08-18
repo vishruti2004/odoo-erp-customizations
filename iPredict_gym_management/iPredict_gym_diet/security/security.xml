@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="rule_gym_admin_diet_plan_company" model="ir.rule">
+        <field name="name">Gym Admin: Current Company Diet Plans</field>
+        <field name="model_id" ref="model_gym_diet_plan"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin'))]"/>
+    </record>
+
+    <record id="rule_gym_user_diet_plan_company" model="ir.rule">
+        <field name="name">Gym User: Current Company Diet Plans</field>
+        <field name="model_id" ref="model_gym_diet_plan"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+    <record id="rule_gym_admin_diet_assignment_company" model="ir.rule">
+        <field name="name">Gym Admin: Current Company Diet Assignments</field>
+        <field name="model_id" ref="model_gym_diet_assignment"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin'))]"/>
+    </record>
+
+    <record id="rule_gym_user_diet_assignment_company" model="ir.rule">
+        <field name="name">Gym User: Own Members Current Company Diet Assignments</field>
+        <field name="model_id" ref="model_gym_diet_assignment"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), ('member_id.trainer_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+    <record id="rule_gym_admin_diet_meal_line_company" model="ir.rule">
+        <field name="name">Gym Admin: Current Company Diet Meal Lines</field>
+        <field name="model_id" ref="model_gym_diet_meal_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin'))]"/>
+    </record>
+
+    <record id="rule_gym_user_diet_meal_line_company" model="ir.rule">
+        <field name="name">Gym User: Current Company Diet Meal Lines</field>
+        <field name="model_id" ref="model_gym_diet_meal_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+</odoo>

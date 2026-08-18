@@ -28,6 +28,8 @@ Adds only what's missing:
     ],
     "data": [
         "security/ir.model.access.csv",
+        "security/security.xml",
+
         "views/equipment_views.xml",
         "views/repair_views.xml",
         "views/maintenance_request.xml",

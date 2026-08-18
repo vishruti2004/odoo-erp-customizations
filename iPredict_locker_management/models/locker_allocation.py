@@ -94,10 +94,37 @@ class LockerAllocation(models.Model):
         return records
 
     def _prepare_create_vals(self, vals_list):
+        Sequence = self.env["ir.sequence"]
+
         for vals in vals_list:
             company_id = vals.get("company_id") or self.env.company.id
+
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].with_company(company_id).next_by_code("locker.allocation") or "New"
+                company = self.env["res.company"].browse(company_id)
+
+                sequence_code = f"locker.allocation.{company_id}"
+
+                sequence = Sequence.search(
+                    [
+                        ("code", "=", sequence_code),
+                        ("company_id", "=", company_id),
+                    ],
+                    limit=1,
+                )
+
+                if not sequence:
+                    sequence = Sequence.create({
+                        "name": f"Locker Allocation - {company.name}",
+                        "code": sequence_code,
+                        "company_id": company_id,
+                        "prefix": "LA/%(year)s/",
+                        "padding": 5,
+                        "number_increment": 1,
+                        "use_date_range": True,
+                    })
+
+                vals["name"] = sequence.next_by_id()
+
         return vals_list
 
     def write(self, vals):

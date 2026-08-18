@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- ===================================================================== -->
+    <!-- RES PARTNER INHERIT FORM VIEW (GYM MEMBERSHIP)                       -->
+    <!-- ===================================================================== -->
     <record id="view_partner_form_inherit_gym_membership" model="ir.ui.view">
         <field name="name">res.partner.form.inherit.gym.membership</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
+
+            <!-- Gym Member Header Buttons -->
+            <xpath expr="//form/sheet" position="before">
+                <header>
+                    <!-- Technical Fields -->
+                    <field name="company_id" invisible="1"/>
+                    <field name="create_employee_for_member" invisible="1"/>
+
+                    <!-- Access Timesheet / Attendance Employee -->
+                    <button name="action_create_attendance_employee"
+                            type="object"
+                            string="Access Timesheet"
+                            class="btn-primary"
+                            invisible="not is_gym_member or attendance_employee_id or not create_employee_for_member"/>
+
+                    <!-- Assign Locker -->
+                    <button name="action_assign_locker"
+                            type="object"
+                            string="Assign Locker"
+                            class="btn-primary"
+                            invisible="not is_gym_member"/>
+                </header>
+            </xpath>
 
             <!-- Freeze Membership Stat Button -->
             <xpath expr="//div[@name='button_box']/*[1]" position="before">
@@ -20,7 +46,9 @@
 
             <!-- Gym Membership Tab -->
             <xpath expr="//notebook" position="inside">
-                <page string="Gym Membership" name="gym_membership_tab" invisible="not is_gym_member">
+                <page string="Gym Membership"
+                      name="gym_membership_tab"
+                      invisible="not is_gym_member">
 
                     <group>
                         <group>
@@ -28,9 +56,10 @@
                             <field name="membership_plan_id"/>
                             <field name="work_schedule_id"/>
                             <field name="membership_start_date"/>
-                            <field name="membership_end_date"/>
+                            <field name="membership_end_date" readonly="1"/>
                             <field name="remaining_days" readonly="1"/>
                             <field name="trainer_id" widget="many2many_tags" string="Assign Trainer"/>
+                            <field name="attendance_employee_id" string="Attendance Employee" readonly="1"/>
                         </group>
                     </group>
 
@@ -38,14 +67,13 @@
                     <field name="notes" nolabel="1" placeholder="Enter membership notes here..."/>
 
                     <notebook>
-
-                        <!--  Membership History -->
+                        <!-- Membership History -->
                         <page string="Membership History" name="membership_history_page">
                             <field name="membership_history_ids" nolabel="1" mode="list,form">
-                                <list default_order="membership_start_date desc"
-                                      create="1" edit="1" delete="1">
+                                <list default_order="membership_start_date desc" create="1" edit="1" delete="1">
                                     <field name="name"/>
                                     <field name="membership_plan_id"/>
+                                    <field name="company_id"/>
                                     <field name="membership_start_date"/>
                                     <field name="membership_end_date"/>
                                     <field name="status"
@@ -62,6 +90,7 @@
                                             class="btn btn-primary btn-sm"
                                             invisible="status != 'expired' or renewal_sale_order_id"/>
                                 </list>
+
                                 <form string="Membership History">
                                     <sheet>
                                         <group>
@@ -82,10 +111,11 @@
                                 </form>
                             </field>
                         </page>
-
                     </notebook>
                 </page>
             </xpath>
+
         </field>
     </record>
+
 </odoo>

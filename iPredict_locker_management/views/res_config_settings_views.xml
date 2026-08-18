@@ -23,24 +23,6 @@
                         </setting>
                     </block>
 
-                    <!-- PENALTY SETTINGS -->
-
-                    <block title="Penalty Settings">
-                        <setting string="Enable Penalty" help="Enable penalty calculation for expired locker allocations.">
-                            <field name="penalty_enabled"/>
-                        </setting>
-                        <setting string="Penalty Amount" help="Amount charged as penalty for an expired locker allocation." invisible="not penalty_enabled">
-                            <field name="penalty_amount" widget="monetary"/>
-                            <field name="penalty_currency_id" invisible="1"/>
-                        </setting>
-                        <setting string="Penalty Period" help="Define how often the penalty amount is applied." invisible="not penalty_enabled">
-                            <field name="penalty_period"/>
-                        </setting>
-                        <setting string="Penalty Start After" help="Number of days after the locker expiry before the penalty starts." invisible="not penalty_enabled">
-                            <field name="penalty_start_after_days"/>
-                        </setting>
-                    </block>
-
                 </app>
             </xpath>
         </field>

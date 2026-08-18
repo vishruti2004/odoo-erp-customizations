@@ -24,6 +24,10 @@
 
     "depends": [
         "base",
+        "hr",
+        "iPredict_locker_management",
+
+
     ],
 
     "data": [
@@ -32,7 +36,13 @@
         "security/ir.model.access.csv",
 
         # Views
+        "views/res_config_settings_views.xml",
         "views/menu_views.xml",
+
+    ],
+
+    'images': [
+        'static/description/icon.png',
     ],
 
     "license": "LGPL-3",

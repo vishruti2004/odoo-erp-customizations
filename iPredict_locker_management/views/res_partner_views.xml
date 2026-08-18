@@ -6,23 +6,14 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//notebook" position="inside">
-                <page string="Locker" invisible="not has_active_locker">
-                    <field name="locker_allocation_ids" readonly="1">
-                        <list>
-                            <field name="name"/>
-                            <field name="locker_id"/>
-                            <field name="profile_id"/>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
-                            <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'allocated'" decoration-warning="state == 'returned'" decoration-danger="state == 'cancelled'"/>
-                        </list>
-                    </field>
-                    <group string="Authentication / Identity">
-                        <field name="locker_pin"/>
-                    </group>
-                </page>
+
+            <!-- Locker Allocations Smart Button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_locker_allocations" type="object" class="oe_stat_button" icon="fa-lock" invisible="locker_allocation_count == 0">
+                    <field name="locker_allocation_count" widget="statinfo" string="Locker Allocations"/>
+                </button>
             </xpath>
+
         </field>
     </record>
 

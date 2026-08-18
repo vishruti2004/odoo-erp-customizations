@@ -1,257 +1,358 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta
-import logging
-
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
-
-_logger = logging.getLogger(__name__)
 
 
 class GymMembershipFreeze(models.Model):
     _name = "gym.membership.freeze"
     _description = "Gym Membership Freeze Request"
-    _rec_name = "partner_id"
     _inherit = ["mail.thread", "mail.activity.mixin"]
+    _order = "create_date desc"
 
-    partner_id = fields.Many2one(
-        "res.partner",
-        string="Member",
-        required=True,
-    )
+    company_id = fields.Many2one("res.company", string="Company", related="partner_id.company_id", store=True, readonly=True, index=True)
+    partner_id = fields.Many2one("res.partner", string="Member", required=True, ondelete="cascade", tracking=True, domain="[('is_gym_member', '=', True)]")
+    membership_history_id = fields.Many2one("gym.membership.history", string="Active Membership", required=True, tracking=True, domain="[('member_id', '=', partner_id), ('status', '=', 'active')]")
+    membership_plan_id = fields.Many2one("gym.membership.plan", string="Membership Plan", related="membership_history_id.membership_plan_id", store=True, readonly=True)
+    freeze_start_date = fields.Date(string="Start Date", required=True, tracking=True)
+    freeze_end_date = fields.Date(string="End Date", required=True, tracking=True)
+    freeze_days = fields.Integer(string="Freeze Days", compute="_compute_freeze_days", store=True)
+    membership_extended = fields.Boolean(string="Membership Extended", default=False, copy=False)
+    reason = fields.Text(string="Freeze Reason", required=True, tracking=True)
+    state = fields.Selection([("draft", "Draft"), ("pending", "Pending"), ("approved", "Approved"), ("rejected", "Rejected")], string="Status", default="draft", required=True, tracking=True)
 
-    membership_history_id = fields.Many2one(
-        "gym.membership.history",
-        string="Active Membership",
-        required=True,
-        domain="[('member_id', '=', partner_id), ('status', '=', 'active')]",
-        help="Select the active membership plan that should be frozen.",
-    )
+    @api.depends("freeze_start_date", "freeze_end_date")
+    def _compute_freeze_days(self):
+        for record in self:
+            if record.freeze_start_date and record.freeze_end_date:
+                record.freeze_days = (
+                    record.freeze_end_date - record.freeze_start_date
+                ).days + 1
+            else:
+                record.freeze_days = 0
 
-    freeze_start_date = fields.Date(
-        string="Start Date",
-        required=True,
-    )
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            partner_id = vals.get("partner_id")
+            membership_history_id = vals.get("membership_history_id")
 
-    freeze_end_date = fields.Date(
-        string="End Date",
-        required=True,
-    )
-
-    membership_plan_id = fields.Many2one(
-        "gym.membership.plan",
-        related="membership_history_id.membership_plan_id",
-        string="Membership Plan",
-        store=True,
-    )
-
-    state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("pending", "Pending"),
-            ("approved", "Approved"),
-            ("rejected", "Rejected"),
-        ],
-        string="Status",
-        default="draft",
-        tracking=True,
-    )
-    # VALIDATIONS
-
-    @api.constrains("freeze_start_date", "freeze_end_date")
-    def _check_dates_order(self):
-        for rec in self:
-            if rec.freeze_start_date and rec.freeze_end_date:
-                if rec.freeze_end_date < rec.freeze_start_date:
+            if partner_id and membership_history_id:
+                history = self.env["gym.membership.history"].browse(
+                    membership_history_id
+                )
+                if history.member_id.id != partner_id or history.status != "active":
                     raise ValidationError(
-                        _("Freeze End Date cannot be earlier than Freeze Start Date.")
+                        _(
+                            "The selected membership must belong to the selected member and must be active."
+                        )
                     )
+        return super().create(vals_list)
+
+    @api.constrains("partner_id", "membership_history_id")
+    def _check_membership(self):
+        for record in self:
+            if not record.partner_id:
+                continue
+
+            if not record.membership_history_id:
+                raise ValidationError(_("An active membership is required."))
+
+            if record.membership_history_id.member_id != record.partner_id:
+                raise ValidationError(
+                    _("The selected membership does not belong to this member.")
+                )
+
+            if record.membership_history_id.status != "active":
+                raise ValidationError(
+                    _("Only an active membership can be frozen.")
+                )
 
     @api.constrains("freeze_start_date", "freeze_end_date")
-    def _check_dates_not_in_past(self):
-        today = fields.Date.today()
-        for rec in self:
-            if rec.freeze_start_date and rec.freeze_start_date < today:
+    def _check_dates(self):
+        for record in self:
+            if (
+                record.freeze_start_date
+                and record.freeze_end_date
+                and record.freeze_end_date < record.freeze_start_date
+            ):
                 raise ValidationError(
-                    _("Freeze Start Date cannot be a past date.")
-                )
-            if rec.freeze_end_date and rec.freeze_end_date < today:
-                raise ValidationError(
-                    _("Freeze End Date cannot be a past date.")
+                    _(
+                        "Freeze End Date must be greater than or equal to Freeze Start Date."
+                    )
                 )
 
-    @api.constrains("freeze_start_date", "freeze_end_date", "membership_history_id")
-    def _check_dates_within_membership(self):
-        for rec in self:
-            if not rec.membership_history_id:
+            if (
+                record.partner_id
+                and record.partner_id.membership_end_date
+                and record.freeze_start_date
+                and record.freeze_start_date
+                > record.partner_id.membership_end_date
+            ):
+                raise ValidationError(
+                    _(
+                        "Freeze Start Date cannot be after the member's membership End Date."
+                    )
+                )
+
+    @api.constrains(
+        "partner_id",
+        "membership_history_id",
+        "freeze_start_date",
+        "freeze_end_date",
+        "state",
+    )
+    def _check_overlap(self):
+        for record in self:
+            if (
+                not record.partner_id
+                or not record.membership_history_id
+                or not record.freeze_start_date
+                or not record.freeze_end_date
+                or record.state == "rejected"
+            ):
                 continue
-            m_start = rec.membership_history_id.membership_start_date
-            m_end = rec.membership_history_id.membership_end_date
 
-            if rec.freeze_start_date and m_start and rec.freeze_start_date < m_start:
-                raise ValidationError(
-                    _("Freeze Start Date cannot be before the Membership Start Date (%s).")
-                    % m_start
-                )
-
-            if rec.freeze_end_date and m_end and rec.freeze_end_date > m_end:
-                raise ValidationError(
-                    _("Freeze End Date cannot be after the Membership End Date (%s).")
-                    % m_end
-                )
-
-    @api.constrains("freeze_start_date", "freeze_end_date", "membership_history_id", "state")
-    def _check_no_overlap(self):
-        for rec in self:
-            if not (rec.membership_history_id and rec.freeze_start_date and rec.freeze_end_date):
-                continue
-            if rec.state == "rejected":
-                continue
-
-            domain = [
-                ("id", "!=", rec.id),
-                ("membership_history_id", "=", rec.membership_history_id.id),
-                ("state", "!=", "rejected"),
-                ("freeze_start_date", "<=", rec.freeze_end_date),
-                ("freeze_end_date", ">=", rec.freeze_start_date),
-            ]
-            overlapping = self.search_count(domain)
+            overlapping = self.search(
+                [
+                    ("id", "!=", record.id),
+                    ("partner_id", "=", record.partner_id.id),
+                    (
+                        "membership_history_id",
+                        "=",
+                        record.membership_history_id.id,
+                    ),
+                    ("state", "in", ["draft", "pending", "approved"]),
+                    ("freeze_start_date", "<=", record.freeze_end_date),
+                    ("freeze_end_date", ">=", record.freeze_start_date),
+                ],
+                limit=1,
+            )
             if overlapping:
                 raise ValidationError(
-                    _("This membership already has an overlapping freeze request "
-                      "for the selected dates. Please check existing freeze requests "
-                      "before creating a new one.")
+                    _(
+                        "A freeze request already exists for this membership during the selected period."
+                    )
                 )
-    # ACTIONS
 
     def action_submit(self):
         self.ensure_one()
-
-        if not self.membership_history_id:
-            raise ValidationError(_("Please select the Active Membership to freeze."))
-
-        if not self.freeze_start_date:
-            raise ValidationError(_("Please select Freeze Start Date."))
-
-        if not self.freeze_end_date:
-            raise ValidationError(_("Please select Freeze End Date."))
-
-        template = self.env.ref(
-            "iPredict_gym_membership.mail_template_membership_freeze_request",
-            raise_if_not_found=False,
-        )
-
-        if not template:
-            raise ValidationError(_("Membership Freeze mail template not found."))
-
-        trainer_partners = self.partner_id.trainer_id.mapped("user_id.partner_id")
-
-        manager_group = self.env.ref(
-            "iPredict_gym_base.group_gym_manager", raise_if_not_found=False
-        )
-        manager_partners = manager_group.all_user_ids.mapped("partner_id") if manager_group else self.env["res.partner"]
-
-        recipients = (trainer_partners | manager_partners).filtered(lambda p: p.email)
-
-        if not recipients:
+        if self.state != "draft":
             raise ValidationError(
-                _("No Trainer or Manager found with a valid email address "
-                  "to notify for this freeze request.")
+                _("Only draft freeze requests can be submitted.")
             )
 
-        template.send_mail(
-            self.partner_id.id, 
-            email_values={
-                "email_to": False,
-                "recipient_ids": [(6, 0, recipients.ids)],
-                "email_from": self.env.company.email_formatted
-                or self.env.user.email_formatted,
-            },
-            force_send=True,
-        )
+        if not self.reason or not self.reason.strip():
+            raise ValidationError(_("Please provide a freeze reason."))
+
+        if (
+            not self.membership_history_id
+            or self.membership_history_id.status != "active"
+        ):
+            raise ValidationError(
+                _("An active membership is required to submit a freeze request.")
+            )
 
         self.state = "pending"
 
-        return {
-            "type": "ir.actions.act_window",
-            "name": "Membership Freeze Request",
-            "res_model": "gym.membership.freeze",
-            "view_mode": "form",
-            "res_id": self.id,
-            "target": "current",
-        }
+        trainer_partners = self.partner_id.trainer_id.mapped(
+            "user_id.partner_id"
+        )
+        admin_group = self.env.ref(
+            "iPredict_gym_base.group_gym_admin", raise_if_not_found=False
+        )
+
+        admin_partners = self.env["res.partner"]
+        if admin_group:
+            admin_users = admin_group.all_user_ids.filtered(
+                lambda u: (
+                    u.company_id == self.company_id
+                    or self.company_id in u.company_ids
+                )
+            )
+            admin_partners = admin_users.mapped("partner_id")
+
+        recipients = (trainer_partners | admin_partners).filtered(
+            lambda p: p.email
+        )
+
+        if recipients:
+            template = self.env.ref(
+                "iPredict_gym_membership.mail_template_membership_freeze_request",
+                raise_if_not_found=False,
+            )
+            if template:
+                template.send_mail(
+                    self.id,
+                    force_send=True,
+                    email_values={
+                        "email_to": ",".join(recipients.mapped("email")),
+                    },
+                )
+        return True
+
+    def _check_approval_access(self):
+        self.ensure_one()
+        user = self.env.user
+        if user.has_group("iPredict_gym_base.group_gym_admin"):
+            return True
+
+        trainers = self.partner_id.trainer_id
+        if any(t.user_id == user for t in trainers):
+            return True
+
+        raise ValidationError(
+            _(
+                "Only the assigned trainer or Gym Administrator can approve or reject this request."
+            )
+        )
 
     def action_approve(self):
         self.ensure_one()
+        self._check_approval_access()
+
+        if self.state != "pending":
+            raise ValidationError(
+                _("Only pending freeze requests can be approved.")
+            )
+
+        partner = self.partner_id
+        if not partner.membership_start_date or not partner.membership_end_date:
+            raise ValidationError(
+                _(
+                    "The member does not have valid Membership Start or End Date."
+                )
+            )
+
         self.state = "approved"
 
         today = fields.Date.today()
-        if self.freeze_start_date and self.freeze_start_date <= today:
+        if (
+            self.freeze_start_date
+            and self.freeze_start_date <= today
+            and self.freeze_end_date
+            and self.freeze_end_date >= today
+        ):
             self._apply_freeze()
+
+        return True
 
     def action_reject(self):
         self.ensure_one()
+        self._check_approval_access()
 
-        self.partner_id.write({
-            "is_frozen": False,
-        })
+        if self.state != "pending":
+            raise ValidationError(
+                _("Only pending freeze requests can be rejected.")
+            )
 
         self.state = "rejected"
+        return True
 
     def _apply_freeze(self):
         self.ensure_one()
-        self.partner_id.write({
-            "is_frozen": True,
-            "freeze_start_date": self.freeze_start_date,
-            "freeze_end_date": self.freeze_end_date,
-        })
-        if self.membership_history_id and self.membership_history_id.status == "active":
-            freeze_days = (self.freeze_end_date - self.freeze_start_date).days + 1
+        if self.state != "approved":
+            return
 
-            history = self.membership_history_id
-            if history.membership_end_date:
-                history.membership_end_date = history.membership_end_date + timedelta(
-                    days=freeze_days
-                )
+        partner = self.partner_id
+        today = fields.Date.today()
 
-            history.status = "frozen"
+        if not partner or not partner.membership_start_date or not partner.membership_end_date:
+            return
+
+        if not self.freeze_start_date or not self.freeze_end_date:
+            return
+
+        if not (self.freeze_start_date <= today <= self.freeze_end_date):
+            return
+
+        if partner.is_frozen or self.freeze_days <= 0:
+            return
+
+        if not self.membership_extended:
+            partner.write(
+                {
+                    "membership_freeze_extension_days": (
+                        partner.membership_freeze_extension_days
+                        + self.freeze_days
+                    ),
+                }
+            )
+            self.membership_extended = True
+
+        membership = self.membership_history_id
+        if membership and membership.status == "active":
+            membership.write(
+                {
+                    "status": "frozen",
+                    "remark": _(
+                        "Membership frozen from %s to %s. Reason: %s"
+                    )
+                    % (
+                        self.freeze_start_date,
+                        self.freeze_end_date,
+                        self.reason or "",
+                    ),
+                }
+            )
+
+        partner.write(
+            {
+                "is_frozen": True,
+                "freeze_start_date": self.freeze_start_date,
+                "freeze_end_date": self.freeze_end_date,
+            }
+        )
 
     def _apply_resume(self):
         self.ensure_one()
-        self.partner_id.write({
-            "is_frozen": False,
-        })
-        if self.membership_history_id and self.membership_history_id.status == "frozen":
-            self.membership_history_id.status = "active"
+        partner = self.partner_id
+        if not partner:
+            return
 
-    # DAILY AUTOMATIC FREEZE / RESUME SWITCH 
+        membership = self.membership_history_id
+        if membership and membership.status == "frozen":
+            membership.write(
+                {
+                    "status": "active",
+                    "remark": _("Membership freeze completed."),
+                }
+            )
+
+        partner.write(
+            {
+                "is_frozen": False,
+                "freeze_start_date": False,
+                "freeze_end_date": False,
+            }
+        )
 
     @api.model
     def _cron_apply_freeze_schedule(self):
-        _logger.info("=== CRON: Freeze Schedule Started ===")
-
         today = fields.Date.today()
-        _logger.info("Today: %s", today)
 
-        to_freeze = self.search([
-            ("state", "=", "approved"),
-            ("freeze_start_date", "<=", today),
-            ("freeze_end_date", ">=", today),
-        ])
-        _logger.info("Found %s requests to freeze", len(to_freeze))
+        freeze_requests = self.search(
+            [
+                ("state", "=", "approved"),
+                ("freeze_start_date", "<=", today),
+                ("freeze_end_date", ">=", today),
+            ]
+        )
+        for request in freeze_requests:
+            partner = request.partner_id
+            if (
+                partner
+                and partner.membership_start_date
+                and partner.membership_end_date
+                and (partner.membership_start_date <= today <= partner.membership_end_date)
+            ):
+                request._apply_freeze()
 
-        for rec in to_freeze:
-            rec._apply_freeze()
-
-        to_resume = self.search([
-            ("state", "=", "approved"),
-            ("freeze_end_date", "<", today),
-        ])
-        _logger.info("Found %s requests to resume", len(to_resume))
-
-        for rec in to_resume:
-            _logger.info("Resuming: %s", rec.partner_id.name)
-            rec._apply_resume()
-
-        _logger.info("=== CRON: Freeze Schedule Finished ===")
+        completed_requests = self.search(
+            [
+                ("state", "=", "approved"),
+                ("freeze_end_date", "<", today),
+            ]
+        )
+        for request in completed_requests:
+            request._apply_resume()

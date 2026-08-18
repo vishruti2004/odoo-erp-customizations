@@ -8,7 +8,8 @@
         <field name="arch" type="xml">
             <list string="Measurement History">
                 <field name="measurement_date" string="Date"/>
-                <field name="member_id" string="Member"/>
+                <field name="member_ids" string="Member"/>
+                <field name="company_id" string="Company"/>
                 <field name="weight" string="Weight (kg)"/>
                 <field name="height" string="Height (cm)"/>
                 <field name="bmi" string="BMI"/>
@@ -17,62 +18,70 @@
         </field>
     </record>
 
+
     <!-- Form View -->
     <record id="view_gym_measurement_form" model="ir.ui.view">
         <field name="name">gym.member.measurement.form</field>
         <field name="model">gym.member.measurement</field>
         <field name="arch" type="xml">
             <form string="Measurement History">
-                <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="member_id" placeholder="Member..."/>
-                        </h1>
-                    </div>
+            <sheet>
 
+                <!-- Company used for member filtering -->
+                <field name="company_id" invisible="1"/>
+
+                <div class="oe_title">
+                    <h1>
+                        <field name="member_ids"
+                            placeholder="Member..."
+                            domain="[('is_gym_member', '=', True),
+                                        ('company_id', '=', company_id)]"/>
+                    </h1>
+                </div>
+
+                <group>
                     <group>
-                        <group>
-                            <field name="measurement_date" string="Date"/>
-                            <field name="gender" string="Gender" widget="radio"/>
-                            <field name="age" string="Age"/>
-                        </group>
+                        <field name="measurement_date" string="Date"/>
+                        <field name="gender" string="Gender" widget="radio"/>
+                        <field name="age" string="Age"/>
                     </group>
+                </group>
 
-                    <group string="Measurements">
-                        <group>
-                            <field name="weight" string="Weight (kg)"/>
-                            <field name="height" string="Height (cm)"/>
-                        </group>
+                <group string="Measurements">
+                    <group>
+                        <field name="weight" string="Weight (kg)"/>
+                        <field name="height" string="Height (cm)"/>
                     </group>
+                </group>
 
-                    <group string="Body Measurements" col="4">
-                        <field name="neck" string="Neck (cm)"/>
-                        <field name="chest" string="Chest (cm)"/>
-                        <field name="waist" string="Waist (cm)"/>
-                        <field name="hips" string="Hips (cm)"/>
-                        <field name="biceps" string="Biceps (cm)"/>
-                        <field name="forearm" string="Forearm (cm)"/>
-                        <field name="shoulder" string="Shoulder (cm)"/>
-                        <field name="thigh" string="Thigh (cm)"/>
-                        <field name="calf" string="Calf (cm)"/>
+                <group string="Body Measurements" col="4">
+                    <field name="neck" string="Neck (cm)"/>
+                    <field name="chest" string="Chest (cm)"/>
+                    <field name="waist" string="Waist (cm)"/>
+                    <field name="hips" string="Hips (cm)"/>
+                    <field name="biceps" string="Biceps (cm)"/>
+                    <field name="forearm" string="Forearm (cm)"/>
+                    <field name="shoulder" string="Shoulder (cm)"/>
+                    <field name="thigh" string="Thigh (cm)"/>
+                    <field name="calf" string="Calf (cm)"/>
+                </group>
+
+                <group string="BMI &amp; BMR" col="2">
+                    <group>
+                        <field name="bmi" string="BMI"/>
                     </group>
-
-                    <group string="BMI &amp; BMR" col="2">
-                        <group>
-                            <field name="bmi" string="BMI" widget="float"/>
-                        </group>
-                        <group>
-                            <field name="bmr" string="BMR (cal/day)"/>
-                        </group>
+                    <group>
+                        <field name="bmr" string="BMR (cal/day)"/>
                     </group>
+                </group>
 
-                </sheet>
+            </sheet>
 
-                <chatter/>
-
-            </form>
+            <chatter/>
+        </form>
         </field>
     </record>
+
 
     <!-- Action -->
     <record id="action_gym_measurement" model="ir.actions.act_window">

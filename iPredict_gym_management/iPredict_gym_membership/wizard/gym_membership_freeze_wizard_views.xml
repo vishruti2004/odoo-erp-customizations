@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Gym Membership Freeze Wizard Form View -->
+    <record id="view_gym_membership_freeze_wizard_form" model="ir.ui.view">
+        <field name="name">gym.membership.freeze.wizard.form</field>
+        <field name="model">gym.membership.freeze.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Freeze Membership">
+                <sheet>
+                    <!-- Member Details -->
+                    <group>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="membership_history_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="membership_plan_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Freeze Period -->
+                    <separator string="Freeze Period"/>
+                    <group>
+                        <group>
+                            <field name="freeze_start_date"/>
+                            <field name="freeze_days" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="freeze_end_date"/>
+                        </group>
+                    </group>
+
+                    <!-- Freeze Reason -->
+                    <separator string="Freeze Reason"/>
+                    <field name="reason"
+                           nolabel="1"
+                           placeholder="Enter the reason for freezing the membership..."/>
+                </sheet>
+
+                <!-- Footer Action Buttons -->
+                <footer>
+                    <button name="action_submit" string="Submit Request" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

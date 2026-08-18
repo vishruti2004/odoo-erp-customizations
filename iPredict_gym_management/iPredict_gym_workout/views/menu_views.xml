@@ -2,20 +2,18 @@
 <odoo>
 
     <!-- WORKOUT MAIN MENU -->
-   
     <menuitem id="menu_gym_workout"
               name="Workout"
               parent="iPredict_gym_base.menu_gym_root"
-              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_user,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
               sequence="30"/>
-
 
     <!-- WORKOUT PLANS  -->
     <menuitem id="menu_gym_workout_plan"
               name="Workout Plans"
               parent="menu_gym_workout"
               action="action_gym_workout_plan"
-              groups="iPredict_gym_base.group_gym_trainer,iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_user,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
               sequence="20"/>
 
      <!-- EXERCISES  -->
@@ -23,7 +21,7 @@
               name="Exercises"
               parent="menu_gym_workout"
               action="action_gym_exercise"
-              groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
+              groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
               sequence="30"/>
 
      <!-- workout_assignment -->
@@ -31,8 +29,7 @@
                 name="Workout Assignments"
                 parent="menu_gym_workout"
                 action="action_gym_workout_assignment"
-                groups="iPredict_gym_base.group_gym_manager,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
+                groups="iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin,iPredict_gym_base.group_gym_admin"
                 sequence="30"/>
-
 
 </odoo>

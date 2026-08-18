@@ -1,4 +1,7 @@
-from odoo import fields, models
+# -*- coding: utf-8 -*-
+
+from odoo import api, fields, models
+
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
@@ -8,7 +11,15 @@ class ResPartner(models.Model):
     workout_assignment_ids = fields.One2many("gym.workout.assignment", "member_id", string="Workout History")
 
     def _compute_workout_plans(self):
+        Assignment = self.env["gym.workout.assignment"]
+
         for partner in self:
-            plans = self.env["gym.workout.plan"].search([("member_ids", "in", partner.id)])
+            assignments = Assignment.search([
+                ("member_id", "=", partner.id),
+                ("company_id", "=", partner.company_id.id),
+            ])
+
+            plans = assignments.mapped("plan_id")
+
             partner.workout_plan_ids = plans
             partner.workout_plan_history_ids = plans

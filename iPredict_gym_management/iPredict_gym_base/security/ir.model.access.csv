@@ -1,4 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_gym_trainer_partner_rw,trainer.partner.rw,base.model_res_partner,group_gym_trainer,1,1,1,1
-access_gym_manager_partner_all,manager.partner.all,base.model_res_partner,group_gym_manager,1,1,1,1
+access_gym_user_partner_rw,user.partner.rw,base.model_res_partner,group_gym_user,1,1,1,1
 access_gym_admin_partner_all,admin.partner.all,base.model_res_partner,group_gym_admin,1,1,1,1

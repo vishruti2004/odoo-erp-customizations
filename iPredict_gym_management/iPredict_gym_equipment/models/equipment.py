@@ -1,4 +1,6 @@
-from odoo import api, fields, models
+# -*- coding: utf-8 -*-
+
+from odoo import _, api, fields, models
 
 
 class MaintenanceEquipment(models.Model):
@@ -10,16 +12,19 @@ class MaintenanceEquipment(models.Model):
 
     @api.depends("repair_order_ids")
     def _compute_repair_order_count(self):
-        for rec in self:
-            rec.repair_order_count = len(rec.repair_order_ids)
+        for record in self:
+            record.repair_order_count = len(record.repair_order_ids)
 
     def action_view_repair_orders(self):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
-            "name": "Repair Orders",
+            "name": _("Repair Orders"),
             "res_model": "repair.order",
             "view_mode": "list,form",
-            "domain": [("equipment_id", "=", self.id)],
-            "context": {"default_equipment_id": self.id},
+            "domain": [("equipment_id", "=", self.id), ("company_id", "=", self.company_id.id)],
+            "context": {
+                "default_equipment_id": self.id,
+                "default_company_id": self.company_id.id,
+            },
         }

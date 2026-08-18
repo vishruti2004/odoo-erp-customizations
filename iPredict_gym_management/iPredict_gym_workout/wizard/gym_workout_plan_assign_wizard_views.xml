@@ -14,9 +14,6 @@
 
                     <group>
                         <field name="plan_id" readonly="1"/>
-                    </group>
-
-                    <group>
                         <field name="member_ids" widget="many2many_tags" placeholder="Assign To..."/>
                     </group>
 
@@ -28,12 +25,11 @@
                             <field name="end_date" string="Date To"/>
                         </group>
                     </group>
-
-                    <footer>
-                        <button name="action_assign" type="object" string="Assign" class="btn-primary"/>
-                        <button name="action_cancel" type="object" string="Cancel" class="btn-secondary"/>
-                    </footer>
                 </sheet>
+                <footer>
+                    <button name="action_assign" type="object" string="Assign" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
             </form>
         </field>
     </record>

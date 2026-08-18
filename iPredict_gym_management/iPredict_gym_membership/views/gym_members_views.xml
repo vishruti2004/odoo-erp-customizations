@@ -1,90 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Members List View -->
+    <!-- ===================================================================== -->
+    <!-- MEMBERS LIST VIEW                                                     -->
+    <!-- ===================================================================== -->
+
     <record id="view_gym_members_list" model="ir.ui.view">
-        <field name="name">gym.membership.history.members.list</field>
-        <field name="model">gym.membership.history</field>
+        <field name="name">res.partner.gym.members.list</field>
+        <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <list string="Gym Members" create="0">
-                <field name="display_member_id" string="Member ID"/>
-                <field name="member_id" string="Member Name"/>
+                <field name="member_code" string="Member ID"/>
+                <field name="name" string="Member Name"/>
                 <field name="membership_plan_id" string="Membership Plan"/>
                 <field name="membership_start_date" string="Start Date"/>
                 <field name="membership_end_date" string="End Date"/>
-                <field name="status"
-                       string="Status"
-                       widget="badge"
-                       decoration-success="status == 'active'"
-                       decoration-info="status == 'frozen'"
-                       decoration-danger="status == 'expired'"
-                       decoration-muted="status == 'cancelled'"/>
+                <field name="is_frozen" string="Frozen"/>
+                <field name="remaining_days" string="Remaining Days"/>
             </list>
         </field>
     </record>
 
-    <!-- Membership History Form View -->
-    <record id="view_gym_membership_history_form" model="ir.ui.view">
-        <field name="name">gym.membership.history.form</field>
-        <field name="model">gym.membership.history</field>
-        <field name="arch" type="xml">
-            <form string="Membership History">
-                <sheet>
-                    <group>
-                        <group>
-                            <field name="member_id"/>
-                            <field name="membership_plan_id"/>
-                            <field name="status"
-                                   widget="badge"
-                                   decoration-success="status == 'active'"
-                                   decoration-info="status == 'frozen'"
-                                   decoration-danger="status == 'expired'"
-                                   decoration-muted="status == 'cancelled'"/>
-                        </group>
-                        <group>
-                            <field name="membership_start_date"/>
-                            <field name="membership_end_date"/>
-                            <field name="user_id"/>
-                        </group>
-                    </group>
 
-                    <group string="Remark">
-                        <field name="remark" nolabel="1"/>
-                    </group>
-                </sheet>
-            </form>
-        </field>
-    </record>
+    <!-- ===================================================================== -->
+    <!-- MEMBERS KANBAN VIEW                                                   -->
+    <!-- ===================================================================== -->
 
-    <!-- Kanban View -->
     <record id="view_gym_members_kanban" model="ir.ui.view">
-        <field name="name">gym.membership.history.members.kanban</field>
-        <field name="model">gym.membership.history</field>
+        <field name="name">res.partner.gym.members.kanban</field>
+        <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile o_kanban_dashboard">
-                <field name="member_id"/>
-                <field name="display_member_id"/>
+                <!-- Fields used by Kanban -->
+                <field name="member_code"/>
+                <field name="name"/>
                 <field name="membership_plan_id"/>
                 <field name="membership_start_date"/>
                 <field name="membership_end_date"/>
-                <field name="status"/>
+                <field name="is_frozen"/>
+                <field name="remaining_days"/>
 
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 #{
-                            record.status.raw_value == 'frozen' ? 'border border-info' :
-                            record.status.raw_value == 'expired' ? 'border border-danger' :
-                            record.status.raw_value == 'cancelled' ? 'border border-secondary' :
-                            'border border-success'
-                        }">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+<div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3
+    #{record.is_frozen.raw_value ? 'border border-info' : record.remaining_days.raw_value &lt;= 0 ? 'border border-danger' : 'border border-success'}">                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <strong class="fs-5 fw-bold text-dark">
-                                    <field name="member_id"/>
+                                    <field name="name"/>
                                 </strong>
-                                <field name="display_member_id" class="badge text-bg-secondary"/>
+                                <span class="badge text-bg-secondary">
+                                    <field name="member_code"/>
+                                </span>
                             </div>
 
-                            <div class="border-top mb-2"></div>
+                            <div class="border-top mb-2"/>
 
                             <div class="text-muted small mb-1">
                                 <i class="fa fa-credit-card me-1" title="Plan"/>
@@ -98,15 +66,18 @@
                                 <field name="membership_end_date"/>
                             </div>
 
+                            <div class="text-muted small mt-1">
+                                <i class="fa fa-clock-o me-1" title="Remaining Days"/>
+                                <field name="remaining_days"/>
+                                <span class="ms-1">days remaining</span>
+                            </div>
+
                             <div class="d-flex justify-content-end mt-3">
-                                <t t-if="record.status.raw_value == 'frozen'">
+                                <t t-if="record.is_frozen.raw_value">
                                     <span class="badge text-bg-info">Frozen</span>
                                 </t>
-                                <t t-elif="record.status.raw_value == 'expired'">
+                                <t t-elif="record.remaining_days.raw_value &lt;= 0">
                                     <span class="badge text-bg-danger">Expired</span>
-                                </t>
-                                <t t-elif="record.status.raw_value == 'cancelled'">
-                                    <span class="badge text-bg-secondary">Cancelled</span>
                                 </t>
                                 <t t-else="">
                                     <span class="badge text-bg-success">Active</span>
@@ -119,12 +90,31 @@
         </field>
     </record>
 
-    <!-- Action -->
+
+    <!-- ===================================================================== -->
+    <!-- MEMBERS ACTION                                                        -->
+    <!-- ===================================================================== -->
+
     <record id="action_gym_members" model="ir.actions.act_window">
         <field name="name">Members</field>
-        <field name="res_model">gym.membership.history</field>
-        <!-- <field name="domain">[('status', '=', 'active')]</field> -->
+        <field name="res_model">res.partner</field>
+        <field name="domain">[('is_gym_member', '=', True)]</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'kanban',
+                'view_id': ref('view_gym_members_kanban')
+            }),
+            (0, 0, {
+                'view_mode': 'list',
+                'view_id': ref('view_gym_members_list')
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('base.view_partner_form')
+            })
+        ]"/>
     </record>
 
 </odoo>

@@ -12,6 +12,7 @@
                 <field name="duration"/>
                 <field name="duration_uom"/>
                 <field name="price"/>
+                <field name="currency_id" invisible="1"/>
                 <field name="company_id"/>
                 <field name="active" widget="boolean_toggle"/>
             </list>
@@ -35,6 +36,7 @@
 
                         <group>
                             <field name="price"/>
+                            <field name="currency_id" invisible="1"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>

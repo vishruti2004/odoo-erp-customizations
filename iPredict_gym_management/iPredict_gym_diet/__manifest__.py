@@ -19,6 +19,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/security.xml',
 
         'data/diet_plan_sequence.xml',
         'data/ir_cron_data.xml',           

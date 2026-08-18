@@ -68,17 +68,36 @@ class LockerLocker(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
+        Sequence = self.env["ir.sequence"]
 
-            company_id = vals.get("company_id", self.env.company.id)
+        for vals in vals_list:
+            company_id = vals.get("company_id") or self.env.company.id
 
             if vals.get("name", _("New")) == _("New"):
-                vals["name"] = (
-                    self.env["ir.sequence"]
-                    .with_company(company_id)
-                    .next_by_code("locker.locker")
-                    or _("New")
+                company = self.env["res.company"].browse(company_id)
+
+                sequence_code = f"locker.locker.{company_id}"
+
+                sequence = Sequence.search(
+                    [
+                        ("code", "=", sequence_code),
+                        ("company_id", "=", company_id),
+                    ],
+                    limit=1,
                 )
+
+                if not sequence:
+                    sequence = Sequence.create({
+                        "name": f"Locker - {company.name}",
+                        "code": sequence_code,
+                        "company_id": company_id,
+                        "prefix": "LK/%(year)s/",
+                        "padding": 5,
+                        "number_increment": 1,
+                        "use_date_range": True,
+                    })
+
+                vals["name"] = sequence.next_by_id()
 
         return super().create(vals_list)
 

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_gym_management" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.gym.management</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//form" position="inside">
+
+                <app string="Gym Management" name="gym_management">
+
+                    <block title="Attendance">
+
+                        <setting
+                            id="gym_create_employee_for_member_setting"
+                            string="Create Employee for Gym Members"
+                            help="Allow gym members to create an employee from the member form."
+                        >
+                            <field name="gym_create_employee_for_member"/>
+                        </setting>
+
+                    </block>
+
+                </app>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

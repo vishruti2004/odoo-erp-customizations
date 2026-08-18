@@ -29,9 +29,10 @@ This module manages gym workout plans including:
     "data": [
         # Security
         "security/ir.model.access.csv",
+        "security/security.xml",
+
 
         # Data
-        "data/gym_exercise_data.xml",
         "data/gym_sequence.xml",
         "data/ir_cron_data.xml",
 
