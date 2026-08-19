@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_attendance_view_form" model="ir.ui.view">
+        <field name="name">hr.attendance.form</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//form//group//group[2]//field[@name='in_mode']" position="before">
+             <field name="check_in_image" widget="image" class="m-0" options='{"zoom": true, "preview_image":"check_in_image"}'/>
+            </xpath>
+
+            <xpath expr="//form//group//group[3]//field[@name='out_mode']" position="before">
+               <field name="check_out_image" widget="image" class="m-0" options='{"zoom": true, "preview_image":"check_out_image"}'/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

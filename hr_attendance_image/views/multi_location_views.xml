@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="multi_location_hr_attendance_face_detection_list" model="ir.ui.view">
+        <field name="name">multi.location.hr.attendance.face.detection.list</field>
+        <field name="model">multi.location</field>
+        <field name="arch" type="xml">
+            <list string="Multi Location" editable="bottom">
+
+                <field name="name"/>
+                <field name="face_attendance_latitude"/>
+                <field name="face_attendance_longitude"/>
+                <field name="face_attendance_radius"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="multi_location_hr_attendance_face_detection" model="ir.ui.view">
+        <field name="name">multi.location.hr.attendance.face.detection.form</field>
+        <field name="model">multi.location</field>
+        <field name="arch" type="xml">
+            <form string="Multi Location">
+                <sheet string="Multi Location">
+                    <group>
+                        <field name="name"/>
+                    </group>
+                    <group>
+                        <field name="face_attendance_latitude"/>
+                        <field name="face_attendance_longitude"/>
+                        <field name="face_attendance_radius"/>
+                        <field name="company_id" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
+

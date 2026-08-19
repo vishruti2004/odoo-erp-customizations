@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="hr_attendance_image.attendance_menu_inherit" t-inherit="hr_attendance.attendance_menu" t-inherit-mode="extension">
+        <xpath expr="//Dropdown" position="attributes">
+            <attribute name="onOpened.bind">openCamera</attribute>
+            <!-- <attribute name="onStateChanged.bind">closeCamera</attribute> -->
+        </xpath>
+        <xpath expr="//div[@class='d-flex flex-column gap-3']" position="before">
+            <t t-if="(state.isImageCaptureEnabled or state.isFaceRecognitionEnabled) and !this.state.allowWithoutImage and this.state.permissionStatus === 'granted'">
+                <video t-ref="videoPreview"
+                       muted="true"
+                       autoplay="true"
+                       playsinline="true"
+                       class="w-100 rounded shadow"
+                       style="max-height:200px;" />
+            </t>
+            <t t-elif="state.permissionStatus !== 'granted' and  state.isImageCaptureEnabled ">
+                <div class="alert alert-warning mt-2 mb-0" role="alert">
+                    Could not capture image.We <br/> needs your authorization first.
+                </div>
+            </t>
+        </xpath>
+    </t>
+</templates>

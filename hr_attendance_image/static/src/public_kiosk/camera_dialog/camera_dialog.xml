@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_attendance_image.CameraDialog">
+        <Dialog title="props.title" fullscreen="true" footer="false">
+            <div class="w-100 h-100 d-flex justify-content-center align-items-center">
+                <video t-ref="videoPreview"
+                       muted="true"
+                       autoplay="true"
+                       playsinline="true"
+                       style="width: 60%; max-height: 80%; object-fit: cover;" />
+                <t t-if="state.processing">
+                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.6); z-index: 10;">
+                        
+                        <div class="text-white text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x mb-2" />
+                            <div>Recognizing...</div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </Dialog>
+    </t>
+</templates>
