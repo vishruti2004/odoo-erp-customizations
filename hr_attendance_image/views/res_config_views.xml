@@ -1,35 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <record id="res_config_settings_view_form_inherit" model="ir.ui.view">
         <field name="name">res.config.settings.view.from.inherit</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form" />
+        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+
         <field name="arch" type="xml">
-            <xpath expr="//form//block[@name='kiosk_mode_setting_container']//setting[2]" position="after">
+
+            <!-- Allow Attendance with Camera Capture -->
+            <xpath expr="//setting[field[@name='absence_management']]" position="after">
                 <setting string="Allow Attendance with Camera Capture" help="Activate this option to allow attendance check-in/out from backend with employee image." invisible="not attendance_from_systray">
-                    <field name="attendance_image_capture" />
+                    <field name="attendance_image_capture"/>
                 </setting>
+            </xpath>
+
+            <!-- Face Recognition and Face Attendance Locations -->
+            <xpath expr="//setting[field[@name='attendance_device_tracking']]" position="after">
+
+                <!-- Face Recognition -->
                 <setting string="Face Recognition for Check In/Out" help="Enable face recognition for attendance check-in/out." invisible="not attendance_from_systray">
-                    <field name="face_recognition" />
-                     <div class="mt16" invisible="not face_recognition">
+                    <field name="face_recognition"/>
+                    <div class="mt16" invisible="not face_recognition">
                         <div>
                             <field name="face_recognition_backend"/>
                             <label for="face_recognition_backend"/>
-                            <!-- <span class="fa fa-user-circle"/> -->
                         </div>
                         <div>
                             <field name="face_recognition_kiosk"/>
                             <label for="face_recognition_kiosk"/>
-                            <!-- <span class="fa fa-desktop"/> -->
                         </div>
-                        <!-- <div>
-                            <field name="snailmail_cover" readonly="snailmail_cover_readonly"/>
-                            <label for="snailmail_cover"/>
-                            <span class="fa fa-lg fa-building-o" title="Values set here are company-specific."/>
-                        </div> -->
                     </div>
                 </setting>
-                <setting string="Face Attendance Locations" company_dependent="1">
+
+                <!-- Face Attendance Locations -->
+                <setting string="Face Attendance Locations" company_dependent="1" invisible="not attendance_device_tracking">
                     <field name="multi_location_ids">
                         <list editable="bottom">
                             <field name="name" string="Location Name"/>
@@ -39,7 +44,10 @@
                         </list>
                     </field>
                 </setting>
+
             </xpath>
+
         </field>
     </record>
+
 </odoo>

@@ -10,10 +10,120 @@ import face_recognition
 from io import BytesIO
 from PIL import Image
 import math
+import os
+import cv2
+import onnxruntime as ort
 
 _logger = logging.getLogger(__name__)
 
 class HrAttendanceController(HrAttendance):
+
+    def _crop_face_with_scale(self, image_bgr, bbox, scale=2.7, out_size=80):
+        """Crop the face region with extra context/padding around it (scaled
+        by `scale`) before resizing to out_size x out_size. Matches the
+        official Silent-Face-Anti-Spoofing preprocessing.
+        """
+        h, w = image_bgr.shape[:2]
+        top, right, bottom, left = bbox
+        box_w, box_h = right - left, bottom - top
+        cx, cy = left + box_w / 2.0, top + box_h / 2.0
+
+        # clamp scale to image boundaries (matches official _get_new_box)
+        scale = min((h - 1) / box_h, min((w - 1) / box_w, scale))
+
+        side_w = box_w * scale
+        side_h = box_h * scale
+        x1, y1 = cx - side_w / 2, cy - side_h / 2
+        x2, y2 = cx + side_w / 2, cy + side_h / 2
+
+        if x1 < 0:
+            x2 -= x1
+            x1 = 0
+        if y1 < 0:
+            y2 -= y1
+            y1 = 0
+        if x2 > w - 1:
+            x1 -= (x2 - w + 1)
+            x2 = w - 1
+        if y2 > h - 1:
+            y1 -= (y2 - h + 1)
+            y2 = h - 1
+
+        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+        crop = image_bgr[y1:y2 + 1, x1:x2 + 1]
+
+        if crop is None or crop.size == 0:
+            return None
+
+        return cv2.resize(crop, (out_size, out_size), interpolation=cv2.INTER_LINEAR)
+
+    def _check_anti_spoof(self, image):
+        """Check the captured image for a live face before normal face recognition.
+        Model: MiniFASNetV2 (2.7_80x80) from Silent-Face-Anti-Spoofing."""
+      
+        try:
+            model_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "lib",
+                "MiniFASNetV2.onnx",
+            )
+
+            if not os.path.exists(model_path):
+                _logger.warning("Anti-spoof model not found: %s", model_path)
+                return True, ""
+
+            image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            locations = face_recognition.face_locations(image)
+
+            if not locations:
+                return True, ""
+
+            face_crop = self._crop_face_with_scale(
+                image_bgr, locations[0], scale=2.7, out_size=80
+            )
+
+            if face_crop is None or face_crop.size == 0:
+                return True, ""
+
+            session = ort.InferenceSession(
+                model_path,
+                providers=["CPUExecutionProvider"],
+            )
+            input_name = session.get_inputs()[0].name
+            output_name = session.get_outputs()[0].name
+
+            face = face_crop.astype(np.float32)
+            tensor = np.transpose(face, (2, 0, 1))
+            tensor = np.expand_dims(tensor, axis=0)
+            tensor = np.ascontiguousarray(tensor)
+
+            output = session.run([output_name], {input_name: tensor})[0]
+            scores = np.asarray(output, dtype=np.float32).reshape(-1)
+
+            if scores.size != 3 or not np.all(np.isfinite(scores)):
+                _logger.warning("Anti-spoof model returned unexpected output shape/values")
+                return True, ""
+
+            s = scores - np.max(scores)
+            exp_s = np.exp(s)
+            scores = exp_s / np.sum(exp_s)
+
+            # index 1 = real face
+            live_score = float(scores[1])
+
+            _logger.info(
+                "ANTI-SPOOF: live=%.4f (scores=[paper=%.4f, real=%.4f, screen=%.4f])",
+                live_score, scores[0], scores[1], scores[2],
+            )
+
+            if live_score < 0.50:
+                return False, "Spoof detected. Please use your real face."
+
+            return True, ""
+
+        except Exception:
+            _logger.exception("Anti-spoof check failed")
+            return True, ""
 
     @http.route('/hr_attendance/store_image_session', type='http', auth='user', methods=['POST'], csrf=False)
     def store_image_session(self, **post):
@@ -63,6 +173,10 @@ class HrAttendanceController(HrAttendance):
 
             except Exception:
                 return {"success": False, "msg": "Image decode failed"}
+
+            anti_spoof_ok, anti_spoof_msg = self._check_anti_spoof(img)
+            if not anti_spoof_ok:
+                return {"success": False, "msg": anti_spoof_msg}
 
             encodings = face_recognition.face_encodings(img)
             if not encodings:
@@ -202,6 +316,10 @@ class HrAttendanceController(HrAttendance):
 
             except Exception:
                 return {"success": False, "msg": "Image decode failed"}
+
+            anti_spoof_ok, anti_spoof_msg = self._check_anti_spoof(img)
+            if not anti_spoof_ok:
+                return {"success": False, "msg": anti_spoof_msg}
 
             encodings = face_recognition.face_encodings(img)
             if not encodings:
