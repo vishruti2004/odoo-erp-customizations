@@ -8,9 +8,9 @@
 
         <field name="arch" type="xml">
 
-            <!-- Allow Attendance with Camera Capture -->
+            <!-- Allow Attendance with image from backend -->
             <xpath expr="//setting[field[@name='absence_management']]" position="after">
-                <setting string="Allow Attendance with Camera Capture" help="Activate this option to allow attendance check-in/out from backend with employee image." invisible="not attendance_from_systray">
+                <setting string="Allow Attendance with image from backend" help="Activate this option to allow attendance check-in/out from backend with employee image." invisible="not attendance_from_systray">
                     <field name="attendance_image_capture"/>
                 </setting>
             </xpath>
@@ -34,17 +34,13 @@
                 </setting>
 
                 <!-- Face Attendance Locations -->
-                <setting string="Face Attendance Locations" company_dependent="1" invisible="not attendance_device_tracking">
-                    <field name="multi_location_ids">
-                        <list editable="bottom">
-                            <field name="name" string="Location Name"/>
-                            <field name="face_attendance_latitude" string="Latitude"/>
-                            <field name="face_attendance_longitude" string="Longitude"/>
-                            <field name="face_attendance_radius" string="Radius (meters)"/>
-                        </list>
-                    </field>
-                </setting>
+                <setting string="Face Attendance Locations"
+                        company_dependent="1"
+                        invisible="not attendance_device_tracking">
 
+                    <field name="multi_location_ids" widget="many2many_tags"/>
+
+                </setting>
             </xpath>
 
         </field>

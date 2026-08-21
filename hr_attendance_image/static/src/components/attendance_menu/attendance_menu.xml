@@ -3,7 +3,6 @@
     <t t-name="hr_attendance_image.attendance_menu_inherit" t-inherit="hr_attendance.attendance_menu" t-inherit-mode="extension">
         <xpath expr="//Dropdown" position="attributes">
             <attribute name="onOpened.bind">openCamera</attribute>
-            <!-- <attribute name="onStateChanged.bind">closeCamera</attribute> -->
         </xpath>
         <xpath expr="//div[@class='d-flex flex-column gap-3']" position="before">
             <t t-if="(state.isImageCaptureEnabled or state.isFaceRecognitionEnabled) and !this.state.allowWithoutImage and this.state.permissionStatus === 'granted'">

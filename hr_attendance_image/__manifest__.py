@@ -18,6 +18,7 @@
         'views/res_config_views.xml',
         'views/hr_employee_views.xml',
         'views/res_users_views.xml',
+        'views/face_attendance_location_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

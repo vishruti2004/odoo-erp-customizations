@@ -47,19 +47,15 @@ class HrEmployee(models.Model):
 
                     if encodings:
                         emp.face_encoding = base64.b64encode(encodings[0].tobytes())
-                        _logger.info(f"✅ Face encoding generated for {emp.name}")
                     else:
-                        _logger.warning(f"❌ No face detected in image for {emp.name}")
                         emp.face_encoding = False
 
                 except Exception as e:
-                    _logger.error(f"❌ Error generating face encoding for {emp.name}: {e}")
                     emp.face_encoding = False
             else:
                 emp.face_encoding = False
 
     def generate_face_encoding_manual(self):
-        """Manual method to generate face encodings"""
         generated_count = 0
         for emp in self:
             if emp.face_image:
