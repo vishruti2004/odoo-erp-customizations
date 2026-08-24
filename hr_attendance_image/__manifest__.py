@@ -12,6 +12,14 @@
     'version': '19.0.0.0.1',
     'depends': ['hr_attendance'],
 
+    'external_dependencies': {
+        'python': [
+            'face_recognition',
+            'cv2',
+            'onnxruntime',
+        ],
+    },
+
     'data': [
         'security/ir.model.access.csv',
         'views/hr_attendance_views.xml',
