@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+<section class="oe_container lead" style="margin-top:30px;">
+    <div style="padding:45px 30px;text-align:center;background:linear-gradient(135deg,#fdf8ef 0%,#ffffff 100%);border:1px solid #f0dfc0;border-radius:12px;">
+        <h1 style="font-size:38px;font-weight:700;color:#C3851F;margin:0 0 15px;">
+            Face Recognition Attendance
+        </h1>
+
+        <div style="width:90px;height:4px;margin:15px auto 25px;background-color:#FF9800;border-radius:5px;"></div>
+
+        <p style="font-size:19px;line-height:1.8;color:#555;max-width:900px;margin:auto;">
+            Enhance Odoo Attendance with camera-based Check In / Check Out,
+            face recognition, live face verification, attendance image capture,
+            location-based validation and anti-spoofing protection.
+        </p>
+    </div>
+</section>
+
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <div style="
+        background-color:#FF9800;
+        color:white;
+        padding:15px;
+        text-align:center;
+        border-radius:6px;
+    ">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Important: System Requirements
+        </h2>
+    </div>
+
+    <div style="padding:25px 30px;">
+
+        <div style="
+            background-color:#FFF5F5;
+            border:1px solid #F1B0B7;
+            border-left:5px solid #be0f20;
+            border-radius:8px;
+            padding:22px;
+        ">
+
+            <h3 style="
+                color:#be0f20;
+                margin:0 0 12px;
+                font-size:20px;
+            ">
+                <i class="fa fa-exclamation-triangle" style="margin-right:8px;"></i>
+                Required Python Libraries
+            </h3>
+
+            <p style="
+                font-size:15px;
+                color:#555;
+                line-height:1.7;
+                margin:0 0 15px;
+            ">
+                Install the following Python libraries in the same Python
+                environment used to run Odoo:
+            </p>
+
+            <ul style="
+                font-size:15px;
+                color:#555;
+                line-height:1.8;
+                margin-bottom:18px;
+            ">
+                <li><strong>face-recognition</strong></li>
+                <li><strong>opencv-python</strong></li>
+                <li><strong>onnxruntime</strong></li>
+            </ul>
+
+            
+            <p style="
+                font-size:14px;
+                color:#777;
+                line-height:1.6;
+                margin:15px 0 0;
+            ">
+                <strong>Note:</strong>
+                Run the command in the same Python environment used to run Odoo.
+                Missing dependencies may prevent the module from being activated.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- KEY FEATURES SECTION -->
+<section class="oe_container lead" style="margin-top:35px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:16px 22px; border-radius:6px; text-align:center;">
+        <h2 style="margin:0; font-size:25px; font-weight:600;">
+            Key Features &amp; Capabilities
+        </h2>
+    </div>
+
+    <!-- Features Grid Container -->
+    <div style="padding:25px 30px;">
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
+
+            <!-- 1. Camera-Based Attendance -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-camera" style="margin-right:8px;"></i>
+                    Camera-Based Attendance
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Camera-based Check In and Check Out with browser permission handling and attendance image capture.
+                </p>
+            </div>
+
+            <!-- 2. Face Recognition -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-user" style="margin-right:8px;"></i>
+                    Face Recognition
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Employee face registration, automatic or manual face encoding, and identity verification.
+                </p>
+            </div>
+
+            <!-- 3. Live Face & Anti-Spoofing -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-shield" style="margin-right:8px;"></i>
+                    Live Face &amp; Anti-Spoofing
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Live face detection and anti-spoofing validation help prevent attendance fraud using printed photos or digital screens.
+                </p>
+            </div>
+
+            <!-- 4. Location-Based Validation -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-map-marker" style="margin-right:8px;"></i>
+                    Location-Based Validation
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Validate attendance using configured latitude, longitude, radius, and authorized physical locations.
+                </p>
+            </div>
+
+            <!-- 5. Backend & Kiosk Support -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-desktop" style="margin-right:8px;"></i>
+                    Backend &amp; Kiosk Support
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Face recognition support seamlessly integrated into backend administrative processing and dedicated Attendance Kiosk workflows.
+                </p>
+            </div>
+
+            <!-- 6. Attendance Image Storage -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-picture-o" style="margin-right:8px;"></i>
+                    Attendance Image Storage
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Store Check In and Check Out facial captures directly alongside the corresponding attendance record for easy auditability.
+                </p>
+            </div>
+
+            <!-- 7. Multiple Attendance Locations -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-map" style="margin-right:8px;"></i>
+                    Multiple Attendance Locations
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Configure multiple geo-fenced locations complete with company-wise assignment rules and access settings.
+                </p>
+            </div>
+
+            <!-- 8. Flexible Attendance Options -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
+                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
+                    <i class="fa fa-cog" style="margin-right:8px;"></i>
+                    Flexible Attendance Options
+                </h3>
+                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
+                    Configure granular, employee-wise options (e.g., standard check-in vs. mandatory facial recognition or image capture).
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+</section>
+
+
+<!-- Attendance Configuration & Setup -->
+<!-- ATTENDANCE CONFIGURATION & SETUP SECTION -->
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:15px; text-align:center; border-radius:6px;">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Attendance Configuration &amp; Setup
+        </h2>
+    </div>
+
+    <!-- Main Content Container -->
+    <div style="padding:25px 20px;">
+
+        <!-- Section Lead Paragraph -->
+        <p style="font-size:17px; color:#555; line-height:1.8; text-align:center; margin-bottom:25px;">
+            Configure the required attendance settings before using camera capture, face recognition, kiosk attendance, and location-based validation.
+        </p>
+
+        <!-- Setup Cards Container -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch;">
+
+            <!-- 1. Employee Face Registration -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
+                    1. Employee Face Registration
+                </h3>
+                <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
+                    Add the employee face image that will be used for face recognition and attendance verification.
+                </p>
+                <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
+                    <img src="abc.png" alt="Employee Face Registration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                </div>
+            </div>
+
+            <!-- 2. Attendance Settings -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
+                    2. Attendance Settings
+                </h3>
+                <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
+                    Go to <strong>Attendances → Configuration → Settings</strong> and configure the required attendance modes, camera capture, face recognition, kiosk support, and location tracking options.
+                </p>
+                <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
+                    <img src="attendance_settingss.png" alt="Attendance Settings Configuration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                </div>
+            </div>
+
+            <!-- 3. Face Attendance Location -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
+                    3. Face Attendance Location
+                </h3>
+                <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
+                    Go to <strong>Attendances → Configuration → Face Attendance Locations</strong> and configure the authorized location using latitude, longitude, radius, and company.
+                </p>
+                <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
+                    <img src="attendance_configs.png" alt="Face Attendance Location Configuration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!--  ATTENDANCE WITH CAMERA CAPTURE -->
+<!-- ATTENDANCE WITH CAMERA CAPTURE SECTION -->
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:15px; text-align:center; border-radius:6px;">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Attendance with Camera Capture
+        </h2>
+    </div>
+
+    <!-- Main Content Container -->
+    <div style="padding:25px 30px;">
+
+        <!-- Section Lead Paragraphs -->
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0 0 10px;">
+            Enable camera-based attendance to capture the employee image during Check In and Check Out.
+        </p>
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0;">
+            The system checks browser camera permission, displays a live camera preview, captures the image, and records the attendance.
+        </p>
+
+        <!-- Process Flow Bar -->
+        <div style="margin-top:25px; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:8px;">
+            <p style="margin:0; font-size:16px; color:#555; text-align:center;">
+                <strong style="color:#C3851F;">Camera Permission</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Camera Preview</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Capture Image</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Attendance</strong>
+            </p>
+        </div>
+
+        <!-- 4 Process Cards Container -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch; margin-top:30px;">
+
+            <!-- 1. Camera Permission -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    1. Camera Permission
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    The browser requests camera permission before capturing the employee image.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="camera_permmision.png" alt="Camera Permission" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 2. Camera Preview -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    2. Camera Preview
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    After permission is granted, the live camera preview is displayed for image capture.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="camera_preview.png" alt="Camera Preview" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 3. Successful Check-In -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    3. Successful Check-In
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    The system confirms that the attendance has been successfully updated after image capture.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="checkin_success.png" alt="Successful Check-In" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 4. Attendance Record -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    4. Attendance Record
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    The newly created attendance record is displayed in the Attendance list with the Check In details.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="attendance_record_details.png" alt="Attendance Record" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!--  ANTI SPOOF -->
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:15px; text-align:center; border-radius:6px;">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Anti-Spoofing &amp; Live Face Verification
+        </h2>
+    </div>
+
+    <!-- Main Content Container -->
+    <div style="padding:25px 30px;">
+
+        <!-- Section Lead Paragraph -->
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0 0 10px;">
+            The system validates whether the detected face belongs to a real person before allowing attendance. This helps prevent attendance using photos or other non-live face sources.
+        </p>
+
+        <!-- Process Flow Bar -->
+        <div style="margin-top:25px; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:8px;">
+            <p style="margin:0; font-size:16px; color:#555; text-align:center;">
+                <strong style="color:#C3851F;">Live Face Detection</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Anti-Spoofing Validation</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Face Verification</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Attendance</strong>
+            </p>
+        </div>
+
+        <!-- 2 Process Cards Container -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch; margin-top:30px;">
+
+            <!-- 1. Live Face Verification -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    1. Live Face Verification
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    The camera captures the face and performs live face validation before attendance.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="anti_spoofing_live_face.png" alt="Live Face Verification" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 2. Spoof Detection -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    2. Spoof Detection
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    If a non-live face is detected, the system rejects the attendance and displays a spoof detection message.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="antispoofing_detected.png" alt="Spoof Detection" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- FACE RECOGNITION KIOSK -->
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:15px; text-align:center; border-radius:6px;">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Face Recognition Kiosk
+        </h2>
+    </div>
+
+    <!-- Main Content Container -->
+    <div style="padding:25px 30px;">
+
+        <!-- Section Lead Paragraphs -->
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0 0 10px;">
+            The dedicated Kiosk Mode allows employees to perform Check In and Check Out using camera-based face recognition without accessing the regular Odoo backend.
+        </p>
+
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0 0 10px;">
+            The kiosk captures the employee face, verifies the identity, and records the attendance through the configured face recognition workflow.
+        </p>
+
+        <!-- Process Flow Bar -->
+        <div style="margin-top:25px; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:8px;">
+            <p style="margin:0; font-size:16px; color:#555; text-align:center;">
+                <strong style="color:#C3851F;">Kiosk Mode</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Face Capture</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Face Recognition</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Check In / Check Out</strong>
+            </p>
+        </div>
+
+        <!-- 3 Process Cards Container -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch; margin-top:30px;">
+
+            <!-- 1. Kiosk Mode -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    1. Kiosk Mode
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    Employees can select Face Recognition directly from the dedicated Kiosk screen.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="kiosk_mode_screen.png" alt="Kiosk Mode" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 2. Face Recognition -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    2. Face Recognition
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    The Kiosk camera captures and verifies the employee face for attendance.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="kiosk_face_recognition.png" alt="Kiosk Face Recognition" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 3. Attendance Confirmation -->
+            <div style="flex:1 1 30%; min-width:280px; max-width:32%; background-color:#fff; border:1px solid #ddd; border-radius:8px; padding:15px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    3. Attendance Confirmation
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:42px; margin:0 0 10px;">
+                    After successful face verification, the employee attendance is recorded through the Kiosk.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="kiosk_attendance.png" alt="Kiosk Attendance Confirmation" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- LOCATION-BASED ATTENDANCE -->
+<section class="oe_container lead" style="margin-top:40px;">
+
+    <!-- Section Header Banner -->
+    <div style="background-color:#FF9800; color:white; padding:15px; text-align:center; border-radius:6px;">
+        <h2 style="margin:0; font-size:24px; font-weight:600;">
+            Location-Based Attendance
+        </h2>
+    </div>
+
+    <!-- Main Content Container -->
+    <div style="padding:25px 30px;">
+
+        <!-- Section Lead Paragraph -->
+        <p style="font-size:17px; color:#555; line-height:1.8; margin:0 0 10px;">
+            Location-based attendance ensures that employees can Check In and Check Out only from authorized attendance locations configured by the administrator.
+        </p>
+
+        <!-- Location Validation Flow Bar -->
+        <div style="margin-top:25px; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:8px;">
+            <p style="margin:0; font-size:16px; color:#555; text-align:center; line-height:1.8;">
+                <strong style="color:#C3851F;">Location Permission</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Current Location</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Latitude / Longitude Validation</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Radius Check</strong>
+                &rarr;
+                <strong style="color:#C3851F;">Attendance</strong>
+            </p>
+        </div>
+
+        <!-- 2 Process Cards Container -->
+        <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch; margin-top:30px;">
+
+            <!-- 1. Configure Attendance Location -->
+            <div style="flex:1 1 45%; min-width:280px; max-width:48%; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; padding:18px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    1. Configure Attendance Location
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:60px; margin:0 0 10px;">
+                    Go to <strong>Attendances &rarr; Configuration &rarr; Face Attendance Locations</strong> to configure authorized attendance locations using <strong>Latitude</strong>, <strong>Longitude</strong>, and allowed <strong>Radius</strong>.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="location_configuration.png" alt="Face Attendance Location Configuration" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+            <!-- 2. Location Validation Failed -->
+            <div style="flex:1 1 45%; min-width:280px; max-width:48%; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; padding:18px; box-sizing:border-box; text-align:center; display:flex; flex-direction:column;">
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:19px;">
+                    2. Location Validation Failed
+                </h3>
+                <p style="font-size:14px; color:#666; line-height:1.5; min-height:60px; margin:0 0 10px;">
+                    If the employee is outside the configured attendance area, the system prevents attendance and displays a location validation error message.
+                </p>
+                <div style="height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid #ddd; border-radius:6px; background-color:#fff; margin-top:auto;">
+                    <img src="location_rejecte.png" alt="Location Validation Failed" style="width:100%; height:100%; object-fit:contain; display:block;"/>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- TECHNICAL HELP & SUPPORT SECTION -->
+<section class="oe_container" id="technical_support" style="padding:20px 0;">       
+    <h2 class="oe_slogan text-center">Technical Help<span style="color:#C3851F">, Queries &amp; Support</span></h2>
+    <div class="separator" style="display:block; width:20%; height:2px; margin:15px auto; background-color:#FF9800; border:1px solid #FF9800;"></div>
+    <p style="text-align:center; color:#666666; font-size:14px; margin:0 0 20px;">For any assistance related to this module, customization or Odoo development.</p>
+    
+    <div class="row">
+        <!-- Company Info & Social Links -->
+        <div class="col-md-6 text-center" style="padding:15px;">
+            <img src="logo.png" alt="Company Logo" style="max-width:50%; margin-bottom:15px;" />
+            <p style="color:#666666; font-size:14px; margin:0 0 10px;">Need help with the module? We are here to help.</p>
+            <div>
+                <a target="_blank" href="https://www.facebook.com/ipredictitsolutions" style="text-decoration:none; margin:0 5px;">
+                    <i class="fa fa-facebook-square" style="font-size:28px; color:#3B5998;"></i>
+                </a>
+                <a target="_blank" href="https://twitter.com/iPredict_It" style="text-decoration:none; margin:0 5px;">
+                    <i class="fa fa-twitter-square" style="font-size:28px; color:#55ACEE;"></i>
+                </a>
+                <a target="_blank" href="https://www.linkedin.com/company/ipredict-it-solutions" style="text-decoration:none; margin:0 5px;">
+                    <i class="fa fa-linkedin-square" style="font-size:28px; color:#007bb5;"></i>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Get In Touch Links -->
+        <div class="col-md-6" style="padding:15px;">
+            <div style="background:#ffffff; padding:15px;">
+                <h3 style="font-size:18px; font-weight:bold; margin:0 0 15px;">Get in Touch</h3>
+                <a href="https://ipredictitsolutions.com/" target="_blank" style="display:block; color:#444444; text-decoration:none; padding:10px 0; border-bottom:1px solid #eeeeee;">
+                    <i class="fa fa-globe" style="font-size:18px; width:25px; color:#714B67;"></i>
+                    <strong>Website</strong>
+                    <span style="float:right; color:#999999;">&rarr;</span>
+                </a>
+                <a href="http://ipredictitsolutions.com/contactus" target="_blank" style="display:block; color:#444444; text-decoration:none; padding:10px 0; border-bottom:1px solid #eeeeee;">
+                    <i class="fa fa-cogs" style="font-size:18px; width:25px; color:#0d6efd;"></i>
+                    <strong>Request Customization</strong>
+                    <span style="float:right; color:#999999;">&rarr;</span>
+                </a>
+                <a href="mailto:ipredictitsolutions@gmail.com" style="display:block; color:#444444; text-decoration:none; padding:10px 0; border-bottom:1px solid #eeeeee;">
+                    <i class="fa fa-envelope" style="font-size:18px; width:25px; color:#198754;"></i>
+                    <strong>Support / Help</strong>
+                    <span style="float:right; color:#999999;">&rarr;</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>
