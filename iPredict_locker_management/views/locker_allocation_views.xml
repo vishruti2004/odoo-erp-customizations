@@ -136,7 +136,14 @@
                             <field name="locker_id" readonly="state != 'draft'"/>
                             <field name="profile_id" readonly="1"/>
                             <field name="access_method" readonly="1"/>
-                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="partner_id"
+                                widget="res_partner_many2one"
+                                context="{
+                                    'res_partner_search_mode': 'customer',
+                                    'show_address': 1,
+                                    'show_vat': True
+                                }"
+                                readonly="state != 'draft'"/>                            
                             <field name="authorized_partner_ids" widget="many2many_tags" readonly="state != 'draft'"/>
                             <field name="company_id" readonly="state != 'draft'"/>
                             <field name="state"

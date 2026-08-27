@@ -19,39 +19,12 @@
         sequence="5"/>
 
 
-    <!-- Check In / Check Out -->
-    <menuitem
-        id="menu_locker_access"
-        name="Check In / Check Out"
-        parent="menu_locker_root"
-        action="action_locker_kiosk"
-        sequence="10"/>
-
-
-    <!-- Locker Allocations -->
-    <menuitem
-        id="menu_locker_allocation"
-        name="Locker Allocations"
-        parent="menu_locker_root"
-        action="action_locker_allocation"
-        sequence="20"/>
-
-
-    <!-- Access History -->
-    <menuitem
-        id="menu_locker_access_history"
-        name="Access History"
-        parent="menu_locker_root"
-        action="action_locker_access_history"
-        sequence="30"/>
-
-
     <!-- Lockers Parent -->
     <menuitem
         id="menu_locker_management"
         name="Lockers"
         parent="menu_locker_root"
-        sequence="40"/>
+        sequence="10"/>
 
     <!-- Lockers -->
     <menuitem
@@ -68,6 +41,33 @@
         parent="menu_locker_management"
         action="action_locker_location"
         sequence="20"/>
+
+    <menuitem
+        id="menu_locker_allocation"
+        name="Locker Allocation"
+        parent="menu_locker_management"
+        action="action_locker_allocation"
+        sequence="30"/>
+
+
+    <!-- Check In / Check Out -->
+    <menuitem
+        id="menu_locker_access"
+        name="Check In / Check Out"
+        parent="menu_locker_root"
+        action="action_locker_kiosk"
+        sequence="20"/>
+
+
+
+
+    <!-- Access History -->
+    <menuitem
+        id="menu_locker_access_history"
+        name="Access History"
+        parent="menu_locker_root"
+        action="action_locker_access_history"
+        sequence="30"/>
 
 
     <!-- Configuration -->
@@ -94,6 +94,7 @@
         action="action_locker_return_reason"
         sequence="20"/>
 
+    <!-- Locker Penalty -->
     <menuitem
         id="menu_locker_penalty"
         name="Locker Penalty"

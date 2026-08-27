@@ -1,28 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- LOCKER MANAGEMENT PRIVILEGE -->
+
     <record id="res_groups_privilege_locker" model="res.groups.privilege">
         <field name="name">Locker Management</field>
         <field name="sequence">30</field>
         <field name="category_id" ref="base.module_category_hidden"/>
     </record>
 
-    <!-- Locker User -->
+
+    <!-- LOCKER USER -->
+
     <record id="group_locker_user" model="res.groups">
         <field name="name">User</field>
         <field name="privilege_id" ref="res_groups_privilege_locker"/>
     </record>
 
-    <!-- Administrator -->
+
+    <!-- LOCKER ADMIN -->
+
     <record id="group_locker_admin" model="res.groups">
         <field name="name">Administrator</field>
         <field name="privilege_id" ref="res_groups_privilege_locker"/>
-        <field name="implied_ids" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="implied_ids"
+               eval="[(4, ref('group_locker_user'))]"/>
     </record>
 
-    <!-- Locker -->
+
+    <!-- LOCKER - COMPANY WISE -->
+
     <record id="locker_company_rule" model="ir.rule">
-        <field name="name">Locker Multi Company</field>
+        <field name="name">Locker Company Wise</field>
         <field name="model_id" ref="model_locker_locker"/>
         <field name="global" eval="True"/>
         <field name="domain_force">
@@ -30,9 +39,11 @@
         </field>
     </record>
 
-    <!-- Locker Location -->
+
+    <!-- LOCKER LOCATION - COMPANY WISE DATA -->
+
     <record id="locker_location_company_rule" model="ir.rule">
-        <field name="name">Locker Location Multi Company</field>
+        <field name="name">Locker Location Company Wise</field>
         <field name="model_id" ref="model_locker_location"/>
         <field name="global" eval="True"/>
         <field name="domain_force">
@@ -40,32 +51,51 @@
         </field>
     </record>
 
-    <!-- Locker Profile -->
+
+    <!-- LOCKER PROFILE - GLOBAL / SHARED CONFIGURATION-->
+
     <record id="locker_profile_company_rule" model="ir.rule">
-        <field name="name">Locker Profile Multi Company</field>
+        <field name="name">Locker Profile Global</field>
         <field name="model_id" ref="model_locker_profile"/>
         <field name="global" eval="True"/>
         <field name="domain_force">
-            [('company_id', 'in', company_ids)]
+            [(1, '=', 1)]
         </field>
     </record>
 
-    <!-- Locker Allocation -->
+
+    <!-- LOCKER ALLOCATION - COMPANY WISE -->
+
     <record id="locker_allocation_company_rule" model="ir.rule">
-        <field name="name">Locker Allocation Multi Company</field>
+        <field name="name">Locker Allocation Company Wise</field>
         <field name="model_id" ref="model_locker_allocation"/>
         <field name="global" eval="True"/>
         <field name="domain_force">
             [('company_id', 'in', company_ids)]
         </field>
     </record>
-        <!-- Locker Access / Access History -->
+
+
+    <!-- LOCKER ACCESS / ACCESS HISTORY - COMPANY WISE -->
+
     <record id="locker_access_company_rule" model="ir.rule">
-        <field name="name">Locker Access Multi Company</field>
+        <field name="name">Locker Access Company Wise</field>
         <field name="model_id" ref="model_locker_access"/>
         <field name="global" eval="True"/>
         <field name="domain_force">
             [('allocation_id.company_id', 'in', company_ids)]
+        </field>
+    </record>
+
+
+    <!-- LOCKER RETURN REASON - GLOBAL CONFIGURATION -->
+
+    <record id="locker_return_reason_global_rule" model="ir.rule">
+        <field name="name">Locker Return Reason Global</field>
+        <field name="model_id" ref="model_locker_return_reason"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            [(1, '=', 1)]
         </field>
     </record>
 

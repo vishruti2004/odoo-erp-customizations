@@ -12,5 +12,8 @@ class ResCompany(models.Model):
     default=5,
     help="Number of days before locker expiry when renewal becomes available."
 )
-
-   
+    enable_3d_locker_view = fields.Boolean(
+        string="Enable 3D Locker View",
+        default=False,
+    )
+    

@@ -27,6 +27,13 @@
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_open_locker_allocation"
+                            type="object"
+                            string="Locker Allocation"
+                            class="btn-primary"
+                            invisible="status != 'available'"/>
+                </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_allocations"

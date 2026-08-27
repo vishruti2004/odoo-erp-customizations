@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- LIST VIEW                                                 -->
+    <!-- ========================================================= -->
+    <!-- LIST VIEW                                                  -->
+    <!-- ========================================================= -->
 
     <record id="view_locker_location_list" model="ir.ui.view">
         <field name="name">locker.location.list</field>
@@ -14,45 +16,193 @@
                 <field name="available_lockers"/>
                 <field name="allocated_lockers"/>
                 <field name="active" widget="boolean_toggle"/>
-                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="company_id"
+                       optional="hide"
+                       groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
 
-    <!-- FORM VIEW -->
+
+    <!-- ========================================================= -->
+    <!-- LOCKER LOCATION FORM                                      -->
+    <!-- ========================================================= -->
 
     <record id="view_locker_location_form" model="ir.ui.view">
         <field name="name">locker.location.form</field>
         <field name="model">locker.location</field>
         <field name="arch" type="xml">
+
             <form string="Locker Location">
+
                 <header>
-                    <button name="action_generate_lockers" string="Generate Lockers" type="object" class="oe_highlight" icon="fa-cogs"/>
-                    <button name="action_open_3d_view" string="3D View" type="object" class="btn-secondary" icon="fa-cubes"/>
+                    <button name="action_generate_lockers"
+                            string="Generate All Lockers"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-cogs"/>
                 </header>
+
                 <sheet>
+
+                    <!-- LOCATION NAME -->
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="e.g. First Floor"/>
+                            <field name="name"
+                                   placeholder="e.g. First Floor"/>
                         </h1>
                     </div>
+
+                    <!-- BASIC DETAILS -->
                     <group>
                         <group>
-                            <field name="company_id"/>
-                            <field name="partner_id" widget="many2one_avatar"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+
+                            <field name="partner_id"
+                                   widget="many2one_avatar"/>
+
                             <field name="total_lockers"/>
-                        </group>
-                        <group>
-                            <field name="available_lockers"/>
-                            <field name="allocated_lockers"/>
-                            <field name="active" widget="boolean_toggle"/>
+
+                            <field name="show_3d_view_option"
+                                   invisible="1"/>
+
+                            <field name="create_3d_view"
+                                   string="Create 3D View"
+                                   invisible="not show_3d_view_option"/>
                         </group>
                     </group>
+
+
+                    <!-- ================================================= -->
+                    <!-- SITES                                              -->
+                    <!-- ================================================= -->
+
                     <notebook>
-                        <page string="Locker Types" name="locker_types">
-                            <field name="line_ids">
+
+                        <page string="Sites"
+                              name="sites">
+
+                            <field name="site_ids"
+                                   mode="list,form">
+
                                 <list editable="bottom">
+
+                                    <field name="sequence"
+                                           widget="handle"/>
+
+                                    <field name="name"/>
+
+                                    <field name="width"/>
+
+                                    <field name="height"/>
+
+                                    <field name="depth"/>
+
+
+                                    <field name="pos_x"/>
+
+                                    <field name="pos_y"/>
+
+                                    <field name="pos_z"/>
+
+                                    <field name="total_lockers"
+                                           readonly="1"/>
+
+                                    <!-- <field name="active"
+                                           widget="boolean_toggle"/> -->
+
+                                </list>
+
+                                <form string="Locker Site">
+
+                                    <sheet>
+
+                                        <div class="oe_title">
+                                            <h1>
+                                                <field name="name"
+                                                       placeholder="e.g. Site 1"/>
+                                            </h1>
+                                        </div>
+
+                                        <!-- SITE DETAILS -->
+                                        <group string="Site Area">
+
+                                            <group>
+                                                <field name="locker_location_id"
+                                                       readonly="1"/>
+
+                                                <field name="company_id"
+                                                       readonly="1"/>
+                                            </group>
+
+                                            <group>
+                                                <field name="width"/>
+
+                                                <field name="height"/>
+
+                                                <field name="depth"/>
+                                            </group>
+
+                                        </group>
+
+
+                                        <!-- SITE POSITION -->
+                                        <group string="Site Position">
+
+                                            <group>
+                                                <field name="pos_x"/>
+                                            </group>
+
+                                            <group>
+                                                <field name="pos_y"/>
+                                            </group>
+
+                                            <group>
+                                                <field name="pos_z"/>
+                                            </group>
+
+                                        </group>
+
+
+                                        <!-- SITE ACTIONS -->
+                                        <footer>
+
+                                            <button name="action_generate_lockers"
+                                                    string="Generate Lockers"
+                                                    type="object"
+                                                    class="btn-primary"/>
+
+                                            <button name="action_view_lockers"
+                                                    string="View Lockers"
+                                                    type="object"
+                                                    class="btn-secondary"/>
+
+                                            <button string="Close"
+                                                    special="cancel"
+                                                    class="btn-secondary"/>
+
+                                        </footer>
+
+                                    </sheet>
+
+                                </form>
+
+                            </field>
+
+                        </page>
+
+                        <page string="Locker Configurations"
+                              name="locker_configurations">
+
+                            <field name="locker_config_ids"
+                                   mode="list,form"
+                                   domain="[('location_id', '=', parent.id)]">
+
+                                <list editable="bottom">
+                                    <field name="site_id"/>
                                     <field name="profile_id"/>
+                                    <field name="side"/>
                                     <field name="width"/>
                                     <field name="height"/>
                                     <field name="depth"/>
@@ -61,24 +211,67 @@
                                     <field name="start_row"/>
                                     <field name="start_col"/>
                                     <field name="levels"/>
-                                    <field name="quantity" string="Total Lockers" readonly="1"/>
+                                    <field name="quantity"
+                                           string="Total Lockers"
+                                           readonly="1"/>
                                 </list>
+
+                                <form string="Locker Configuration">
+                                    <sheet>
+                                        <group>
+                                            <group>
+                                                <field name="location_id" readonly="1"/>
+                                                <field name="site_id"/>
+                                                <field name="profile_id"/>
+                                            </group>
+                                            <group string="Dimensions">
+                                                <field name="width"/>
+                                                <field name="height"/>
+                                                <field name="depth"/>
+
+                                            </group>
+                                        </group>
+
+                                        <group string="Locker Grid">
+                                            <group>
+                                                <field name="rows"/>
+                                                <field name="cols"/>
+                                                <field name="levels"/>
+                                            </group>
+                                            <group>
+                                                <field name="start_row"/>
+                                                <field name="start_col"/>
+                                                <field name="quantity" readonly="1"/>
+                                            </group>
+                                        </group>
+                                    </sheet>
+                                </form>
+
                             </field>
                         </page>
+
                     </notebook>
+
                 </sheet>
+
             </form>
+
         </field>
     </record>
 
+
+    <!-- ========================================================= -->
     <!-- KANBAN VIEW                                               -->
+    <!-- ========================================================= -->
 
     <record id="view_locker_location_kanban" model="ir.ui.view">
         <field name="name">locker.location.kanban</field>
         <field name="model">locker.location</field>
+
         <field name="arch" type="xml">
+
             <kanban class="o_kanban_mobile o_kanban_dashboard">
-                <!-- Fields used in Kanban -->
+
                 <field name="name"/>
                 <field name="company_id"/>
                 <field name="partner_id"/>
@@ -88,103 +281,246 @@
                 <field name="available_percentage"/>
                 <field name="allocated_percentage"/>
                 <field name="locker_profile_tags_html"/>
+                <field name="create_3d_view"/>
+                <field name="show_3d_view_option"/>
 
                 <templates>
+
                     <t t-name="card">
+
                         <div class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 border">
+
                             <!-- HEADER -->
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div>
-                                    <div class="fs-5 fw-bold text-dark">
+                            <div class="d-flex justify-content-between align-items-start mb-2 w-100">
+
+                                <div class="text-truncate me-2">
+
+                                    <div class="fs-5 fw-bold text-dark text-truncate">
                                         <field name="name"/>
                                     </div>
-                                    <div class="text-muted small">
-                                        <i class="fa fa-map-marker me-1"/> Locker Location
+
+                                    <div class="text-muted small text-nowrap">
+                                        <i class="fa fa-map-marker me-1"/>
+                                        Locker Location
                                     </div>
+
                                 </div>
-                                <button name="action_view_lockers" type="object" class="btn btn-primary btn-sm">
-                                    <i class="fa fa-th-large me-1"/> View Lockers
-                                </button>
+
+
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0 ms-auto">
+
+                                    <button name="action_view_lockers"
+                                            type="object"
+                                            class="btn btn-primary btn-sm text-nowrap px-2 py-1"
+                                            stop_propagation="1">
+                                        <i class="fa fa-th-large me-1"/>
+                                        Lockers
+                                    </button>
+
+
+                                    <button name="action_open_3d_view"
+                                            type="object"
+                                            class="btn btn-secondary btn-sm text-nowrap px-2 py-1"
+                                            invisible="not show_3d_view_option or not create_3d_view"
+                                            stop_propagation="1">
+                                        <i class="fa fa-cubes me-1"/>
+                                        3D View
+                                    </button>
+
+                                </div>
+
                             </div>
+
 
                             <div class="border-top mb-3"/>
 
+
                             <!-- COMPANY -->
                             <div class="small mb-2">
-                                <span class="text-muted"><i class="fa fa-building me-1"/> Company: </span>
-                                <strong><field name="company_id"/></strong>
+
+                                <span class="text-muted">
+                                    <i class="fa fa-building me-1"/>
+                                    Company:
+                                </span>
+
+                                <strong>
+                                    <field name="company_id"/>
+                                </strong>
+
                             </div>
+
 
                             <!-- RESPONSIBLE -->
                             <div class="small mb-3">
-                                <span class="text-muted"><i class="fa fa-user me-1"/> Responsible: </span>
-                                <strong><field name="partner_id"/></strong>
+
+                                <span class="text-muted">
+                                    <i class="fa fa-user me-1"/>
+                                    Responsible:
+                                </span>
+
+                                <strong>
+                                    <field name="partner_id"/>
+                                </strong>
+
                             </div>
+
 
                             <!-- STATISTICS -->
                             <div class="row g-2 mb-3">
+
                                 <div class="col-4">
-                                    <div class="border rounded text-center p-2">
-                                        <div class="text-muted small">Total</div>
-                                        <div class="fs-4 fw-bold"><field name="total_lockers"/></div>
-                                    </div>
+
+                                    <button name="action_view_lockers"
+                                            type="object"
+                                            class="btn p-2 w-100 border text-center"
+                                            stop_propagation="1">
+
+                                        <div class="text-muted small">
+                                            Total
+                                        </div>
+
+                                        <div class="fs-4 fw-bold">
+                                            <field name="total_lockers"/>
+                                        </div>
+
+                                    </button>
+
                                 </div>
+
+
                                 <div class="col-4">
-                                    <div class="border rounded text-center p-2">
-                                        <div class="text-success small">Available</div>
-                                        <div class="fs-4 fw-bold text-success"><field name="available_lockers"/></div>
-                                    </div>
+
+                                    <button name="action_view_available_lockers"
+                                            type="object"
+                                            class="btn p-2 w-100 border text-center"
+                                            stop_propagation="1">
+
+                                        <div class="small text-success">
+                                            Available
+                                        </div>
+
+                                        <div class="fs-4 fw-bold text-success">
+                                            <field name="available_lockers"/>
+                                        </div>
+
+                                    </button>
+
                                 </div>
+
+
                                 <div class="col-4">
-                                    <div class="border rounded text-center p-2">
-                                        <div class="text-danger small">Allocated</div>
-                                        <div class="fs-4 fw-bold text-danger"><field name="allocated_lockers"/></div>
-                                    </div>
+
+                                    <button name="action_view_allocated_lockers"
+                                            type="object"
+                                            class="btn p-2 w-100 border text-center"
+                                            stop_propagation="1">
+
+                                        <div class="small text-danger">
+                                            Allocated
+                                        </div>
+
+                                        <div class="fs-4 fw-bold text-danger">
+                                            <field name="allocated_lockers"/>
+                                        </div>
+
+                                    </button>
+
                                 </div>
+
                             </div>
+
 
                             <!-- AVAILABILITY -->
                             <div class="mb-3">
+
                                 <div class="d-flex justify-content-between small mb-1">
-                                    <span class="text-success fw-bold">Availability</span>
-                                    <span><t t-esc="Math.round(record.available_percentage.raw_value)"/>%</span>
+
+                                    <span class="text-success fw-bold">
+                                        Availability
+                                    </span>
+
+                                    <span>
+                                        <t t-esc="Math.round(record.available_percentage.raw_value || 0)"/>%
+                                    </span>
+
                                 </div>
+
                                 <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" t-att-style="'width: ' + record.available_percentage.raw_value + '%'"/>
+
+                                    <div class="progress-bar bg-success"
+                                         t-att-style="'width: ' + (record.available_percentage.raw_value || 0) + '%'"/>
+
                                 </div>
+
                             </div>
+
 
                             <!-- ALLOCATION -->
                             <div class="mb-3">
+
                                 <div class="d-flex justify-content-between small mb-1">
-                                    <span class="text-danger fw-bold">Allocation</span>
-                                    <span><t t-esc="Math.round(record.allocated_percentage.raw_value)"/>%</span>
+
+                                    <span class="text-danger fw-bold">
+                                        Allocation
+                                    </span>
+
+                                    <span>
+                                        <t t-esc="Math.round(record.allocated_percentage.raw_value || 0)"/>%
+                                    </span>
+
                                 </div>
+
                                 <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-danger" t-att-style="'width: ' + record.allocated_percentage.raw_value + '%'"/>
+
+                                    <div class="progress-bar bg-danger"
+                                         t-att-style="'width: ' + (record.allocated_percentage.raw_value || 0) + '%'"/>
+
                                 </div>
+
                             </div>
 
-                            <!-- LOCKER PROFILE TAGS -->
+
+                            <!-- LOCKER PROFILES -->
                             <div class="border-top pt-3">
+
                                 <div class="text-muted small mb-2">
-                                    <i class="fa fa-tags me-1"/> Locker Profiles
+
+                                    <i class="fa fa-tags me-1"/>
+
+                                    Locker Profiles
+
                                 </div>
-                                <field name="locker_profile_tags_html" widget="html"/>
+
+                                <field name="locker_profile_tags_html"
+                                       widget="html"/>
+
                             </div>
+
                         </div>
+
                     </t>
+
                 </templates>
+
             </kanban>
+
         </field>
+
     </record>
 
-    <!-- ACTION                                                    -->
+
+    <!-- ========================================================= -->
+    <!-- ACTION                                                     -->
+    <!-- ========================================================= -->
 
     <record id="action_locker_location" model="ir.actions.act_window">
+
         <field name="name">Locker Locations</field>
+
         <field name="res_model">locker.location</field>
+
         <field name="view_mode">kanban,list,form</field>
+
     </record>
 
 </odoo>

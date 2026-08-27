@@ -10,7 +10,7 @@ class LockerPenalty(models.Model):
     _order = "id desc"
 
     name = fields.Char(string="Name", required=True)
-    company_id = fields.Many2one("res.company", string="Company", required=True, default=lambda self: self.env.company)
+    company_id = fields.Many2one("res.company", string="Company")
     active = fields.Boolean(string="Active", default=True)
     amount = fields.Monetary(string="Penalty Amount", required=True, default=0.0)
     currency_id = fields.Many2one("res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True)
@@ -29,4 +29,13 @@ class LockerPenalty(models.Model):
     @api.model
     def get_active_penalty(self, company=None):
         company = company or self.env.company
-        return self.search([("company_id", "=", company.id), ("active", "=", True)], order="id desc", limit=1)
+        return self.search(
+            [
+                ("active", "=", True),
+                "|",
+                ("company_id", "=", False),
+                ("company_id", "=", company.id),
+            ],
+            order="id desc",
+            limit=1,
+        )

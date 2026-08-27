@@ -134,9 +134,16 @@
                                     <tr>
                                         <td class="label">Status</td>
                                         <td class="value">
-                                            <span t-attf-class="badge rounded-pill #{state.selectedLocker.status == 'available' ? 'bg-success' : 'bg-danger'}">
-                                                <t t-esc="state.selectedLocker.status"/>
-                                            </span>
+                                            <t t-if="state.selectedLocker.status === 'allocated'">
+                                                <span class="badge rounded-pill bg-danger">
+                                                    Allocated
+                                                </span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge rounded-pill bg-success">
+                                                    Available
+                                                </span>
+                                            </t>
                                         </td>
                                     </tr>
                                 </tbody>

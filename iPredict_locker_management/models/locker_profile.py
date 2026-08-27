@@ -11,7 +11,7 @@ class LockerProfile(models.Model):
     _order = "name"
 
     name = fields.Char(string="Profile Name", required=True, tracking=True)
-    company_id = fields.Many2one("res.company", string="Company", default=lambda self: self.env.company, required=True, tracking=True)
+    company_id = fields.Many2one("res.company", string="Company", default=lambda self: self.env.company,tracking=True)
     active = fields.Boolean(default=True, tracking=True)
     note = fields.Html(string="Notes")
     allocation_type = fields.Selection([("free", "Free"), ("paid", "Paid")], string="Allocation Type", default="paid", required=True, tracking=True)

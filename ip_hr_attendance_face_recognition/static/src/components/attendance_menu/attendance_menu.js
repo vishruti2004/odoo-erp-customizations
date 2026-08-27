@@ -42,15 +42,21 @@ patch(ActivityMenu.prototype, {
             isFaceMatched: false,
             attendanceDeviceTracking: false,
         });
+
+        console.log("DEBUG SETUP: this.employee =", this.employee);
     },
 
 
     async _fetchAllowWithoutImage() {
+        console.log("DEBUG _fetchAllowWithoutImage: this.employee =", this.employee);
+
         const employeeConfig = await this.orm.searchRead(
             "hr.employee",
             [["id", "=", this.employee.id]],
             ["allow_without_image_capture"]
         );
+
+        console.log("DEBUG _fetchAllowWithoutImage: employeeConfig =", employeeConfig);
 
         return employeeConfig[0]?.allow_without_image_capture || false;
     },
@@ -80,19 +86,34 @@ patch(ActivityMenu.prototype, {
 
     // OPEN CAMERA
     async openCamera() {
+        console.log("DEBUG openCamera: STARTED");
+
         try {
             this.state.allowWithoutImage = await this._fetchAllowWithoutImage();
+            console.log("DEBUG openCamera: allowWithoutImage =", this.state.allowWithoutImage);
 
-            const records = await this.orm.searchRead(
-                "res.company",
-                [],
-                [
-                    "attendance_image_capture",
-                    "face_recognition",
-                    "face_recognition_backend",
-                    "attendance_device_tracking",
-                ]
-            );
+            const employeeCompany = await this.orm.searchRead(
+            "hr.employee",
+            [["id", "=", this.employee.id]],
+            ["company_id"]
+        );
+
+        const companyId = employeeCompany[0]?.company_id?.[0];
+
+        const records = await this.orm.searchRead(
+            "res.company",
+            [["id", "=", companyId]],
+            [
+                "attendance_image_capture",
+                "face_recognition",
+                "face_recognition_backend",
+                "attendance_device_tracking",
+            ]
+        );
+
+        console.log("DEBUG openCamera: employee company_id =", companyId);
+        console.log("DEBUG openCamera: company records =", records);
+
 
             const company = records[0] || {};
 
@@ -106,6 +127,12 @@ patch(ActivityMenu.prototype, {
             this.state.attendanceDeviceTracking =
                 company.attendance_device_tracking;
 
+            console.log(
+                "DEBUG openCamera: isImageCaptureEnabled =", this.state.isImageCaptureEnabled,
+                "| isFaceRecognitionEnabled =", this.state.isFaceRecognitionEnabled,
+                "| attendanceDeviceTracking =", this.state.attendanceDeviceTracking
+            );
+
             // Check current camera permission.
             try {
                 const cameraStatus = await navigator.permissions.query({
@@ -114,8 +141,11 @@ patch(ActivityMenu.prototype, {
 
                 this.state.permissionStatus = cameraStatus.state;
 
+                console.log("DEBUG openCamera: permissionStatus =", this.state.permissionStatus);
+
                 cameraStatus.onchange = () => {
                     this.state.permissionStatus = cameraStatus.state;
+                    console.log("DEBUG openCamera: permissionStatus CHANGED to", this.state.permissionStatus);
                 };
             } catch (err) {
                 console.warn(
@@ -123,6 +153,13 @@ patch(ActivityMenu.prototype, {
                     err
                 );
             }
+
+            console.log(
+                "DEBUG openCamera: will show video preview? ->",
+                (this.state.isImageCaptureEnabled || this.state.isFaceRecognitionEnabled) &&
+                !this.state.allowWithoutImage &&
+                this.state.permissionStatus === "granted"
+            );
 
             // If permission is already granted, keep the existing
             // normal camera preview behaviour.
@@ -133,19 +170,26 @@ patch(ActivityMenu.prototype, {
                 this.state.permissionStatus === "granted"
             ) {
                 if (!this.stream) {
+                    console.log("DEBUG openCamera: requesting getUserMedia...");
                     this.stream =
                         await navigator.mediaDevices.getUserMedia({
                             video: true,
                         });
+                    console.log("DEBUG openCamera: stream obtained =", this.stream);
                 }
 
                 if (this.videoPreviewRef.el) {
                     this.videoPreviewRef.el.srcObject = this.stream;
+                    console.log("DEBUG openCamera: video element srcObject SET");
+                } else {
+                    console.log("DEBUG openCamera: videoPreviewRef.el is NULL - video tag not rendered!");
                 }
             }
         } catch (err) {
             console.error("Camera access denied:", err);
         }
+
+        console.log("DEBUG openCamera: FINISHED");
     },
 
     // REQUEST CAMERA PERMISSION ONLY
@@ -231,6 +275,8 @@ patch(ActivityMenu.prototype, {
 
     // CHECK IN / CHECK OUT
     async signInOut() {
+        console.log("DEBUG signInOut: STARTED, this.employee =", this.employee);
+
         this.isSigningAction = true;
 
         try {
@@ -238,6 +284,13 @@ patch(ActivityMenu.prototype, {
             const isFaceRecognitionEnabled = this.state.isFaceRecognitionEnabled;
 
             const allowWithoutImage = await this._fetchAllowWithoutImage();
+
+            console.log(
+                "DEBUG signInOut: isImageEnabled =", isImageEnabled,
+                "| isFaceRecognitionEnabled =", isFaceRecognitionEnabled,
+                "| allowWithoutImage =", allowWithoutImage,
+                "| current permissionStatus =", this.state.permissionStatus
+            );
 
             if (
                 (isImageEnabled || isFaceRecognitionEnabled) &&
@@ -259,8 +312,14 @@ patch(ActivityMenu.prototype, {
                     );
                 }
 
+                console.log("DEBUG signInOut: cameraPermission (fresh query) =", cameraPermission);
+
                 if (cameraPermission !== "granted") {
+                    console.log("DEBUG signInOut: permission NOT granted, requesting now...");
+
                     const granted = await this.requestCameraPermission();
+
+                    console.log("DEBUG signInOut: requestCameraPermission returned =", granted);
 
                     if (!granted) {
                         this.notification.add(
@@ -275,6 +334,7 @@ patch(ActivityMenu.prototype, {
                         await this.requestLocationPermission();
                     }
 
+                    console.log("DEBUG signInOut: RETURNING EARLY after permission request (click button again)");
                     return;
                 }
             }
@@ -355,7 +415,7 @@ patch(ActivityMenu.prototype, {
             // CHECK LOCATION
             // This happens ONLY after location permission is
             // already granted.
-    
+
             if (latitude !== null && longitude !== null) {
                 const result = await rpc(
                     "/face_attendance/check_location",
@@ -394,6 +454,8 @@ patch(ActivityMenu.prototype, {
 
             const isPermissionGranted = this.state.permissionStatus === "granted";
 
+            console.log("DEBUG signInOut: isPermissionGranted (before capture) =", isPermissionGranted);
+
             if (
                 (isImageEnabled || isFaceRecognitionEnabled) &&
                 !allowWithoutImage &&
@@ -406,6 +468,7 @@ patch(ActivityMenu.prototype, {
                     }
                 );
 
+                console.log("DEBUG signInOut: RETURNING - permission not granted at capture stage");
                 return;
             }
 
@@ -418,6 +481,7 @@ patch(ActivityMenu.prototype, {
             ) {
                 try {
                     if (!this.stream || !this.stream.active) {
+                        console.log("DEBUG signInOut: getting new stream for capture...");
                         this.stream = await navigator.mediaDevices.getUserMedia({
                             video: true,
                         });
@@ -427,6 +491,7 @@ patch(ActivityMenu.prototype, {
                     const imageCapture = new ImageCapture(track);
 
                     photo = await imageCapture.takePhoto();
+                    console.log("DEBUG signInOut: photo captured =", photo);
                 } catch (err) {
                     console.error(
                         "Image capture failed:",
@@ -448,6 +513,8 @@ patch(ActivityMenu.prototype, {
                     "/hr_attendance/face_recognition_check",
                     {}
                 );
+
+                console.log("DEBUG signInOut: faceResponse =", faceResponse);
 
                 this.state.isFaceMatched = faceResponse.success;
 
@@ -483,6 +550,8 @@ patch(ActivityMenu.prototype, {
                     longitude: longitude,
                 }
             );
+
+            console.log("DEBUG signInOut: attendance response =", response);
 
             if (response.attendance_state) {
                 if (this.employee) {
@@ -613,7 +682,7 @@ patch(ActivityMenu.prototype, {
                 );
             }
         } catch (error) {
-            console.error(error);
+            console.error("DEBUG signInOut: CAUGHT ERROR ->", error);
 
             this.notification.add(
                 _t("Something went wrong"),
@@ -625,6 +694,8 @@ patch(ActivityMenu.prototype, {
 
         this.closeCamera();
         this.isSigningAction = false;
+
+        console.log("DEBUG signInOut: FINISHED");
     },
 
 
@@ -669,5 +740,6 @@ patch(ActivityMenu.prototype, {
         }
 
         this.isSigningAction = false;
+        console.log("DEBUG closeCamera: called");
     },
 });

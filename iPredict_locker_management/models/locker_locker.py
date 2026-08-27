@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 from odoo import _, api, fields, models
 
@@ -30,7 +29,23 @@ class LockerLocker(models.Model):
     tracking=True,
     domain="[('company_id', '=', company_id)]",
 )
-
+    site_id = fields.Many2one(
+    "locker.site",
+    string="Site",
+    ondelete="restrict",
+    index=True,
+)
+    side = fields.Selection(
+        [
+            ("side_1", "Side 1"),
+            ("side_2", "Side 2"),
+        ],
+        string="Side",
+        default="side_1",
+        required=True,
+        index=True,
+    )
+  
     # 3D VIEW FIELDS
     pos_x = fields.Float(string="Position X", default=0.0)
     pos_y = fields.Float(string="Position Y", default=0.0)
@@ -61,6 +76,23 @@ class LockerLocker(models.Model):
             "res_model": "locker.allocation",
             "view_mode": "list,form",
             "domain": [("locker_id", "=", self.id)],
+            "context": {
+                "default_locker_id": self.id,
+            },
+        }
+
+    def action_open_locker_allocation(self):
+        self.ensure_one()
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Locker Allocation"),
+            "res_model": "locker.allocation",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "iPredict_locker_management.view_locker_allocation_form"
+            ).id,
+            "target": "current",
             "context": {
                 "default_locker_id": self.id,
             },
@@ -108,76 +140,135 @@ class LockerLocker(models.Model):
             "name": _("3D Locker View"),
             "context": {"default_company_id": self.company_id.id},
         }
-
-    @api.model
-    def update_locker_position(self, locker_id, pos_x, pos_y, pos_z):
-        locker = self.browse(locker_id)
-        if locker.exists():
-            locker.write({
-                'pos_x': float(pos_x),
-                'pos_y': float(pos_y),
-                'pos_z': float(pos_z),
-            })
-            return True
-        return False
-
+        
     @api.model
     def get_3d_data(self, company_id=None):
-        domain = [("active", "=", True)]
-
+        company_domain = []
         if company_id:
-            domain.append(("company_id", "=", company_id))
-
-        lockers = self.search(
-            domain,
-            order="locker_location_id, profile_id, name, id"
+            company_domain.append(("id", "=", company_id))
+    
+        companies = self.env["res.company"].search(company_domain, order="name")
+    
+        location_domain = [
+            ("create_3d_view", "=", True),
+        ]
+        if company_id:
+            location_domain.append(("company_id", "=", company_id))
+    
+        locations = self.env["locker.location"].search(
+            location_domain,
+            order="name",
         )
-
-        location_data = {}
-
-        for locker in lockers:
-            location = locker.locker_location_id
-            location_id = location.id or 0
-            location_name = location.name or "Unassigned"
-
-            if location_id not in location_data:
-                location_data[location_id] = {
-                    "location_id": location_id,
-                    "locker_location_id": location_id,
-                    "location": location_name,
-                    "lockers": [],
+    
+        site_domain = [
+            ("active", "=", True),
+        ]
+    
+        if company_id:
+            site_domain.append(("locker_location_id.company_id", "=", company_id))
+    
+        sites = self.env["locker.site"].search(
+            site_domain,
+            order="id",
+        )
+    
+        locker_domain = [
+            ("active", "=", True),
+        ]
+    
+        if company_id:
+            locker_domain.append(("company_id", "=", company_id))
+    
+        lockers = self.search(
+            locker_domain,
+            order="locker_location_id, site_id, profile_id, name, id",
+        )
+    
+        profiles = self.env["locker.profile"].search(
+            [],
+            order="name",
+        )
+    
+        return {
+            "companies": [
+                {
+                    "id": company.id,
+                    "name": company.name,
                 }
-
-            location_data[location_id]["lockers"].append({
-                "id": locker.id,
-                "name": locker.name,
-                "status": locker.status,
-                "company_id": locker.company_id.id,
-                "locker_location_id": locker.locker_location_id.id,
-                "locker_location": locker.locker_location_id.name or "",
-                "profile_id": locker.profile_id.id,
-                "profile_color": locker.profile_id.color,
-                "profile": locker.profile_id.name,
-
-                "pos_x": float(locker.pos_x or 0.0),
-                "pos_y": float(locker.pos_y or 0.0),
-                "pos_z": float(locker.pos_z or 0.0),
-
-                # Dimensions
-                "w": float(locker.width or 1.0),
-                "h": float(locker.height or 2.0),
-                "d": float(locker.depth or 1.0),
-            })
-
-        result = list(location_data.values())
-        result.sort(key=lambda loc: loc["location"].lower())
-
-        return result
+                for company in companies
+            ],
+            "locker_locations": [
+                {
+                    "id": location.id,
+                    "name": location.name,
+                }
+                for location in locations
+            ],
+            "sites": [
+                {
+                    "id": site.id,
+                    "name": site.name,
+                    "width": float(site.width or 1.0),
+                    "height": float(site.height or 1.0),
+                    "depth": float(site.depth or 1.0),
+                    "pos_x": float(site.pos_x or 0.0),
+                    "pos_y": float(site.pos_y or 0.0),
+                    "pos_z": float(site.pos_z or 0.0),
+                    "active": site.active,
+                    # NEW: needed so the frontend can filter sites by
+                    # the currently selected company / locker location.
+                    "locker_location_id": site.locker_location_id.id,
+                    "company_id": site.company_id.id,
+                }
+                for site in sites
+            ],
+            "lockers": [
+                {
+                    "id": locker.id,
+                    "name": locker.name,
+                    "status": locker.status,
+                    "company_id": locker.company_id.id,
+                    "locker_location_id": locker.locker_location_id.id,
+                    "locker_location": locker.locker_location_id.name or "",
+                    "site_id": locker.site_id.id if locker.site_id else False,
+                    "side": locker.side or "side_1",
+                    "profile_id": locker.profile_id.id,
+                    "profile_color": locker.profile_id.color,
+                    "profile": locker.profile_id.name,
+                    "pos_x": float(locker.pos_x or 0.0),
+                    "pos_y": float(locker.pos_y or 0.0),
+                    "pos_z": float(locker.pos_z or 0.0),
+                    "width": float(locker.width or 1.0),
+                    "height": float(locker.height or 1.0),
+                    "depth": float(locker.depth or 1.0),
+                    # NEW: aliases the 3D widget actually reads.
+                    "w": float(locker.width or 1.0),
+                    "h": float(locker.height or 1.0),
+                    "d": float(locker.depth or 1.0),
+                    "color": locker.profile_id.color or "#198754",
+                }
+                for locker in lockers
+            ],
+            "profiles": [
+                {
+                    "id": profile.id,
+                    "name": profile.name,
+                    "color": profile.color or "#198754",
+                }
+                for profile in profiles
+            ],
+            "is_admin": self.env.user.has_group(
+                "iPredict_locker_management.group_locker_admin"
+            ),
+        }
 
     @api.model
     def get_locker_locations(self, company_id):
         locations = self.env["locker.location"].search(
-            [("company_id", "=", company_id)],
+            [
+                ("company_id", "=", company_id),
+                ("create_3d_view", "=", True),
+            ],
             order="name",
         )
 
@@ -210,3 +301,24 @@ class LockerLocker(models.Model):
             "start_date": str(allocation.start_date) if allocation else "",
             "end_date": str(allocation.end_date) if allocation else "",
         }
+
+
+    @api.model
+    def update_locker_position(self, locker_id, pos_x, pos_y, pos_z, side=None,site_id=None,):
+        locker = self.browse(locker_id)
+        if locker.exists():
+            vals = {
+                'pos_x': float(pos_x),
+                'pos_y': float(pos_y),
+                'pos_z': float(pos_z),
+            }
+            if side in ("side_1", "side_2"):
+                vals['side'] = side
+
+                        
+            if site_id:
+                vals["site_id"] = int(site_id)
+
+            locker.write(vals)
+            return True
+        return False

@@ -264,7 +264,6 @@ export class LockerKiosk extends Component {
         this.state.loading = true;
         this.clearMessage();
 
-        // ---- ✅ REFRESH CHECKED-IN LIST BEFORE SEARCH ----
         await this.loadCurrentCheckedIn();
         // ------------------------------------------------
 

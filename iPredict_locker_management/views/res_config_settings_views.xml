@@ -12,17 +12,26 @@
                     <!-- LOCKER SETTINGS -->
 
                     <block title="Locker Settings">
-                        <setting string="Available Locker Color" help="Set the color used for available lockers in the 3D view.">
+                        <setting string="Available Locker Color"
+                                help="Set the color used for available lockers in the 3D view.">
                             <field name="available_locker_color" widget="color"/>
                         </setting>
-                        <setting string="Allocated Locker Color" help="Set the color used for allocated lockers in the 3D view.">
+
+                        <setting string="Allocated Locker Color"
+                                help="Set the color used for allocated lockers in the 3D view.">
                             <field name="allocated_locker_color" widget="color"/>
                         </setting>
-                        <setting string="Renewal Reminder Days" help="Number of days before locker expiry when renewal becomes pending.">
+
+                        <setting string="Renewal Reminder Days"
+                                help="Number of days before locker expiry when renewal becomes pending.">
                             <field name="renewal_reminder_days"/>
                         </setting>
-                    </block>
 
+                        <setting string="Enable 3D Locker View"
+                                help="Enable 3D view configuration for locker locations.">
+                            <field name="enable_3d_locker_view"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

@@ -23,3 +23,6 @@ access_locker_return_wizard_user,access.locker.return.wizard.user,model_locker_r
 access_locker_return_reason_user,access.locker.return.reason.user,model_locker_return_reason,base.group_user,1,1,1,1
 
 access_locker_penalty_admin,access.locker.penalty.admin,model_locker_penalty,iPredict_locker_management.group_locker_admin,1,1,1,1
+
+access_locker_site_user,locker.site.user,model_locker_site,base.group_user,1,1,1,1
+access_locker_site_admin,locker.site.admin,model_locker_site,iPredict_locker_management.group_locker_admin,1,1,1,1

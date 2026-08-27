@@ -13,7 +13,6 @@
                 <field name="currency_id" column_invisible="1"/>
                 <field name="period"/>
                 <field name="start_after_days"/>
-                <field name="active" widget="boolean_toggle"/>
             </list>
         </field>
     </record>

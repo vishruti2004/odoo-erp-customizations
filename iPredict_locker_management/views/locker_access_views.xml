@@ -14,35 +14,53 @@
                 <field name="access_method"/>
                 <field name="check_in_time"/>
                 <field name="check_out_time"/>
-                <field name="state" widget="badge" decoration-success="state == 'checked_in'" decoration-muted="state == 'checked_out'"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-success="state == 'checked_in'"
+                       decoration-muted="state == 'checked_out'"/>
             </list>
         </field>
     </record>
+
 
     <record id="view_locker_access_form" model="ir.ui.view">
         <field name="name">locker.access.form</field>
         <field name="model">locker.access</field>
         <field name="arch" type="xml">
             <form string="Locker Access">
+
                 <header>
-                    <button name="action_check_in" type="object" string="Check In" class="btn-primary" invisible="state == 'checked_in'"/>
-                    <button name="action_check_out" type="object" string="Check Out" class="btn-secondary" invisible="state != 'checked_in'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="checked_in,checked_out"/>
+                    <button name="action_check_in"
+                            type="object"
+                            string="Check In"
+                            class="btn-primary"
+                            invisible="state == 'checked_in'"/>
+
+                    <button name="action_check_out"
+                            type="object"
+                            string="Check Out"
+                            class="btn-secondary"
+                            invisible="state != 'checked_in'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="checked_in,checked_out"/>
                 </header>
 
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
-                    </div>
 
+                    <!-- Locker Access Details -->
                     <group>
                         <group>
                             <field name="allocation_id" readonly="1"/>
-                            <field name="partner_id" string="Allocation Partner" readonly="1"/>
-                            <field name="authenticated_partner_id" string="Authenticated Person" readonly="1"/>
+                            <field name="partner_id"
+                                   string="Allocation Partner"
+                                   readonly="1"/>
+                            <field name="authenticated_partner_id"
+                                   string="Authenticated Person"
+                                   readonly="1"/>
                         </group>
+
                         <group>
                             <field name="locker_id" readonly="1"/>
                             <field name="profile_id" readonly="1"/>
@@ -50,19 +68,171 @@
                         </group>
                     </group>
 
+                    <!-- Access Timing -->
                     <separator string="Access Timing"/>
+
                     <group>
                         <field name="check_in_time" readonly="1"/>
                         <field name="check_out_time" readonly="1"/>
-                        <field name="state" widget="badge" decoration-success="state == 'checked_in'" decoration-muted="state == 'checked_out'" readonly="1"/>
+                        <field name="state"
+                               widget="badge"
+                               decoration-success="state == 'checked_in'"
+                               decoration-muted="state == 'checked_out'"
+                               readonly="1"/>
                     </group>
+
                 </sheet>
 
                 <!-- Chatter -->
                 <chatter/>
+
             </form>
         </field>
     </record>
+
+     <!-- ============================================================ -->
+    <!-- ACCESS HISTORY SEARCH VIEW                                  -->
+    <!-- ============================================================ -->
+
+    <record id="view_locker_access_search" model="ir.ui.view">
+        <field name="name">locker.access.search</field>
+        <field name="model">locker.access</field>
+        <field name="arch" type="xml">
+
+            <search>
+
+                <!-- ================================================= -->
+                <!-- SEARCH FIELDS                                    -->
+                <!-- ================================================= -->
+
+                <field name="name"
+                       string="Access Number"/>
+
+                <field name="partner_id"
+                       string="Allocation Partner"/>
+
+                <field name="authenticated_partner_id"
+                       string="Authenticated Person"/>
+
+                <field name="allocation_id"
+                       string="Allocation"/>
+
+                <field name="locker_id"
+                       string="Locker"/>
+
+                <field name="profile_id"
+                       string="Locker Profile"/>
+
+                <field name="access_method"
+                       string="Access Method"/>
+
+                <field name="state"
+                       string="State"/>
+
+
+                <!-- ================================================= -->
+                <!-- DATE SEARCH                                      -->
+                <!-- ================================================= -->
+
+                <field name="check_in_time"
+                       string="Check In"/>
+
+                <field name="check_out_time"
+                       string="Check Out"/>
+
+
+                <separator/>
+
+
+                <!-- ================================================= -->
+                <!-- STATE FILTERS                                    -->
+                <!-- ================================================= -->
+
+                <filter name="filter_checked_in"
+                        string="Checked In"
+                        domain="[('state', '=', 'checked_in')]"/>
+
+                <filter name="filter_checked_out"
+                        string="Checked Out"
+                        domain="[('state', '=', 'checked_out')]"/>
+
+
+                <separator/>
+
+
+                <!-- ================================================= -->
+                <!-- ACCESS METHOD FILTERS                            -->
+                <!-- ================================================= -->
+
+                <filter name="filter_physical_key"
+                        string="Physical Key"
+                        domain="[('access_method', '=', 'physical_key')]"/>
+
+                <filter name="filter_pin"
+                        string="PIN Code"
+                        domain="[('access_method', '=', 'pin')]"/>
+
+                <filter name="filter_qr"
+                        string="QR Code"
+                        domain="[('access_method', '=', 'qr')]"/>
+
+                <filter name="filter_rfid"
+                        string="RFID Card"
+                        domain="[('access_method', '=', 'rfid')]"/>
+
+                <filter name="filter_biometric"
+                        string="Biometric"
+                        domain="[('access_method', '=', 'biometric')]"/>
+
+
+                <separator/>
+
+
+                <!-- ================================================= -->
+                <!-- GROUP BY                                         -->
+                <!-- ================================================= -->
+
+                <group>
+
+                    <filter name="group_partner"
+                            string="Allocation Partner"
+                            context="{'group_by': 'partner_id'}"/>
+
+                    <filter name="group_authenticated_partner"
+                            string="Authenticated Person"
+                            context="{'group_by': 'authenticated_partner_id'}"/>
+
+                    <filter name="group_allocation"
+                            string="Allocation"
+                            context="{'group_by': 'allocation_id'}"/>
+
+                    <filter name="group_locker"
+                            string="Locker"
+                            context="{'group_by': 'locker_id'}"/>
+
+                    <filter name="group_profile"
+                            string="Locker Profile"
+                            context="{'group_by': 'profile_id'}"/>
+
+                    <filter name="group_access_method"
+                            string="Access Method"
+                            context="{'group_by': 'access_method'}"/>
+
+                    <filter name="group_state"
+                            string="State"
+                            context="{'group_by': 'state'}"/>
+
+                </group>
+
+
+            
+
+                
+            </search>
+
+        </field>
+    </record>
+
 
     <record id="action_locker_access_history" model="ir.actions.act_window">
         <field name="name">Access History</field>
@@ -70,6 +240,7 @@
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_locker_access_list"/>
     </record>
+
 
     <record id="action_locker_kiosk" model="ir.actions.client">
         <field name="name">Check In / Check Out</field>
