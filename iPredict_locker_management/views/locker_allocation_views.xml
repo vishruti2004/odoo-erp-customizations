@@ -172,7 +172,6 @@
                             <field name="penalty_start_date" readonly="1" invisible="not penalty_start_date"/>
                             <field name="penalty_invoice_id" readonly="1" invisible="not penalty_invoice_id"/>
                         </group>
-                     
                     </group>
 
                     <!-- Credentials / Identity Section -->
@@ -188,7 +187,6 @@
                             <field name="rfid_uid" readonly="1" column_invisible="parent.access_method != 'rfid'"/>
                             <field name="qr_token" readonly="1" column_invisible="parent.access_method != 'qr'"/>
                             <field name="qr_code" widget="image" readonly="1" column_invisible="parent.access_method != 'qr'" options="{'size': [60, 60]}"/>
-                            <field name="biometric_id" readonly="1" column_invisible="parent.access_method != 'biometric'"/>
                             <button name="action_generate_credential"
                                     type="object"
                                     string="Generate"

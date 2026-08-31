@@ -148,7 +148,7 @@
                     Location-Based Validation
                 </h3>
                 <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
-                    Validate attendance using configured latitude, longitude, radius, and authorized physical locations.
+                    Validate attendance using configured latitude, longitude, radius, and multiple authorized physical locations.
                 </p>
             </div>
 
@@ -174,18 +174,7 @@
                 </p>
             </div>
 
-            <!-- 7. Multiple Attendance Locations -->
-            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
-                <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
-                    <i class="fa fa-map" style="margin-right:8px;"></i>
-                    Multiple Attendance Locations
-                </h3>
-                <p style="margin:0; font-size:15px; color:#666; line-height:1.6;">
-                    Configure multiple geo-fenced locations complete with company-wise assignment rules and access settings.
-                </p>
-            </div>
-
-            <!-- 8. Flexible Attendance Options -->
+            <!-- 7. Flexible Attendance Options -->
             <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:20px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; box-sizing:border-box;">
                 <h3 style="color:#C3851F; margin:0 0 8px; font-size:19px;">
                     <i class="fa fa-cog" style="margin-right:8px;"></i>
@@ -203,7 +192,6 @@
 
 
 <!-- Attendance Configuration & Setup -->
-<!-- ATTENDANCE CONFIGURATION & SETUP SECTION -->
 <section class="oe_container lead" style="margin-top:40px;">
 
     <!-- Section Header Banner -->
@@ -224,43 +212,83 @@
         <!-- Setup Cards Container -->
         <div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:stretch;">
 
-            <!-- 1. Employee Face Registration -->
-            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+            <!-- 1. User Face Registration -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
                 <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
-                    1. Employee Face Registration
+                    1. User Face Registration
                 </h3>
+
+                <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
+                    Users can upload or update their face image from their own profile preferences for face recognition and attendance verification.
+                </p>
+
+                <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
+                    <img src="user_face_registration.png"
+                         alt="User Face Registration"
+                         style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                </div>
+
+            </div>
+
+
+            <!-- 2. Employee Face Registration -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
+                <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
+                    2. Employee Face Registration
+                </h3>
+
                 <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
                     Add the employee face image that will be used for face recognition and attendance verification.
                 </p>
+
                 <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
-                    <img src="abc.png" alt="Employee Face Registration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                    <img src="abc.png"
+                         alt="Employee Face Registration"
+                         style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
                 </div>
+
             </div>
 
-            <!-- 2. Attendance Settings -->
-            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
+            <!-- 3. Attendance Settings -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
                 <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
-                    2. Attendance Settings
+                    3. Attendance Settings
                 </h3>
+
                 <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
                     Go to <strong>Attendances → Configuration → Settings</strong> and configure the required attendance modes, camera capture, face recognition, kiosk support, and location tracking options.
                 </p>
+
                 <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
-                    <img src="attendance_settingss.png" alt="Attendance Settings Configuration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                    <img src="attendance_settingss.png"
+                         alt="Attendance Settings Configuration"
+                         style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
                 </div>
+
             </div>
 
-            <!-- 3. Face Attendance Location -->
-            <div style="flex:1 1 30%; min-width:280px; max-width:32%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
+            <!-- 4. Face Attendance Location -->
+            <div style="flex:1 1 45%; min-width:320px; max-width:48%; padding:18px; background-color:#fffaf2; border:1px solid #f0dfc0; border-radius:10px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column;">
+
                 <h3 style="color:#C3851F; margin:0 0 12px; font-size:20px; min-height:48px;">
-                    3. Face Attendance Location
+                    4. Face Attendance Location
                 </h3>
+
                 <p style="font-size:15px; color:#555; line-height:1.6; height:72px; margin:0 0 10px;">
-                    Go to <strong>Attendances → Configuration → Face Attendance Locations</strong> and configure the authorized location using latitude, longitude, radius, and company.
+                    Go to <strong>Attendances → Configuration → Face Attendance Locations</strong> and configure the authorized locations using latitude, longitude, radius, and company.
                 </p>
+
                 <div style="height:250px; display:flex; align-items:center; justify-content:center; margin-top:10px; overflow:hidden;">
-                    <img src="attendance_configs.png" alt="Face Attendance Location Configuration" style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
+                    <img src="attendance_configs.png"
+                         alt="Face Attendance Location Configuration"
+                         style="width:100%; height:100%; object-fit:contain; display:block; border:1px solid #ddd; border-radius:8px;"/>
                 </div>
+
             </div>
 
         </div>
@@ -268,7 +296,6 @@
     </div>
 
 </section>
-<!--  ATTENDANCE WITH CAMERA CAPTURE -->
 <!-- ATTENDANCE WITH CAMERA CAPTURE SECTION -->
 <section class="oe_container lead" style="margin-top:40px;">
 

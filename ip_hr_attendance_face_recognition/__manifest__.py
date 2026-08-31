@@ -15,7 +15,7 @@
     'external_dependencies': {
         'python': [
             'face_recognition',
-            'cv2',
+            'opencv-python',
             'onnxruntime',
         ],
     },
