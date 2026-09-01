@@ -9,6 +9,7 @@
         nutritional recommendations, and calorie tracking.
     """,
     'author': 'iPredict IT Solutions',
+    'license': 'LGPL-3',
     'depends': [
         'base',
         'contacts',
@@ -22,7 +23,7 @@
         'security/security.xml',
 
         'data/diet_plan_sequence.xml',
-        'data/ir_cron_data.xml',           
+        'data/ir_cron_data.xml',
         'views/gym_diet_plan_views.xml',
         'views/gym_food.xml',
         'views/res_partner_views.xml',

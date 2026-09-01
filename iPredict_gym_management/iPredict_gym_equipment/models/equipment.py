@@ -8,7 +8,7 @@ class MaintenanceEquipment(models.Model):
 
     product_id = fields.Many2one("product.product", string="Product", ondelete="restrict")
     repair_order_ids = fields.One2many("repair.order", "equipment_id", string="Repair Orders")
-    repair_order_count = fields.Integer(string="Repair Orders", compute="_compute_repair_order_count")
+    repair_order_count = fields.Integer(string="Repair Orders Count", compute="_compute_repair_order_count")
 
     @api.depends("repair_order_ids")
     def _compute_repair_order_count(self):

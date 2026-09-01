@@ -1,9 +1,9 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_gym_diet_plan_admin,gym.diet.plan.admin,model_gym_diet_plan,iPredict_gym_base.group_gym_admin,1,1,1,1
-access_gym_diet_plan_trainer,gym.diet.plan.trainer,model_gym_diet_plan,iPredict_gym_base.group_gym_user,1,1,1,1
+access_gym_diet_plan_user,gym.diet.plan.user,model_gym_diet_plan,iPredict_gym_base.group_gym_user,1,1,1,1
 access_gym_diet_meal_line_admin,gym.diet.meal.line.admin,model_gym_diet_meal_line,iPredict_gym_base.group_gym_admin,1,1,1,1
-access_gym_diet_meal_line_trainer,gym.diet.meal.line.trainer,model_gym_diet_meal_line,iPredict_gym_base.group_gym_user,1,1,1,1
+access_gym_diet_meal_line_user,gym.diet.meal.line.user,model_gym_diet_meal_line,iPredict_gym_base.group_gym_user,1,1,1,1
 access_gym_diet_plan_assign_wizard_admin,gym.diet.plan.assign.wizard.admin,model_gym_diet_plan_assign_wizard,iPredict_gym_base.group_gym_admin,1,1,1,1
-access_gym_diet_plan_assign_wizard_trainer,gym.diet.plan.assign.wizard.trainer,model_gym_diet_plan_assign_wizard,iPredict_gym_base.group_gym_user,1,1,1,1
+access_gym_diet_plan_assign_wizard_user,gym.diet.plan.assign.wizard.user,model_gym_diet_plan_assign_wizard,iPredict_gym_base.group_gym_user,1,1,1,1
 access_gym_diet_assignment_admin,gym.diet.assignment.admin,model_gym_diet_assignment,iPredict_gym_base.group_gym_admin,1,1,1,1
-access_gym_diet_assignment_trainer,gym.diet.assignment.trainer,model_gym_diet_assignment,iPredict_gym_base.group_gym_user,1,1,1,0
+access_gym_diet_assignment_user,gym.diet.assignment.user,model_gym_diet_assignment,iPredict_gym_base.group_gym_user,1,1,1,1

@@ -18,7 +18,7 @@ class ResPartner(models.Model):
     freeze_days = fields.Integer(string="Freeze Days", compute="_compute_freeze_days", store=True)
     membership_freeze_extension_days = fields.Integer(string="Freeze Extension Days", default=0, copy=False)
     remaining_days = fields.Integer(string="Remaining Days", compute="_compute_remaining_days", store=True)
-    notes = fields.Text(string="Notes")
+    notes = fields.Text(string="Gym Notes")
     membership_start_date = fields.Date(string="Start Date", tracking=True)
     membership_end_date = fields.Date(string="End Date", compute="_compute_membership_end_date", store=True, tracking=True)
     is_gym_member = fields.Boolean(string="Gym Member", default=False, tracking=True)

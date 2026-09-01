@@ -1,0 +1,22 @@
+#portal_gym_category .o_portal_icon {
+    width: 72px !important;
+    min-width: 72px !important;
+    height: 72px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+#portal_gym_category .o_portal_icon img {
+    width: 72px !important;
+    height: 72px !important;
+    max-width: 72px !important;
+    max-height: 72px !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+
+#portal_gym_category .o_portal_index_card {
+    min-height: 120px;
+}

@@ -22,7 +22,7 @@ class ResPartner(models.Model):
     )
 
     locker_allocation_count = fields.Integer(
-        string="Locker Allocations",
+        string="Locker Allocations Count",
         compute="_compute_locker_allocation_count",
     )
 

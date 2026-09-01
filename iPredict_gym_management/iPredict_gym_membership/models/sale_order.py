@@ -14,20 +14,16 @@ class SaleOrder(models.Model):
 
     @api.depends("partner_id.membership_end_date")
     def _compute_is_membership_expired(self):
-        """Check if the partner's membership has expired."""
         today = date.today()
         for order in self:
             if order.partner_id.membership_end_date:
-                order.is_membership_expired = (
-                    order.partner_id.membership_end_date < today
-                )
+                order.is_membership_expired = order.partner_id.membership_end_date < today
             else:
                 order.is_membership_expired = False
 
     # COMPANY-WISE MEMBER SEQUENCE
 
     def _get_member_sequence(self, company):
-        """Get or create a company-wise sequence for Gym Member IDs."""
         Sequence = self.env["ir.sequence"].sudo()
         sequence = Sequence.search(
             [
@@ -38,23 +34,20 @@ class SaleOrder(models.Model):
         )
 
         if not sequence:
-            sequence = Sequence.create(
-                {
-                    "name": f"Gym Member - {company.name}",
-                    "code": "gym.member",
-                    "prefix": "GM",
-                    "padding": 5,
-                    "number_increment": 1,
-                    "company_id": company.id,
-                }
-            )
+            sequence = Sequence.create({
+                "name": f"Gym Member - {company.name}",
+                "code": "gym.member",
+                "prefix": "GM",
+                "padding": 5,
+                "number_increment": 1,
+                "company_id": company.id,
+            })
 
         return sequence
 
     def action_confirm(self):
-        """Confirm sale order and create membership."""
         MembershipPlan = self.env["gym.membership.plan"]
-        MembershipHistory = self.env["gym.membership.history"]
+        MembershipHistory = self.env["gym.membership.history"].sudo()
 
         for order in self:
             partner = order.partner_id
@@ -73,7 +66,6 @@ class SaleOrder(models.Model):
         for order in self:
             partner = order.partner_id
             for line in order.order_line:
-                # Find membership plan for the SAME COMPANY
                 plan = MembershipPlan.search(
                     [
                         ("product_id", "=", line.product_template_id.id),
@@ -109,7 +101,6 @@ class SaleOrder(models.Model):
         for order in self:
             partner = order.partner_id
             for line in order.order_line:
-                # Find membership plan for the SAME COMPANY
                 plan = MembershipPlan.search(
                     [
                         ("product_id", "=", line.product_template_id.id),
@@ -130,7 +121,6 @@ class SaleOrder(models.Model):
                     "company_id": order.company_id.id,
                 }
 
-                # Generate member code only once
                 if not partner.member_code:
                     sequence = self._get_member_sequence(order.company_id)
                     partner_vals["member_code"] = sequence.next_by_id()
@@ -144,16 +134,14 @@ class SaleOrder(models.Model):
                     if not employee.active:
                         employee.write({"active": True})
 
-                MembershipHistory.create(
-                    {
-                        "member_id": partner.id,
-                        "membership_plan_id": plan.id,
-                        "membership_start_date": partner.membership_start_date,
-                        "membership_end_date": partner.membership_end_date,
-                        "status": "active",
-                        "remark": "Membership Created",
-                    }
-                )
+                MembershipHistory.create({
+                    "member_id": partner.id,
+                    "membership_plan_id": plan.id,
+                    "membership_start_date": partner.membership_start_date,
+                    "membership_end_date": partner.membership_end_date,
+                    "status": "active",
+                    "remark": "Membership Created",
+                })
 
                 break
 
@@ -162,16 +150,13 @@ class SaleOrder(models.Model):
     # RENEW MEMBERSHIP
 
     def action_renew_membership(self):
-        """Create a new renewal quotation from current sale order."""
         self.ensure_one()
 
-        new_order = self.copy(
-            {
-                "name": "/",
-                "state": "draft",
-                "date_order": fields.Datetime.now(),
-            }
-        )
+        new_order = self.copy({
+            "name": "/",
+            "state": "draft",
+            "date_order": fields.Datetime.now(),
+        })
 
         new_order.message_post(
             body=_("Renewal Quotation created from %s") % self.name
@@ -186,12 +171,10 @@ class SaleOrder(models.Model):
             "target": "current",
         }
 
-
     def action_cancel(self):
-        """Reset renewal_sale_order_id when sale order is cancelled."""
         res = super().action_cancel()
 
-        history = self.env["gym.membership.history"].search(
+        history = self.env["gym.membership.history"].sudo().search(
             [("renewal_sale_order_id", "=", self.id)],
             limit=1,
         )
@@ -202,9 +185,8 @@ class SaleOrder(models.Model):
         return res
 
     def unlink(self):
-        """Reset renewal_sale_order_id before deletion."""
         for order in self:
-            history = self.env["gym.membership.history"].search(
+            history = self.env["gym.membership.history"].sudo().search(
                 [("renewal_sale_order_id", "=", order.id)],
                 limit=1,
             )

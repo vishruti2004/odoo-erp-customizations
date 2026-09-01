@@ -8,7 +8,7 @@ class MaintenanceRequest(models.Model):
     _inherit = "maintenance.request"
 
     repair_order_id = fields.Many2one("repair.order", string="Repair Order", readonly=True, copy=False)
-    is_request_done = fields.Boolean(related="stage_id.done", string="Request Done", readonly=True)
+    is_request_done = fields.Boolean(related="stage_id.done", string="Is Request Done", readonly=True)
 
     @api.constrains("company_id", "equipment_id")
     def _check_equipment_company(self):

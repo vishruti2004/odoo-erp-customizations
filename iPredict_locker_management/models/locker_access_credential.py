@@ -18,11 +18,18 @@ class LockerAccessCredential(models.Model):
     _rec_name = "partner_id"
     _order = "id desc"
 
-    _sql_constraints = [
-        ("pin_code_unique", "UNIQUE(pin_code)", "This PIN is already assigned to another locker credential."),
-        ("rfid_uid_unique", "UNIQUE(rfid_uid)", "This RFID UID is already assigned to another locker credential."),
-        ("qr_token_unique", "UNIQUE(qr_token)", "This QR Token is already assigned to another locker credential."),
-    ]
+    _pin_code_unique = models.Constraint(
+        "UNIQUE(pin_code)",
+        "This PIN is already assigned to another locker credential.",
+    )
+    _rfid_uid_unique = models.Constraint(
+        "UNIQUE(rfid_uid)",
+        "This RFID UID is already assigned to another locker credential.",
+    )
+    _qr_token_unique = models.Constraint(
+        "UNIQUE(qr_token)",
+        "This QR Token is already assigned to another locker credential.",
+    )
 
     allocation_id = fields.Many2one("locker.allocation", string="Locker Allocation", required=True, ondelete="cascade", tracking=True)
     partner_id = fields.Many2one("res.partner", string="Person", required=True, ondelete="restrict", tracking=True)

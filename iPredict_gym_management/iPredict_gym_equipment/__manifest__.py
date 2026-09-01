@@ -27,7 +27,6 @@ Adds only what's missing:
         "iPredict_gym_base",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "security/security.xml",
 
         "views/equipment_views.xml",

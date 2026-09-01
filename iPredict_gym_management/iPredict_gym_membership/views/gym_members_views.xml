@@ -15,7 +15,6 @@
                 <field name="membership_plan_id" string="Membership Plan"/>
                 <field name="membership_start_date" string="Start Date"/>
                 <field name="membership_end_date" string="End Date"/>
-                <field name="is_frozen" string="Frozen"/>
                 <field name="remaining_days" string="Remaining Days"/>
             </list>
         </field>

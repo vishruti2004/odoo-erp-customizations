@@ -18,10 +18,7 @@ class GymMembershipPlan(models.Model):
     currency_id = fields.Many2one("res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True)
     active = fields.Boolean(string="Active", default=True, tracking=True)
 
-    _sql_constraints = [
-        (
-            "unique_plan_name_company",
-            "unique(name, company_id)",
-            "Membership Plan name must be unique per company.",
-        ),
-    ]
+    _name_company_unique = models.Constraint(
+        "UNIQUE(name, company_id)",
+        "Membership Plan name must be unique per company.",
+    )

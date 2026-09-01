@@ -23,9 +23,9 @@
     </record>
 
     <record id="rule_gym_user_diet_assignment_company" model="ir.rule">
-        <field name="name">Gym User: Own Members Current Company Diet Assignments</field>
+        <field name="name">Gym User: Current Company Diet Assignments</field>
         <field name="model_id" ref="model_gym_diet_assignment"/>
-        <field name="domain_force">[('company_id', 'in', company_ids), ('member_id.trainer_id.user_id', '=', user.id)]</field>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_user'))]"/>
     </record>
 

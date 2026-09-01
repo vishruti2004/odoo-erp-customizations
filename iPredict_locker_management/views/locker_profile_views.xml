@@ -163,7 +163,7 @@
 
                                     <!-- Profile Color Icon -->
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" t-att-style="'width: 48px; height: 48px; background-color: ' + (record.color.raw_value || '#7c7bad') + '; color: white;'">
-                                        <i class="fa fa-archive fa-lg"/>
+                                        <i class="fa fa-archive fa-lg" title="Lockers"/>
                                     </div>
                                 </div>
                             </div>
