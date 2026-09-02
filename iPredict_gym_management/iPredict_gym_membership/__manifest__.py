@@ -54,6 +54,7 @@ This module manages the complete membership lifecycle including:
         "views/gym_frozen_members.xml",
         "views/sale_order_views.xml",
         "views/gym_measurement_views.xml",
+        "views/gym_membership_trial_views.xml",
         "views/menu_views.xml",
 
         "wizard/gym_member_locker_wizard_views.xml",

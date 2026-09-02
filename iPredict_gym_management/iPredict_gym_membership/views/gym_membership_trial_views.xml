@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Trial Membership List View -->
+    <record id="view_gym_membership_trial_list" model="ir.ui.view">
+        <field name="name">gym.membership.trial.list</field>
+        <field name="model">gym.membership.trial</field>
+        <field name="arch" type="xml">
+            <list string="Trial Memberships">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="membership_plan_id"/>
+                <field name="amount"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'active'"
+                       decoration-primary="state == 'member_created'"
+                       decoration-danger="state == 'cancelled'"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Trial Membership Form View -->
+    <record id="view_gym_membership_trial_form" model="ir.ui.view">
+        <field name="name">gym.membership.trial.form</field>
+        <field name="model">gym.membership.trial</field>
+        <field name="arch" type="xml">
+            <form string="Trial Membership">
+                <header>
+                    <!-- Confirm Trial -->
+                    <button name="action_confirm_trial"
+                            string="Confirm"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+
+                    <!-- Convert Trial to Gym Member -->
+                    <button name="action_convert_to_gym_member"
+                            string="Gym Member"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'active'"/>
+
+                    <!-- Cancel Trial -->
+                    <button name="action_cancel_trial"
+                            string="Cancel"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state in ('member_created', 'cancelled')"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,active,member_created,cancelled"/>
+                </header>
+
+                <sheet>
+                    <!-- Smart Button for Sale Order -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_convert_to_gym_member"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-usd"
+                                invisible="not sale_order_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Sale Order</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Title / Sequence Reference -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="customer_id"/>
+                            <field name="membership_plan_id"
+                                   domain="[('company_id', '=', company_id), ('is_trial', '=', True)]"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="amount" readonly="1"/>
+                            <field name="sale_order_id" invisible="not sale_order_id"/>
+                        </group>
+
+                        <group>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Trial Membership Action -->
+    <record id="action_gym_membership_trial" model="ir.actions.act_window">
+        <field name="name">Trial Memberships</field>
+        <field name="res_model">gym.membership.trial</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+    </record>
+
+</odoo>

@@ -32,6 +32,11 @@
                             <field name="product_id"/>
                             <field name="duration"/>
                             <field name="duration_uom"/>
+                            <field name="is_trial"/>
+
+                            <field name="trial_days"
+                                invisible="not is_trial"
+                                required="is_trial"/>
                         </group>
 
                         <group>

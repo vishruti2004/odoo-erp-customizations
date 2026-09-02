@@ -6,3 +6,4 @@ from . import hr_employee
 from . import gym_membership_freeze
 from . import gym_member_measurement
 from . import gym_member_locker
+from . import gym_membership_trial

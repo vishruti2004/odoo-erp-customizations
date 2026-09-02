@@ -24,3 +24,5 @@ access_gym_member_locker_wizard_user,gym.member.locker.wizard.user,model_gym_mem
 
 access_gym_membership_freeze_wizard_user,gym.membership.freeze.wizard.user,model_gym_membership_freeze_wizard,iPredict_gym_base.group_gym_user,1,1,1,1
 access_gym_membership_freeze_wizard_admin,gym.membership.freeze.wizard.admin,model_gym_membership_freeze_wizard,iPredict_gym_base.group_gym_admin,1,1,1,1
+
+access_gym_membership_trial_admin,gym.membership.trial admin,model_gym_membership_trial,iPredict_gym_base.group_gym_admin,1,1,1,1

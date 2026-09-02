@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models, _
-
+from odoo.exceptions import ValidationError
 
 class GymMembershipPlan(models.Model):
     _name = "gym.membership.plan"
@@ -17,6 +17,16 @@ class GymMembershipPlan(models.Model):
     company_id = fields.Many2one("res.company", string="Company", required=True, default=lambda self: self.env.company, index=True)
     currency_id = fields.Many2one("res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True)
     active = fields.Boolean(string="Active", default=True, tracking=True)
+    is_trial = fields.Boolean(string="Trial Membership",default=False,)
+    trial_days = fields.Integer(string="Trial Days",default=0,)
+
+    @api.constrains("is_trial", "trial_days")
+    def _check_trial_days(self):
+        for record in self:
+            if record.is_trial and record.trial_days <= 0:
+                raise ValidationError(
+                    _("Trial Days must be greater than 0 for a Trial Membership.")
+                )
 
     _name_company_unique = models.Constraint(
         "UNIQUE(name, company_id)",

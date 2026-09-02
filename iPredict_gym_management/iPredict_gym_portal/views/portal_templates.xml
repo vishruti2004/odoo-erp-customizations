@@ -1,64 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ========================================================= -->
-    <!-- 1. GYM BLOCKS ON MY ACCOUNT                               -->
-    <!-- ========================================================= -->
-  <template id="portal_my_home_gym_blocks" inherit_id="portal.portal_my_home" priority="40">
-    <xpath expr="//div[@id='portal_alert_category']" position="before">
-        <div class="o_portal_category row g-2 mt-3" id="portal_gym_category">
-            <t t-if="request.env.user.has_group('base.group_portal') and not request.env.user.has_group('base.group_user') and request.env.user.partner_id.is_gym_member">
-                <t t-set="member" t-value="request.env.user.partner_id"/>
-                <t t-set="active_membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', member.id), ('status', '=', 'active')], limit=1)"/>
-                <t t-set="workout_plans" t-value="request.env['gym.workout.assignment'].sudo().search([('member_id', '=', member.id)])"/>
-                <t t-set="diet_plans" t-value="request.env['gym.diet.assignment'].sudo().search([('member_id', '=', member.id)])"/>
-                <t t-set="measurements" t-value="request.env['gym.member.measurement'].sudo().search([('member_ids', '=', member.id)])"/>
-
-                <t t-if="active_membership">
+    <template id="portal_my_home_gym_blocks" inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[@id='portal_alert_category']" position="before">
+            <div class="o_portal_category row g-2 mt-3" id="portal_gym_category">
+                <t t-if="request.env.user.has_group('base.group_portal') and not request.env.user.has_group('base.group_user') and request.env.user.partner_id.is_gym_member">
+                    <t t-set="member" t-value="request.env.user.partner_id"/>
+                    <t t-set="membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', member.id)], order='membership_start_date desc, id desc', limit=1)"/>
+                    <t t-set="workout_plans" t-value="request.env['gym.workout.assignment'].sudo().search([('member_id', '=', member.id)])"/>
+                    <t t-set="diet_plans" t-value="request.env['gym.diet.assignment'].sudo().search([('member_id', '=', member.id)])"/>
+                    <t t-set="measurements" t-value="request.env['gym.member.measurement'].sudo().search([('member_ids', '=', member.id)])"/>
+                    <t t-if="membership">
                         <t t-call="portal.portal_docs_entry">
-                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/membership.png'"/>
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/membershipp.png'"/>
                             <t t-set="title">Membership</t>
                             <t t-set="url" t-value="'/my/gym/membership'"/>
-                            <t t-set="text">View your active membership</t>
+                            <t t-set="text">View your membership details</t>
                             <t t-set="config_card" t-value="True"/>
                         </t>
                     </t>
-
-                <t t-if="workout_plans">
-                    <t t-call="portal.portal_docs_entry">
-                        <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/workout.png'"/>
-                        <t t-set="title">Workout Plans</t>
-                        <t t-set="url" t-value="'/my/gym/workout'"/>
-                        <t t-set="text">View your assigned workout plans</t>
-                        <t t-set="config_card" t-value="True"/>
+                    <t t-if="workout_plans">
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/workoutt.png'"/>
+                            <t t-set="title">Workout Plans</t>
+                            <t t-set="url" t-value="'/my/gym/workout'"/>
+                            <t t-set="text">View your assigned workout plans</t>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
+                    </t>
+                    <t t-if="diet_plans">
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/diett.png'"/>
+                            <t t-set="title">Diet Plans</t>
+                            <t t-set="url" t-value="'/my/gym/diet'"/>
+                            <t t-set="text">View your assigned diet plans</t>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
+                    </t>
+                    <t t-if="measurements">
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/measurementt.png'"/>
+                            <t t-set="title">Measurement History</t>
+                            <t t-set="url" t-value="'/my/gym/measurement'"/>
+                            <t t-set="text">View your body measurement history</t>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
                     </t>
                 </t>
+            </div>
+        </xpath>
+    </template>
 
-                <t t-if="diet_plans">
-                    <t t-call="portal.portal_docs_entry">
-                        <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/diet.png'"/>
-                        <t t-set="title">Diet Plans</t>
-                        <t t-set="url" t-value="'/my/gym/diet'"/>
-                        <t t-set="text">View your assigned diet plans</t>
-                        <t t-set="config_card" t-value="True"/>
-                    </t>
-                </t>
-
-                <t t-if="measurements">
-                    <t t-call="portal.portal_docs_entry">
-                        <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/measurement.png'"/>
-                        <t t-set="title">Measurement History</t>
-                        <t t-set="url" t-value="'/my/gym/measurement'"/>
-                        <t t-set="text">View your body measurement history</t>
-                        <t t-set="config_card" t-value="True"/>
-                    </t>
-                </t>
-            </t>
-        </div>
-    </xpath>
-</template>
-    <!-- ========================================================= -->
-    <!-- 2. BREADCRUMBS                                            -->
-    <!-- ========================================================= -->
     <template id="portal_gym_breadcrumbs" inherit_id="portal.portal_breadcrumbs" priority="30">
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
             <li t-if="page_name == 'gym_membership'" class="breadcrumb-item active">Membership</li>
@@ -67,9 +58,7 @@
             <li t-if="page_name == 'gym_measurement'" class="breadcrumb-item active">Measurement History</li>
         </xpath>
     </template>
-    <!-- ========================================================= -->
-    <!-- 3. GYM DASHBOARD                                          -->
-    <!-- ========================================================= -->
+
     <template id="gym_dashboard" name="Gym Management Dashboard">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -119,9 +108,7 @@
             </div>
         </t>
     </template>
-    <!-- ========================================================= -->
-    <!-- 4. MEMBERSHIP HISTORY                                     -->
-    <!-- ========================================================= -->
+
     <template id="gym_membership" name="Gym Membership History">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -150,7 +137,7 @@
                                     <td><t t-esc="history.membership_end_date or ''"/></td>
                                     <td>
                                         <span t-if="history.status == 'active'" class="badge rounded-pill bg-success text-white">Active</span>
-                                        <span t-elif="history.status == 'frozen'" class="badge rounded-pill bg-info text-dark">Frozen</span>
+                                        <span t-elif="history.status == 'frozen'" class="badge rounded-pill bg-warning text-dark">Frozen</span>
                                         <span t-elif="history.status == 'expired'" class="badge rounded-pill bg-danger text-white">Expired</span>
                                         <span t-elif="history.status == 'cancelled'" class="badge rounded-pill bg-secondary text-white">Cancelled</span>
                                         <span t-else="" class="badge rounded-pill bg-secondary text-white">
@@ -170,9 +157,7 @@
             </div>
         </t>
     </template>
-    <!-- ========================================================= -->
-    <!-- 5. WORKOUT PLANS                                         -->
-    <!-- ========================================================= -->
+
     <template id="gym_workout" name="Gym Workout Plans">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -219,9 +204,7 @@
             </div>
         </t>
     </template>
-    <!-- ========================================================= -->
-    <!-- 6. DIET PLANS                                            -->
-    <!-- ========================================================= -->
+
     <template id="gym_diet" name="Gym Diet Plans">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -264,9 +247,7 @@
             </div>
         </t>
     </template>
-    <!-- ========================================================= -->
-    <!-- 7. MEASUREMENT HISTORY                                   -->
-    <!-- ========================================================= -->
+
     <template id="gym_measurement" name="Gym Measurement History">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -307,33 +288,63 @@
     </template>
 
     <template id="gym_membership_in_account" inherit_id="portal.side_content">
-    <xpath expr="//a[@href='/my/account']" position="after">
-        <t t-set="active_membership"
-           t-value="request.env['gym.membership.history'].sudo().search([
-               ('member_id', '=', user_id.partner_id.id),
-               ('status', '=', 'active')
-           ], order='membership_start_date desc, id desc', limit=1)"/>
-<div t-if="active_membership"
-     class="mt-3 p-3"
-     style="background-color: #1c8d3e;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            width: 100%;">
-    <div style="font-size: 13px;
-                color: #d9e0e7;
-                margin-bottom: 4px;">
-        <i class="fa fa-id-card-o me-2"/>
-        ACTIVE MEMBERSHIP
-    </div>
+        <xpath expr="//a[@href='/my/account']" position="after">
 
-    <div style="font-size: 17px;
-                font-weight: 600;
-                color: #212529;">
-        <span t-esc="active_membership.membership_plan_id.name"/>
-    </div>
-</div>
+            <!-- Current Trial Membership -->
+            <t t-set="trial"
+            t-value="request.env['gym.membership.trial'].sudo().search([
+                ('customer_id', '=', user_id.partner_id.id),
+                ('state', '=', 'active')
+            ], order='start_date desc, id desc', limit=1)"/>
 
+            <!-- Regular Membership -->
+            <t t-set="membership"
+            t-value="request.env['gym.membership.history'].sudo().search([
+                ('member_id', '=', user_id.partner_id.id)
+            ], order='membership_start_date desc, id desc', limit=1)"/>
 
-    </xpath>
-</template>
+            <!-- Trial Membership Box -->
+            <div t-if="trial"
+                class="mt-3 p-3 rounded bg-warning"
+                style="width: 100%;">
+                <div style="font-size: 17px; font-weight: 600; color: #212529; margin-bottom: 8px;">
+                    <i class="fa fa-id-card-o me-2"/>
+                    <span t-esc="trial.membership_plan_id.name"/>
+                </div>
+
+                <div style="font-size: 13px; color: #212529; line-height: 1.6;">
+                    <strong>Date:</strong>
+                    <span t-field="trial.start_date"/>
+                    <strong> to </strong>
+                    <span t-field="trial.end_date"/>
+                </div>
+            </div>
+
+            <!-- Regular Membership Box -->
+            <div t-if="membership and not trial"
+                t-attf-class="mt-3 p-3 rounded #{'bg-success' if membership.status in ['active', 'frozen'] else 'bg-danger' if membership.status == 'expired' else 'bg-secondary'}"
+                style="width: 100%;">
+
+                <div style="font-size: 17px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">
+                    <i class="fa fa-id-card-o me-2"/>
+                    <span t-esc="membership.membership_plan_id.name"/>
+                </div>
+
+                <div style="font-size: 13px; color: #ffffff; line-height: 1.6;">
+                    <div t-if="membership.status != 'expired'">
+                        <strong>Date:</strong>
+                        <span t-field="membership.membership_start_date"/>
+                        <strong> to </strong>
+                        <span t-field="membership.membership_end_date"/>
+                    </div>
+
+                    <div t-if="membership.status == 'expired'">
+                        <strong>Date:</strong>
+                        <span t-field="membership.membership_end_date"/>
+                    </div>
+                </div>
+            </div>
+
+        </xpath>
+    </template>
 </odoo>
