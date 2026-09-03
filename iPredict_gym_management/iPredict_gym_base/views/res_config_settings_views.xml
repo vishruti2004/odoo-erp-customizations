@@ -1,33 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <record id="res_config_settings_view_form_gym_management" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.gym.management</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-
             <xpath expr="//form" position="inside">
-
                 <app string="Gym Management" name="gym_management">
-
                     <block title="Attendance">
-
-                        <setting
-                            id="gym_create_employee_for_member_setting"
-                            string="Create Employee for Gym Members"
-                            help="Allow gym members to create an employee from the member form."
-                        >
+                        <setting id="gym_create_employee_for_member_setting"
+                                 string="Create Employee for Gym Members"
+                                 help="Allow gym members to create an employee from the member form.">
                             <field name="gym_create_employee_for_member"/>
                         </setting>
+                        <setting id="gym_member_attendance_setting"
+                                string="Member Attendance Management"
+                                help="Enable attendance management for gym members and optionally manage attendance via QR code.">
+                            <field name="gym_member_attendance"/>
 
+                            <div invisible="not gym_member_attendance" class="mt-2">
+                                <div class="o_setting_left_pane">
+                                    <field name="gym_member_attendance_qr"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="gym_member_attendance_qr"
+                                        string="Manage Member Attendance via QR Code"
+                                        class="o_form_label fw-bold"/>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-3 mt-3"
+                                    invisible="not gym_member_attendance_qr">
+                                    <div class="border rounded p-3 bg-light"
+                                        invisible="not gym_attendance_qr_code">
+                                        <field name="gym_attendance_qr_code"
+                                            widget="image"
+                                            readonly="1"
+                                            nolabel="1"
+                                            style="width: 150px; height: 150px; object-fit: contain;"/>
+                                    </div>
+                                    <button string="Generate QR Code"
+                                            class="btn btn-primary"
+                                            type="object"
+                                            name="action_generate_attendance_qr"/>
+                                </div>
+                            </div>
+                        </setting>
                     </block>
-
                 </app>
-
             </xpath>
-
         </field>
     </record>
-
 </odoo>

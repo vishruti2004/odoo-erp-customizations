@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="iPredict_gym_portal.GymAttendanceQRScanner">
+        <div class="gym-qr-scanner">
+            <button type="button" class="gym-qr-close" aria-label="Close QR Scanner">
+                <i class="fa fa-times"/>
+            </button>
+            <div class="gym-qr-header">
+                <div class="gym-qr-icon">
+                    <i class="fa fa-qrcode"/>
+                </div>
+                <h2>Scan Gym QR Code</h2>
+                <p>Scan the QR code displayed at the gym entrance</p>
+            </div>
+            <div class="gym-qr-camera">
+                <video class="gym-qr-video" autoplay="true" muted="true" playsinline="true"/>
+                <div class="gym-qr-frame">
+                    <span class="corner top-left"/>
+                    <span class="corner top-right"/>
+                    <span class="corner bottom-left"/>
+                    <span class="corner bottom-right"/>
+                </div>
+                <div class="gym-qr-scanning-overlay">
+                    <div class="gym-qr-loader">
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                        <span/>
+                    </div>
+                    <span class="gym-qr-loader-text">Scanning...</span>
+                </div>
+            </div>
+            <div class="gym-qr-instruction">
+                <i class="fa fa-camera"/>
+                <span>Position the QR code inside the frame</span>
+            </div>
+            <div class="gym-qr-message" role="status" aria-live="polite"/>
+            <div class="gym-qr-toast" role="alert" aria-live="assertive"/>
+        </div>
+    </t>
+</templates>

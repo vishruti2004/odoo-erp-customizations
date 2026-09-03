@@ -1,14 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <template id="portal_status_badge">
+        <span t-if="status in ['active', 'checked_in']" class="badge rounded-pill bg-success text-white">
+            <t t-esc="status_label"/>
+        </span>
+        <span t-elif="status in ['frozen', 'expiring', 'draft', 'paused']" class="badge rounded-pill bg-warning text-dark">
+            <t t-esc="status_label"/>
+        </span>
+        <span t-elif="status in ['expired', 'cancelled', 'checked_out', 'completed']" class="badge rounded-pill bg-danger text-white">
+            <t t-esc="status_label"/>
+        </span>
+        <span t-else="" class="badge rounded-pill bg-secondary text-white">
+            <t t-esc="status_label"/>
+        </span>
+    </template>
     <template id="portal_my_home_gym_blocks" inherit_id="portal.portal_my_home" priority="40">
         <xpath expr="//div[@id='portal_alert_category']" position="before">
-            <div class="o_portal_category row g-2 mt-3" id="portal_gym_category">
-                <t t-if="request.env.user.has_group('base.group_portal') and not request.env.user.has_group('base.group_user') and request.env.user.partner_id.is_gym_member">
-                    <t t-set="member" t-value="request.env.user.partner_id"/>
-                    <t t-set="membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', member.id)], order='membership_start_date desc, id desc', limit=1)"/>
-                    <t t-set="workout_plans" t-value="request.env['gym.workout.assignment'].sudo().search([('member_id', '=', member.id)])"/>
-                    <t t-set="diet_plans" t-value="request.env['gym.diet.assignment'].sudo().search([('member_id', '=', member.id)])"/>
-                    <t t-set="measurements" t-value="request.env['gym.member.measurement'].sudo().search([('member_ids', '=', member.id)])"/>
+            <t t-if="request.env.user.has_group('base.group_portal') and not request.env.user.has_group('base.group_user') and request.env.user.partner_id.is_gym_member">
+                <t t-set="member" t-value="request.env.user.partner_id"/>
+                <t t-set="membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', member.id)], order='membership_start_date desc, id desc', limit=1)"/>
+                <t t-set="workout_plans" t-value="request.env['gym.workout.assignment'].sudo().search([('member_id', '=', member.id)])"/>
+                <t t-set="diet_plans" t-value="request.env['gym.diet.assignment'].sudo().search([('member_id', '=', member.id)])"/>
+                <t t-set="measurements" t-value="request.env['gym.member.measurement'].sudo().search([('member_ids', '=', member.id)])"/>
+                <t t-set="attendance_membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', member.id), ('status', '=', 'active')], order='membership_start_date desc, id desc', limit=1)"/>
+                <t t-set="current_attendance" t-value="request.env['gym.attendance'].sudo().search([('member_id', '=', member.id), ('status', '=', 'checked_in')], order='check_in desc, id desc', limit=1)"/>
+                <div class="o_portal_category row g-2 mt-3" id="portal_gym_category">
                     <t t-if="membership">
                         <t t-call="portal.portal_docs_entry">
                             <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/membershipp.png'"/>
@@ -45,20 +61,74 @@
                             <t t-set="config_card" t-value="True"/>
                         </t>
                     </t>
-                </t>
+                    <t t-if="request.env.company.gym_member_attendance">
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/attendance.png'"/>
+                            <t t-set="title">Attendance</t>
+                            <t t-set="url" t-value="'/my/gym/attendance'"/>
+                            <t t-set="text">View your attendance history</t>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+    </template>
+    <template id="gym_attendance_account_buttons" inherit_id="portal.portal_my_home" priority="50">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="attendance_membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', request.env.user.partner_id.id), ('status', '=', 'active')], order='membership_start_date desc, id desc', limit=1)"/>
+            <t t-set="current_attendance" t-value="request.env['gym.attendance'].sudo().search([('member_id', '=', request.env.user.partner_id.id), ('status', '=', 'checked_in')], order='check_in desc, id desc', limit=1)"/>
+            <div t-if="attendance_membership and attendance_membership.company_id.gym_member_attendance"
+                class="gym-attendance-action d-flex justify-content-end">
+
+                <form t-if="not current_attendance and not attendance_membership.company_id.gym_member_attendance_qr"
+                    action="/my/gym/attendance/check-in"
+                    method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn btn-success px-4 py-2 fw-bold">
+                        <i class="fa fa-sign-in me-2"/>
+                        CHECK IN
+                    </button>
+                </form>
+
+                <button t-if="not current_attendance and attendance_membership.company_id.gym_member_attendance_qr"
+                        type="button"
+                        class="btn btn-success px-4 py-2 fw-bold js_gym_attendance_qr"
+                        data-action-type="check_in">
+                    <i class="fa fa-sign-in me-2"/>
+                    CHECK IN
+                </button>
+
+                <form t-if="current_attendance and not attendance_membership.company_id.gym_member_attendance_qr"
+                    action="/my/gym/attendance/check-out"
+                    method="post">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn btn-danger px-4 py-2 fw-bold">
+                        <i class="fa fa-sign-out me-2"/>
+                        CHECK OUT
+                    </button>
+                </form>
+
+                <button t-if="current_attendance and attendance_membership.company_id.gym_member_attendance_qr"
+                        type="button"
+                        class="btn btn-danger px-4 py-2 fw-bold js_gym_attendance_qr"
+                        data-action-type="check_out">
+                    <i class="fa fa-sign-out me-2"/>
+                    CHECK OUT
+                </button>
+
             </div>
         </xpath>
     </template>
-
     <template id="portal_gym_breadcrumbs" inherit_id="portal.portal_breadcrumbs" priority="30">
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
             <li t-if="page_name == 'gym_membership'" class="breadcrumb-item active">Membership</li>
             <li t-if="page_name == 'gym_workout'" class="breadcrumb-item active">Workout Plans</li>
             <li t-if="page_name == 'gym_diet'" class="breadcrumb-item active">Diet Plans</li>
             <li t-if="page_name == 'gym_measurement'" class="breadcrumb-item active">Measurement History</li>
+            <li t-if="page_name == 'gym_attendance'" class="breadcrumb-item active">Attendance</li>
         </xpath>
     </template>
-
     <template id="gym_dashboard" name="Gym Management Dashboard">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
@@ -79,7 +149,7 @@
                             <div class="card shadow-sm h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Workout Plans</h5>
-                                    <p class="text-muted mb-0">View your workout plans</p>
+                                    <p class="text-muted mb-0">View your assigned workout plans</p>
                                 </div>
                             </div>
                         </a>
@@ -89,7 +159,7 @@
                             <div class="card shadow-sm h-100">
                                 <div class="card-body">
                                     <h5 class="card-title">Diet Plans</h5>
-                                    <p class="text-muted mb-0">View your diet plans</p>
+                                    <p class="text-muted mb-0">View your assigned diet plans</p>
                                 </div>
                             </div>
                         </a>
@@ -104,27 +174,32 @@
                             </div>
                         </a>
                     </div>
+                    <t t-if="request.env.company.gym_member_attendance">
+                        <t t-call="portal.portal_docs_entry">
+                            <t t-set="icon" t-value="'/iPredict_gym_portal/static/src/img/attendance.png'"/>
+                            <t t-set="title">Attendance</t>
+                            <t t-set="url" t-value="'/my/gym/attendance'"/>
+                            <t t-set="text">View your attendance history</t>
+                            <t t-set="config_card" t-value="True"/>
+                        </t>
+                    </t>
                 </div>
             </div>
         </t>
     </template>
-
     <template id="gym_membership" name="Gym Membership History">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
-                <h2 class="mb-4">Membership History</h2>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
                                 <th>Membership ID</th>
                                 <th>Membership Plan</th>
-                                <th>Company</th>
                                 <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Status</th>
+                                <th>End Date</th>                                 
                                 <th>Remark</th>
-                                <th>Updated By</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -132,20 +207,16 @@
                                 <tr>
                                     <td><t t-esc="history.name or ''"/></td>
                                     <td><t t-esc="history.membership_plan_id.name or ''"/></td>
-                                    <td><t t-esc="history.company_id.name or ''"/></td>
-                                    <td><t t-esc="history.membership_start_date or ''"/></td>
-                                    <td><t t-esc="history.membership_end_date or ''"/></td>
-                                    <td>
-                                        <span t-if="history.status == 'active'" class="badge rounded-pill bg-success text-white">Active</span>
-                                        <span t-elif="history.status == 'frozen'" class="badge rounded-pill bg-warning text-dark">Frozen</span>
-                                        <span t-elif="history.status == 'expired'" class="badge rounded-pill bg-danger text-white">Expired</span>
-                                        <span t-elif="history.status == 'cancelled'" class="badge rounded-pill bg-secondary text-white">Cancelled</span>
-                                        <span t-else="" class="badge rounded-pill bg-secondary text-white">
-                                            <t t-esc="history.status or ''"/>
-                                        </span>
-                                    </td>
+                                    <td><t t-esc="history.membership_start_date.strftime('%d/%m/%Y') if history.membership_start_date else ''"/></td>
+                                    <td><t t-esc="history.membership_end_date.strftime('%d/%m/%Y') if history.membership_end_date else ''"/></td>
                                     <td><t t-esc="history.remark or ''"/></td>
-                                    <td><t t-esc="history.user_id.name or ''"/></td>
+
+                                    <td>
+                                        <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="status" t-value="history.status"/>
+                                            <t t-set="status_label" t-value="dict(history._fields['status'].selection).get(history.status, history.status or '')"/>
+                                        </t>
+                                    </td>
                                 </tr>
                             </t>
                             <tr t-if="not histories">
@@ -157,15 +228,14 @@
             </div>
         </t>
     </template>
-
     <template id="gym_workout" name="Gym Workout Plans">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
-                <h2 class="mb-4">Workout Plans</h2>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
+                                <th>Code</th>
                                 <th>Plan</th>
                                 <th>Member</th>
                                 <th>Trainer</th>
@@ -178,25 +248,28 @@
                         <tbody>
                             <t t-foreach="workout_plans" t-as="workout">
                                 <tr>
+                                    <td>
+                                        <a t-att-href="'/my/gym/workout/%s' % workout.plan_id.id"
+                                        class="text-decoration-none fw-bold">
+                                            <t t-esc="workout.plan_id.code or ''"/>
+                                        </a>
+                                    </td>
                                     <td><t t-esc="workout.plan_id.name or ''"/></td>
                                     <td><t t-esc="workout.member_id.name or ''"/></td>
                                     <td><t t-esc="workout.trainer_id.name or ''"/></td>
-                                    <td><t t-esc="workout.start_date or ''"/></td>
-                                    <td><t t-esc="workout.end_date or ''"/></td>
+                                    <td><t t-esc="workout.start_date.strftime('%d/%m/%Y') if workout.start_date else ''"/></td>
+                                    <td><t t-esc="workout.end_date.strftime('%d/%m/%Y') if workout.end_date else ''"/></td>
                                     <td><t t-esc="workout.days or ''"/></td>
                                     <td>
-                                        <span t-if="workout.state == 'active'" class="badge rounded-pill bg-success text-white">Active</span>
-                                        <span t-elif="workout.state == 'expired'" class="badge rounded-pill bg-danger text-white">Expired</span>
-                                        <span t-elif="workout.state == 'cancelled'" class="badge rounded-pill bg-secondary text-white">Cancelled</span>
-                                        <span t-elif="workout.state == 'draft'" class="badge rounded-pill bg-warning text-dark">Draft</span>
-                                        <span t-else="" class="badge rounded-pill bg-secondary text-white">
-                                            <t t-esc="workout.state or ''"/>
-                                        </span>
+                                        <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="status" t-value="workout.state"/>
+                                            <t t-set="status_label" t-value="dict(workout._fields['state'].selection).get(workout.state, workout.state or '')"/>
+                                        </t>
                                     </td>
                                 </tr>
                             </t>
                             <tr t-if="not workout_plans">
-                                <td colspan="7" class="text-center text-muted">No workout plans found.</td>
+                                <td colspan="8" class="text-center text-muted">No workout plans found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -204,17 +277,133 @@
             </div>
         </t>
     </template>
+    <template id="gym_workout_detail" name="Gym Workout Plan Detail">
+        <t t-call="portal.portal_layout">
+            <div class="container my-5">
 
+                <!-- Header -->
+                <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:28px;">
+                    <div>
+                        <span class="badge rounded-pill bg-primary text-white"
+                            style="padding:6px 14px; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px;">
+                            <t t-esc="workout_plan.code or ''"/>
+                        </span>
+                        <h4 style="margin:0; font-weight:700; color:#212529;">
+                            <t t-esc="workout_plan.name or ''"/>
+                        </h4>
+                    </div>
+                    <a href="/my/gym/workout"
+                    class="btn btn-primary"
+                    style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-weight:600; white-space:nowrap;">
+                        <i class="fa fa-arrow-left"/>
+                        Back to Workout Plans
+                    </a>
+                </div>
+
+
+                <!-- Exercise List -->
+                <div style="background:#ffffff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,0.06); margin-bottom:24px; overflow:hidden;">
+                    <div style="padding:18px 26px; border-bottom:1px solid #f0f0f0;">
+                        <h5 style="margin:0; font-weight:700; color:#212529;">Exercise List</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead style="background:#f8f9fa;">
+                                <tr>
+                                    <th style="padding:14px 26px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Day</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Exercise</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none;">Steps</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Exercise Image</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none;">Video URL</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Sets</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Reps</th>
+                                    <th style="padding:14px 26px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Rest Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="workout_plan.exercise_line_ids"
+                                t-as="exercise">
+                                    <tr>
+                                        <td style="padding:14px 26px; white-space:nowrap;">
+                                            <span class="badge rounded-pill bg-primary text-white"
+                                                style="padding:6px 12px; font-size:12px; font-weight:700;">
+                                                <t t-esc="exercise.day or ''"/>
+                                            </span>
+                                        </td>
+
+                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;">
+                                            <t t-esc="exercise.exercise_id.name or ''"/>
+                                        </td>
+
+                                        <td style="padding:14px;">
+                                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                                <t t-foreach="exercise.exercise_step_ids"
+                                                t-as="step">
+                                                    <span style="display:inline-block; padding:4px 10px; border-radius:6px; background:#f8f9fa; border:1px solid #e9ecef; color:#495057; font-size:12px; width:fit-content;">
+                                                        <t t-esc="step.name or ''"/>
+                                                    </span>
+                                                </t>
+                                            </div>
+                                        </td>
+
+                                        <td style="padding:14px;">
+                                            <t t-if="exercise.exercise_image">
+                                                <img t-att-src="'data:image/png;base64,%s' % exercise.exercise_image.decode('utf-8')"
+                                                    alt="Exercise Image"
+                                                    style="width: 70px; height: 70px; object-fit: cover; border-radius: 10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);"/>
+                                            </t>
+                                        </td>
+
+                                        <td style="padding:14px;">
+                                            <t t-if="exercise.exercise_video_url">
+                                                <a t-att-href="exercise.exercise_video_url"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="text-primary"
+                                                style="display:inline-flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; font-size:13px; white-space:nowrap;">
+                                                    <i class="fa fa-play-circle"/>
+                                                    Watch Video
+                                                </a>
+                                            </t>
+                                        </td>
+
+                                        <td style="padding:14px; white-space:nowrap;">
+                                            <t t-esc="exercise.sets or 0"/>
+                                        </td>
+
+                                        <td style="padding:14px; white-space:nowrap;">
+                                            <t t-esc="exercise.reps or ''"/>
+                                        </td>
+
+                                        <td style="padding:14px 26px; white-space:nowrap;">
+                                            <t t-esc="exercise.rest or ''"/>
+                                        </td>
+                                    </tr>
+                                </t>
+
+                                <tr t-if="not workout_plan.exercise_line_ids">
+                                    <td colspan="8" style="padding:32px; text-align:center; color:#6c757d;">
+                                        No exercises found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
     <template id="gym_diet" name="Gym Diet Plans">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
-                <h2 class="mb-4">Diet Plans</h2>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
+                                <th>Code</th>
                                 <th>Diet Plan</th>
                                 <th>Member</th>
+                                <th>Trainer</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>
@@ -223,23 +412,32 @@
                         <tbody>
                             <t t-foreach="diet_plans" t-as="diet">
                                 <tr>
-                                    <td><t t-esc="diet.plan_id.name or ''"/></td>
-                                    <td><t t-esc="diet.member_id.name or ''"/></td>
-                                    <td><t t-esc="diet.start_date or ''"/></td>
-                                    <td><t t-esc="diet.end_date or ''"/></td>
                                     <td>
-                                        <span t-if="diet.state == 'active'" class="badge rounded-pill bg-success text-white">Active</span>
-                                        <span t-elif="diet.state == 'expired'" class="badge rounded-pill bg-danger text-white">Expired</span>
-                                        <span t-elif="diet.state == 'cancelled'" class="badge rounded-pill bg-secondary text-white">Cancelled</span>
-                                        <span t-elif="diet.state == 'draft'" class="badge rounded-pill bg-warning text-dark">Draft</span>
-                                        <span t-else="" class="badge rounded-pill bg-secondary text-white">
-                                            <t t-esc="diet.state or ''"/>
-                                        </span>
+                                        <a t-att-href="'/my/gym/diet/%s' % diet.plan_id.id"
+                                           class="text-decoration-none fw-bold">
+                                            <t t-esc="diet.plan_id.code or ''"/>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a t-att-href="'/my/gym/diet/%s' % diet.plan_id.id"
+                                           class="text-decoration-none">
+                                            <t t-esc="diet.plan_id.name or ''"/>
+                                        </a>
+                                    </td>
+                                    <td><t t-esc="diet.member_id.name or ''"/></td>
+                                    <td><t t-esc="diet.trainer_id.name or ''"/></td>
+                                    <td><t t-esc="diet.start_date.strftime('%d/%m/%Y') if diet.start_date else ''"/></td>
+                                    <td><t t-esc="diet.end_date.strftime('%d/%m/%Y') if diet.end_date else ''"/></td>
+                                    <td>
+                                        <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="status" t-value="diet.state"/>
+                                            <t t-set="status_label" t-value="dict(diet._fields['state'].selection).get(diet.state, diet.state or '')"/>
+                                        </t>
                                     </td>
                                 </tr>
                             </t>
                             <tr t-if="not diet_plans">
-                                <td colspan="5" class="text-center text-muted">No diet plans found.</td>
+                                <td colspan="7" class="text-center text-muted">No diet plans found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -247,18 +445,150 @@
             </div>
         </t>
     </template>
+    <template id="gym_diet_detail" name="Gym Diet Plan Detail">
+        <t t-call="portal.portal_layout">
+            <div class="container my-5">
 
+                <!-- Header -->
+                <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:28px;">
+                    <div>
+                        <span class="badge rounded-pill bg-primary text-white"
+                              style="padding:6px 14px; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px;">
+                            <t t-esc="diet_plan.code or ''"/>
+                        </span>
+                        <h4 style="margin:0; font-weight:700; color:#212529;">
+                            <t t-esc="diet_plan.name or ''"/>
+                        </h4>
+                    </div>
+                    <a href="/my/gym/diet"
+                       class="btn btn-primary"
+                       style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-weight:600; white-space:nowrap;">
+                        <i class="fa fa-arrow-left"/>
+                        Back to Diet Plans
+                    </a>
+                </div>
+
+                <!-- Nutrition Summary -->
+                <div style="background:#ffffff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,0.06); margin-bottom:24px; overflow:hidden;">
+                    <div style="padding:18px 26px; border-bottom:1px solid #f0f0f0;">
+                        <h5 style="margin:0; font-weight:700; color:#212529;">Nutrition Summary</h5>
+                    </div>
+                    <div style="padding:22px 26px; display:flex; flex-wrap:wrap; gap:16px;">
+                        <div style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(220,53,69,0.06); border:1px solid rgba(220,53,69,0.15);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <span style="width:34px; height:34px; border-radius:9px; background:#dc3545; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+                                    <i class="fa fa-fire"/>
+                                </span>
+                                <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Calories</span>
+                            </div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f' % diet_plan.total_calories"/></div>
+                        </div>
+                        <div style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(13,110,253,0.06); border:1px solid rgba(13,110,253,0.15);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <span style="width:34px; height:34px; border-radius:9px; background:#0d6efd; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+                                    <i class="fa fa-cutlery"/>
+                                </span>
+                                <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Protein</span>
+                            </div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_protein"/></div>
+                        </div>
+                        <div style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(25,135,84,0.06); border:1px solid rgba(25,135,84,0.15);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <span style="width:34px; height:34px; border-radius:9px; background:#198754; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+                                    <i class="fa fa-leaf"/>
+                                </span>
+                                <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Carbs</span>
+                            </div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_carbs"/></div>
+                        </div>
+                        <div style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(255,193,7,0.10); border:1px solid rgba(255,193,7,0.25);">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <span style="width:34px; height:34px; border-radius:9px; background:#ffc107; color:#212529; display:inline-flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;">
+                                    <i class="fa fa-tint"/>
+                                </span>
+                                <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Fat</span>
+                            </div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_fat"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meals -->
+                <div style="background:#ffffff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,0.06); margin-bottom:24px; overflow:hidden;">
+                    <div style="padding:18px 26px; border-bottom:1px solid #f0f0f0;">
+                        <h5 style="margin:0; font-weight:700; color:#212529;">Meals</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead style="background:#f8f9fa;">
+                                <tr>
+                                    <th style="padding:14px 26px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Meal</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">From</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">To</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Food Item</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Quantity</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">UoM</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Calories</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Protein</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Carbs</th>
+                                    <th style="padding:14px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none; white-space:nowrap;">Fat</th>
+                                    <th style="padding:14px 26px; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:#6c757d; font-weight:700; border:none;">Instructions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="diet_plan.meal_line_ids" t-as="meal">
+                                    <tr>
+                                        <td style="padding:14px 26px; white-space:nowrap;">
+                                            <span class="badge rounded-pill bg-primary text-white"
+                                                  style="padding:6px 12px; font-size:12px; font-weight:700;">
+                                                <t t-esc="dict(meal._fields['meal_time'].selection).get(meal.meal_time, meal.meal_time or '')"/>
+                                            </span>
+                                        </td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.start_time"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.end_time"/></td>
+                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;"><t t-esc="meal.food_id.name or ''"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.quantity"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.uom_id.name or ''"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f' % meal.calories"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.protein"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.carbs"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.fat"/></td>
+                                        <td style="padding:14px 26px; color:#6c757d;"><t t-esc="meal.note or ''"/></td>
+                                    </tr>
+                                </t>
+                                <tr t-if="not diet_plan.meal_line_ids">
+                                    <td colspan="11" style="padding:32px; text-align:center; color:#6c757d;">
+                                        No meal details found.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div t-if="diet_plan.notes"
+                     style="background:#ffffff; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,0.06); overflow:hidden;">
+                    <div style="padding:18px 26px; border-bottom:1px solid #f0f0f0;">
+                        <h5 style="margin:0; font-weight:700; color:#212529;">Notes</h5>
+                    </div>
+                    <div style="padding:22px 26px; color:#495057; line-height:1.6;">
+                        <t t-esc="diet_plan.notes"/>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
     <template id="gym_measurement" name="Gym Measurement History">
         <t t-call="portal.portal_layout">
             <div class="container my-5">
-                <h2 class="mb-4">Measurement History</h2>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover align-middle">
                         <thead>
                             <tr>
-                                <th>Date</th>
                                 <th>Member</th>
-                                <th>Company</th>
+                                <th>Date</th>
                                 <th>Weight (kg)</th>
                                 <th>Height (cm)</th>
                                 <th>BMI</th>
@@ -268,9 +598,8 @@
                         <tbody>
                             <t t-foreach="measurements" t-as="measurement">
                                 <tr>
-                                    <td><t t-esc="measurement.measurement_date or ''"/></td>
                                     <td><t t-esc="measurement.member_ids.name or ''"/></td>
-                                    <td><t t-esc="measurement.company_id.name or ''"/></td>
+                                    <td><t t-esc="measurement.measurement_date.strftime('%d/%m/%Y') if measurement.measurement_date else ''"/></td>       
                                     <td><t t-esc="'%.2f' % measurement.weight if measurement.weight else ''"/></td>
                                     <td><t t-esc="'%.2f' % measurement.height if measurement.height else ''"/></td>
                                     <td><t t-esc="'%.2f' % measurement.bmi if measurement.bmi else ''"/></td>
@@ -286,65 +615,184 @@
             </div>
         </t>
     </template>
+    <template id="gym_attendance" name="Gym Attendance History">
+        <t t-call="portal.portal_layout">
+            <div class="container my-5">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Membership</th>
+                                        <th>Member</th>
+                                        <th>Check In</th>
+                                        <th>Check Out</th>
+                                        <th>Total Time</th>
+                                    </tr>
+                                </thead>
 
+                                <tbody>
+                                    <t t-foreach="attendances" t-as="attendance">
+                                        <tr>
+                                            <td>
+                                                <t t-esc="attendance.membership_id.name or ''"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-esc="attendance.member_id.name or ''"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-esc="attendance_datetime.get(attendance.id, {}).get('check_in', '')"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-if="attendance.check_out">
+                                                    <t t-esc="attendance_datetime.get(attendance.id, {}).get('check_out', '')"/>
+                                                </t>
+                                                <span t-else="" class="text-muted">—</span>
+                                            </td>
+
+                                            <td>
+                                                <strong>
+                                                    <t t-if="attendance.check_out">
+                                                        <t t-esc="attendance_datetime.get(attendance.id, {}).get('duration', '')"/>
+                                                    </t>
+                                                    <span t-else="" class="text-muted">—</span>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </t>
+
+                                    <tr t-if="not attendances">
+                                        <td colspan="5"
+                                            class="text-center text-muted py-5">
+                                            No attendance records found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <t t-if="total_records">
+                    <div style="margin-top:24px; padding:18px 24px; background:#ffffff; border:1px solid #e9ecef; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.05); display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; width:100%; box-sizing:border-box;">
+
+                        <div style="color:#6c757d; font-size:14px; line-height:40px; white-space:nowrap; flex-shrink:0;">
+                            <span>
+                                Showing
+                                <strong style="color:#212529; font-weight:600;">
+                                    <t t-esc="(current_page - 1) * per_page + 1"/>
+                                </strong>
+                                -
+                                <strong style="color:#212529; font-weight:600;">
+                                    <t t-esc="min(current_page * per_page, total_records)"/>
+                                </strong>
+                                of
+                                <strong style="color:#212529; font-weight:600;">
+                                    <t t-esc="total_records"/>
+                                </strong>
+                                records
+                            </span>
+                        </div>
+
+                        <nav aria-label="Attendance pagination"
+                            style="flex-shrink:1; min-width:0; max-width:100%; overflow-x:auto;">
+                            <ul style="display:flex; flex-wrap:nowrap; align-items:center; justify-content:flex-end; gap:6px; margin:0; padding:0; list-style:none;">
+
+                                <li t-if="current_page &gt; 1" style="flex-shrink:0;">
+                                    <a t-att-href="'/my/gym/attendance?page=%s' % (current_page - 1)"
+                                    aria-label="Previous"
+                                    style="min-width:40px; height:40px; padding:0 12px; border:1px solid #dee2e6; border-radius:8px; background:#ffffff; color:#495057; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:500; line-height:1; text-decoration:none; white-space:nowrap; box-sizing:border-box;">
+                                        <i class="fa fa-chevron-left"/>
+                                        <span>Previous</span>
+                                    </a>
+                                </li>
+
+                                <li t-else="" style="flex-shrink:0;">
+                                    <span aria-label="Previous"
+                                        style="min-width:40px; height:40px; padding:0 12px; border:1px solid #e9ecef; border-radius:8px; background:#f8f9fa; color:#adb5bd; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:500; line-height:1; white-space:nowrap; box-sizing:border-box; cursor:default;">
+                                        <i class="fa fa-chevron-left"/>
+                                        <span>Previous</span>
+                                    </span>
+                                </li>
+
+                                <t t-foreach="pager_pages" t-as="pager">
+                                    <li t-if="pager.get('is_dots')" style="flex-shrink:0;">
+                                        <span style="min-width:40px; height:40px; padding:0 10px; border:1px solid #dee2e6; border-radius:8px; background:#ffffff; color:#6c757d; display:inline-flex; align-items:center; justify-content:center; font-size:14px; line-height:1; box-sizing:border-box;">
+                                            …
+                                        </span>
+                                    </li>
+
+                                    <li t-else="" style="flex-shrink:0;">
+                                        <a t-att-href="'/my/gym/attendance?page=%s' % pager.get('number')"
+                                        t-attf-style="min-width:40px; height:40px; padding:0 12px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:#{'600' if pager.get('is_current') else '500'}; line-height:1; text-decoration:none; white-space:nowrap; box-sizing:border-box; background:#{'#198754' if pager.get('is_current') else '#ffffff'}; border:1px solid #{'#198754' if pager.get('is_current') else '#dee2e6'}; color:#{'#ffffff' if pager.get('is_current') else '#495057'};">
+                                            <t t-esc="pager.get('number')"/>
+                                        </a>
+                                    </li>
+                                </t>
+
+                                <li t-if="current_page &lt; total_pages" style="flex-shrink:0;">
+                                    <a t-att-href="'/my/gym/attendance?page=%s' % (current_page + 1)"
+                                    aria-label="Next"
+                                    style="min-width:40px; height:40px; padding:0 12px; border:1px solid #dee2e6; border-radius:8px; background:#ffffff; color:#495057; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:500; line-height:1; text-decoration:none; white-space:nowrap; box-sizing:border-box;">
+                                        <span>Next</span>
+                                        <i class="fa fa-chevron-right"/>
+                                    </a>
+                                </li>
+
+                                <li t-else="" style="flex-shrink:0;">
+                                    <span aria-label="Next"
+                                        style="min-width:40px; height:40px; padding:0 12px; border:1px solid #e9ecef; border-radius:8px; background:#f8f9fa; color:#adb5bd; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:500; line-height:1; white-space:nowrap; box-sizing:border-box; cursor:default;">
+                                        <span>Next</span>
+                                        <i class="fa fa-chevron-right"/>
+                                    </span>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
     <template id="gym_membership_in_account" inherit_id="portal.side_content">
         <xpath expr="//a[@href='/my/account']" position="after">
-
-            <!-- Current Trial Membership -->
-            <t t-set="trial"
-            t-value="request.env['gym.membership.trial'].sudo().search([
-                ('customer_id', '=', user_id.partner_id.id),
-                ('state', '=', 'active')
-            ], order='start_date desc, id desc', limit=1)"/>
-
-            <!-- Regular Membership -->
-            <t t-set="membership"
-            t-value="request.env['gym.membership.history'].sudo().search([
-                ('member_id', '=', user_id.partner_id.id)
-            ], order='membership_start_date desc, id desc', limit=1)"/>
-
-            <!-- Trial Membership Box -->
-            <div t-if="trial"
-                class="mt-3 p-3 rounded bg-warning"
-                style="width: 100%;">
+            <t t-set="trial" t-value="request.env['gym.membership.trial'].sudo().search([('customer_id', '=', user_id.partner_id.id), ('state', '=', 'active')], order='start_date desc, id desc', limit=1)"/>
+            <t t-set="membership" t-value="request.env['gym.membership.history'].sudo().search([('member_id', '=', user_id.partner_id.id)], order='membership_start_date desc, id desc', limit=1)"/>
+            <div t-if="trial" class="mt-3 p-3 rounded bg-warning" style="width: 100%;">
                 <div style="font-size: 17px; font-weight: 600; color: #212529; margin-bottom: 8px;">
                     <i class="fa fa-id-card-o me-2"/>
                     <span t-esc="trial.membership_plan_id.name"/>
                 </div>
-
                 <div style="font-size: 13px; color: #212529; line-height: 1.6;">
                     <strong>Date:</strong>
-                    <span t-field="trial.start_date"/>
+                    <span t-esc="trial.start_date.strftime('%d/%m/%Y') if trial.start_date else ''"/>
                     <strong> to </strong>
-                    <span t-field="trial.end_date"/>
+                    <span t-esc="trial.end_date.strftime('%d/%m/%Y') if trial.end_date else ''"/>
                 </div>
             </div>
-
-            <!-- Regular Membership Box -->
             <div t-if="membership and not trial"
-                t-attf-class="mt-3 p-3 rounded #{'bg-success' if membership.status in ['active', 'frozen'] else 'bg-danger' if membership.status == 'expired' else 'bg-secondary'}"
-                style="width: 100%;">
-
-                <div style="font-size: 17px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">
+                 t-attf-class="mt-3 p-3 rounded #{'bg-success' if membership.status == 'active' else 'bg-warning text-dark' if membership.status == 'frozen' else 'bg-danger' if membership.status == 'expired' else 'bg-secondary'}"
+                 style="width: 100%;">
+                <div t-attf-style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: #{'#212529' if membership.status == 'frozen' else '#ffffff'};">
                     <i class="fa fa-id-card-o me-2"/>
                     <span t-esc="membership.membership_plan_id.name"/>
                 </div>
-
-                <div style="font-size: 13px; color: #ffffff; line-height: 1.6;">
+                <div t-attf-style="font-size: 13px; line-height: 1.6; color: #{'#212529' if membership.status == 'frozen' else '#ffffff'};">
                     <div t-if="membership.status != 'expired'">
                         <strong>Date:</strong>
-                        <span t-field="membership.membership_start_date"/>
+                        <span t-esc="membership.membership_start_date.strftime('%d/%m/%Y') if membership.membership_start_date else ''"/>
                         <strong> to </strong>
-                        <span t-field="membership.membership_end_date"/>
+                        <span t-esc="membership.membership_end_date.strftime('%d/%m/%Y') if membership.membership_end_date else ''"/>
                     </div>
-
                     <div t-if="membership.status == 'expired'">
                         <strong>Date:</strong>
-                        <span t-field="membership.membership_end_date"/>
+                        <span t-esc="membership.membership_end_date.strftime('%d/%m/%Y') if membership.membership_end_date else ''"/>
                     </div>
                 </div>
             </div>
-
         </xpath>
     </template>
 </odoo>
