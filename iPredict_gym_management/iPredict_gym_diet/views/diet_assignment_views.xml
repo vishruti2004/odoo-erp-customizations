@@ -6,13 +6,17 @@
         <field name="name">gym.diet.assignment.tree</field>
         <field name="model">gym.diet.assignment</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Diet Assignments">
                 <field name="plan_id"/>
                 <field name="member_id"/>
                 <field name="trainer_id"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
-                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'expiring'" decoration-danger="state == 'expired'"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-primary="state == 'upcoming'"
+                       decoration-success="state == 'active'"
+                       decoration-danger="state == 'expired'"/>
             </list>
         </field>
     </record>
@@ -33,7 +37,11 @@
                         <group>
                             <field name="start_date"/>
                             <field name="end_date"/>
-                            <field name="state" widget="badge" decoration-success="state == 'active'" decoration-warning="state == 'expiring'" decoration-danger="state == 'expired'"/>
+                            <field name="state"
+                                   widget="badge"
+                                   decoration-primary="state == 'upcoming'"
+                                   decoration-success="state == 'active'"
+                                   decoration-danger="state == 'expired'"/>
                         </group>
                     </group>
                 </sheet>
@@ -47,7 +55,6 @@
         <field name="model">gym.diet.assignment</field>
         <field name="arch" type="xml">
             <search string="Search Diet Assignments">
-
                 <field name="member_id"/>
                 <field name="plan_id"/>
                 <field name="trainer_id"/>
@@ -55,22 +62,39 @@
                 <field name="end_date"/>
                 <field name="state"/>
 
-                <!-- Status -->
+                <!-- Status Filters -->
                 <separator/>
-                <filter name="active" string="Active" domain="[('state', '=', 'active')]"/>
-                <filter name="expiring" string="Expiring Soon" domain="[('state', '=', 'expiring')]"/>
-                <filter name="expired" string="Expired" domain="[('state', '=', 'expired')]"/>
+                <filter name="upcoming"
+                        string="Upcoming"
+                        domain="[('state', '=', 'upcoming')]"/>
+                <filter name="active"
+                        string="Running"
+                        domain="[('state', '=', 'active')]"/>
+                <filter name="expired"
+                        string="Expired"
+                        domain="[('state', '=', 'expired')]"/>
 
-                <!-- Group By-->
+                <!-- Group By -->
                 <group>
-                    <filter name="group_member" string="Member" context="{'group_by':'member_id'}"/>
-                    <filter name="group_plan" string="Diet Plan" context="{'group_by':'plan_id'}"/>
-                    <filter name="group_trainer" string="Trainer" context="{'group_by':'trainer_id'}"/>
-                    <filter name="group_state" string="Status" context="{'group_by':'state'}"/>
-                    <filter name="group_start_date" string="Start Date" context="{'group_by':'start_date'}"/>
-                    <filter name="group_end_date" string="End Date" context="{'group_by':'end_date'}"/>
+                    <filter name="group_member"
+                            string="Member"
+                            context="{'group_by':'member_id'}"/>
+                    <filter name="group_plan"
+                            string="Diet Plan"
+                            context="{'group_by':'plan_id'}"/>
+                    <filter name="group_trainer"
+                            string="Trainer"
+                            context="{'group_by':'trainer_id'}"/>
+                    <filter name="group_state"
+                            string="Status"
+                            context="{'group_by':'state'}"/>
+                    <filter name="group_start_date"
+                            string="Start Date"
+                            context="{'group_by':'start_date'}"/>
+                    <filter name="group_end_date"
+                            string="End Date"
+                            context="{'group_by':'end_date'}"/>
                 </group>
-
             </search>
         </field>
     </record>

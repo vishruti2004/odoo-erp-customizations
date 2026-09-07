@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import http, fields
 from odoo.http import request
+import base64
 
 class GymPortal(http.Controller):
     def _is_admin(self):
@@ -213,17 +214,17 @@ class GymPortal(http.Controller):
         if is_admin:
             assignments = WorkoutAssignment.search([
                 ("plan_id", "=", plan_id),
-            ])
+            ], order="start_date desc, id desc")
         elif trainer:
             assignments = WorkoutAssignment.search([
                 ("plan_id", "=", plan_id),
                 ("member_id", "in", trainer.member_ids.ids),
-            ])
+            ], order="start_date desc, id desc")
         elif member:
             assignments = WorkoutAssignment.search([
                 ("plan_id", "=", plan_id),
                 ("member_id", "=", member.id),
-            ])
+            ], order="start_date desc, id desc")
         else:
             assignments = WorkoutAssignment.browse([])
 
@@ -247,7 +248,7 @@ class GymPortal(http.Controller):
                 "is_trainer": bool(trainer),
                 "is_member": bool(member),
                 "is_gym_portal_member": is_gym_portal_member,
-                "page_name": "gym_workout",
+                "page_name": "gym_workout_detail",
             },
         )
 
@@ -316,17 +317,17 @@ class GymPortal(http.Controller):
         if is_admin:
             assignments = DietAssignment.search([
                 ("plan_id", "=", plan_id),
-            ])
+            ], order="start_date desc, id desc")
         elif trainer:
             assignments = DietAssignment.search([
                 ("plan_id", "=", plan_id),
                 ("member_id", "in", trainer.member_ids.ids),
-            ])
+            ], order="start_date desc, id desc")
         elif member:
             assignments = DietAssignment.search([
                 ("plan_id", "=", plan_id),
                 ("member_id", "=", member.id),
-            ])
+            ], order="start_date desc, id desc")
         else:
             assignments = DietAssignment.browse([])
 
@@ -350,7 +351,7 @@ class GymPortal(http.Controller):
                 "is_trainer": bool(trainer),
                 "is_member": bool(member),
                 "is_gym_portal_member": is_gym_portal_member,
-                "page_name": "gym_diet",
+                "page_name": "gym_diet_detail",
             },
         )
 
@@ -779,3 +780,28 @@ class GymPortal(http.Controller):
             "success": False,
             "message": "Invalid attendance action.",
         }
+
+    @http.route(
+        "/my/gym/workout/exercise-image/<int:exercise_line_id>",
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def gym_workout_exercise_image(self, exercise_line_id, **kwargs):
+        exercise_line = request.env[
+            "gym.workout.plan.exercise.line"
+        ].sudo().browse(exercise_line_id)
+
+        if not exercise_line.exists() or not exercise_line.exercise_image:
+            return request.not_found()
+
+        image_data = base64.b64decode(exercise_line.exercise_image)
+
+        return request.make_response(
+            image_data,
+            headers=[
+                ("Content-Type", "image/png"),
+                ("Content-Length", str(len(image_data))),
+                ("Cache-Control", "public, max-age=3600"),
+            ],
+        )
