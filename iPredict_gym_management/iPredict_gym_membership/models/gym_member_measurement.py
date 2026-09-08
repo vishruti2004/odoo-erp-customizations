@@ -11,7 +11,7 @@ class GymMemberMeasurement(models.Model):
     _order = "measurement_date desc, id desc"
 
     company_id = fields.Many2one("res.company", string="Company", required=True, default=lambda self: self.env.company, index=True)
-    member_ids = fields.Many2one("res.partner", string="Member", required=True, ondelete="cascade", tracking=True, domain=[("is_gym_member", "=", True), ("company_id", "=", company_id)])
+    member_ids = fields.Many2one("res.partner", string="Member", required=True, ondelete="cascade", tracking=True, domain="['&', ('is_gym_member', '=', True), ('membership_history_ids.company_id', '=', company_id)]")
     measurement_date = fields.Date(string="Date", required=True, default=fields.Date.today, tracking=True)
     gender = fields.Selection([("male", "Male"), ("female", "Female")], string="Gender", required=True, default="male", tracking=True)
     age = fields.Integer(string="Age", tracking=True)
@@ -29,11 +29,9 @@ class GymMemberMeasurement(models.Model):
     bmi = fields.Float(string="BMI", compute="_compute_bmi_bmr", store=True)
     bmr = fields.Float(string="BMR", compute="_compute_bmi_bmr", store=True)
 
-
     @api.depends("weight", "height", "gender", "age")
     def _compute_bmi_bmr(self):
         for record in self:
-
             # BMI
             if record.height and record.height > 0 and record.weight:
                 height_m = record.height / 100
@@ -64,26 +62,33 @@ class GymMemberMeasurement(models.Model):
             else:
                 record.bmr = 0.0
 
-
     @api.constrains("member_ids", "company_id")
     def _check_company(self):
+        MembershipHistory = self.env["gym.membership.history"]
+
         for record in self:
-            if (
-                record.member_ids
-                and record.company_id
-                and record.member_ids.company_id != record.company_id
-            ):
+            if not record.member_ids or not record.company_id:
+                continue
+
+            membership = MembershipHistory.search(
+                [
+                    ("member_id", "=", record.member_ids.id),
+                    ("company_id", "=", record.company_id.id),
+                ],
+                limit=1,
+            )
+
+            if not membership:
                 raise ValidationError(
                     _(
-                        "The member and measurement must belong "
-                        "to the same company."
+                        "The selected member does not have a membership "
+                        "in the selected company."
                     )
                 )
 
     @api.constrains("weight", "height", "age")
     def _check_positive_values(self):
         for record in self:
-
             if record.weight and record.weight <= 0:
                 raise ValidationError(
                     _("Weight must be greater than 0.")

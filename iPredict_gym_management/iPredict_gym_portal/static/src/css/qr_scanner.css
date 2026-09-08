@@ -403,3 +403,21 @@
         min-width: 0;
     }
 }
+
+@media (max-width: 767.98px) {
+    .table-responsive table tbody tr,
+    .table-responsive table tbody tr > td,
+    .table-responsive table tbody tr > th {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+    .table-responsive table.table-hover tbody tr:hover > td,
+    .table-responsive table.table-hover tbody tr:hover > th,
+    .table-responsive table tbody tr:focus > td,
+    .table-responsive table tbody tr:active > td {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+    }
+}

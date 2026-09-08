@@ -9,7 +9,11 @@ class HrEmployee(models.Model):
     is_trainer = fields.Boolean(string="Is Trainer", default=False)
     trainer_code = fields.Char(string="Trainer ID", readonly=True, copy=False)
     skill_ids = fields.Many2many("hr.skill", string="Gym Skills")
-    member_ids = fields.Many2many("res.partner", string="Assigned Members", domain="[('is_gym_member', '=', True), ('company_id', '=', company_id)]")
+    member_ids = fields.Many2many(
+        "res.partner",
+        string="Assigned Members",
+        domain="[('is_gym_member', '=', True), ('membership_history_ids.company_id', '=', company_id)]"
+    )    
     member_count = fields.Integer(string="Members", compute="_compute_member_count", store=False)
 
     @api.depends("member_ids")

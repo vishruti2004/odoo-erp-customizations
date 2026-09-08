@@ -68,7 +68,7 @@
     <record id="action_gym_trainers" model="ir.actions.act_window">
         <field name="name">Trainers</field>
         <field name="res_model">hr.employee</field>
-        <field name="domain">[('is_trainer', '=', True)]</field>
+        <field name="domain">[ ('is_gym_member', '=', True),('company_id', '=', company_id)]</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_gym_trainers_list"/>
     </record>

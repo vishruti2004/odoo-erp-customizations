@@ -14,7 +14,7 @@ class GymMembershipPlan(models.Model):
     duration = fields.Integer(string="Duration", required=True, default=1, tracking=True)
     duration_uom = fields.Selection([("days", "Days"), ("months", "Months"), ("years", "Years")], string="Duration Unit", default="months", required=True, tracking=True)
     price = fields.Monetary(string="Price", currency_field="currency_id", required=True, tracking=True)
-    company_id = fields.Many2one("res.company", string="Company", required=True, default=lambda self: self.env.company, index=True)
+    company_id = fields.Many2one("res.company", string="Company",index=True)
     currency_id = fields.Many2one("res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True)
     active = fields.Boolean(string="Active", default=True, tracking=True)
     is_trial = fields.Boolean(string="Trial Membership",default=False,)

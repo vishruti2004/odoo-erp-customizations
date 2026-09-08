@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Trial Membership List View -->
+    <!-- ===================================================================== -->
+    <!-- TRIAL MEMBERSHIP LIST VIEW                                            -->
+    <!-- ===================================================================== -->
+
     <record id="view_gym_membership_trial_list" model="ir.ui.view">
         <field name="name">gym.membership.trial.list</field>
         <field name="model">gym.membership.trial</field>
@@ -24,28 +27,31 @@
         </field>
     </record>
 
-    <!-- Trial Membership Form View -->
+
+    <!-- ===================================================================== -->
+    <!-- TRIAL MEMBERSHIP FORM VIEW                                            -->
+    <!-- ===================================================================== -->
+
     <record id="view_gym_membership_trial_form" model="ir.ui.view">
         <field name="name">gym.membership.trial.form</field>
         <field name="model">gym.membership.trial</field>
         <field name="arch" type="xml">
             <form string="Trial Membership">
+
                 <header>
-                    <!-- Confirm Trial -->
+
                     <button name="action_confirm_trial"
                             string="Confirm"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'draft'"/>
 
-                    <!-- Convert Trial to Gym Member -->
                     <button name="action_convert_to_gym_member"
                             string="Gym Member"
                             type="object"
                             class="btn-primary"
                             invisible="state != 'active'"/>
 
-                    <!-- Cancel Trial -->
                     <button name="action_cancel_trial"
                             string="Cancel"
                             type="object"
@@ -55,10 +61,11 @@
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,active,member_created,cancelled"/>
+
                 </header>
 
                 <sheet>
-                    <!-- Smart Button for Sale Order -->
+
                     <div class="oe_button_box" name="button_box">
                         <button name="action_convert_to_gym_member"
                                 type="object"
@@ -71,7 +78,6 @@
                         </button>
                     </div>
 
-                    <!-- Title / Sequence Reference -->
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -81,29 +87,106 @@
                     <group>
                         <group>
                             <field name="customer_id"/>
+
                             <field name="membership_plan_id"
                                    domain="[('company_id', '=', company_id), ('is_trial', '=', True)]"
                                    options="{'no_create': True, 'no_create_edit': True}"/>
+
                             <field name="amount" readonly="1"/>
-                            <field name="sale_order_id" invisible="not sale_order_id"/>
+
+                            <field name="sale_order_id"
+                                   invisible="not sale_order_id"/>
                         </group>
 
                         <group>
                             <field name="start_date"/>
                             <field name="end_date"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
                         </group>
                     </group>
+
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- Trial Membership Action -->
+
+    <!-- ===================================================================== -->
+    <!-- TRIAL MEMBERSHIP SEARCH VIEW                                          -->
+    <!-- ===================================================================== -->
+
+    <record id="view_gym_membership_trial_search" model="ir.ui.view">
+        <field name="name">gym.membership.trial.search</field>
+        <field name="model">gym.membership.trial</field>
+        <field name="arch" type="xml">
+            <search string="Search Trial Memberships">
+
+                <!-- Search Fields -->
+                <field name="name" string="Trial Reference"/>
+                <field name="customer_id" string="Customer"/>
+                <field name="membership_plan_id" string="Membership Plan"/>
+
+                <!-- Status Filters -->
+                <filter name="filter_draft"
+                        string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+
+                <filter name="filter_active"
+                        string="Active"
+                        domain="[('state', '=', 'active')]"/>
+
+                <filter name="filter_member_created"
+                        string="Member Created"
+                        domain="[('state', '=', 'member_created')]"/>
+
+                <filter name="filter_cancelled"
+                        string="Cancelled"
+                        domain="[('state', '=', 'cancelled')]"/>
+
+                <!-- Date Filters -->
+                <filter name="filter_start_today"
+                        string="Starting Today"
+                        domain="[('start_date', '=', context_today())]"/>
+
+
+                <!-- Group By -->
+                <group>
+                    <filter name="group_state"
+                            string="Status"
+                            context="{'group_by': 'state'}"/>
+
+                    <filter name="group_membership_plan"
+                            string="Membership Plan"
+                            context="{'group_by': 'membership_plan_id'}"/>
+
+                    <filter name="group_company"
+                            string="Company"
+                            context="{'group_by': 'company_id'}"/>
+
+                    <filter name="group_start_date"
+                            string="Start Date"
+                            context="{'group_by': 'start_date'}"/>
+
+                    <filter name="group_end_date"
+                            string="End Date"
+                            context="{'group_by': 'end_date'}"/>
+                </group>
+
+            </search>
+        </field>
+    </record>
+
+
+    <!-- ===================================================================== -->
+    <!-- TRIAL MEMBERSHIP ACTION                                               -->
+    <!-- ===================================================================== -->
+
     <record id="action_gym_membership_trial" model="ir.actions.act_window">
         <field name="name">Trial Memberships</field>
         <field name="res_model">gym.membership.trial</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_gym_membership_trial_search"/>
         <field name="context">{}</field>
     </record>
 

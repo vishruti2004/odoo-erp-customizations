@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="portal_status_badge">
-        <span t-if="status in ['active', 'checked_in']" class="badge rounded-pill bg-success text-white">
-            <t t-esc="status_label"/>
-        </span>
-        <span t-elif="status in ['frozen', 'expiring', 'draft', 'paused']" class="badge rounded-pill bg-warning text-dark">
-            <t t-esc="status_label"/>
-        </span>
-        <span t-elif="status in ['expired', 'cancelled', 'checked_out', 'completed']" class="badge rounded-pill bg-danger text-white">
-            <t t-esc="status_label"/>
-        </span>
-        <span t-else="" class="badge rounded-pill bg-secondary text-white">
-            <t t-esc="status_label"/>
-        </span>
+        <t t-if="status_field == 'status'">
+            <span t-if="status in ['active', 'checked_in']" t-field="record.status" class="badge rounded-pill bg-success text-white"/>
+            <span t-elif="status in ['frozen', 'expiring', 'draft', 'paused']" t-field="record.status" class="badge rounded-pill bg-warning text-dark"/>
+            <span t-elif="status in ['expired', 'cancelled', 'checked_out', 'completed']" t-field="record.status" class="badge rounded-pill bg-danger text-white"/>
+            <span t-else="" t-field="record.status" class="badge rounded-pill bg-secondary text-white"/>
+        </t>
+        <t t-elif="status_field == 'state'">
+            <span t-if="status in ['active', 'checked_in']" t-field="record.state" class="badge rounded-pill bg-success text-white"/>
+            <span t-elif="status in ['frozen', 'expiring', 'draft', 'paused']" t-field="record.state" class="badge rounded-pill bg-warning text-dark"/>
+            <span t-elif="status in ['expired', 'cancelled', 'checked_out', 'completed']" t-field="record.state" class="badge rounded-pill bg-danger text-white"/>
+            <span t-else="" t-field="record.state" class="badge rounded-pill bg-secondary text-white"/>
+        </t>
     </template>
     <template id="portal_my_home_gym_blocks" inherit_id="portal.portal_my_home" priority="40">
         <xpath expr="//div[@id='portal_alert_category']" position="before">
@@ -224,27 +224,24 @@
                         <tbody>
                             <t t-foreach="histories" t-as="history">
                                 <tr>
-                                    <td><t t-esc="history.name or ''"/></td>
-                                    <td><t t-esc="history.membership_plan_id.name or ''"/></td>
+                                    <td><span t-field="history.name"/></td>
+                                    <td><span t-field="history.membership_plan_id"/></td>
                                     <td>
-                                        <span class="gym-membership-start-date">
-                                            <t t-esc="history.membership_start_date.strftime('%d/%m/%Y') if history.membership_start_date else ''"/>
-                                        </span>
+                                        <span class="gym-membership-start-date" t-field="history.membership_start_date"/>
                                     </td>
                                     <td>
-                                        <span class="gym-membership-end-date">
-                                            <t t-esc="history.membership_end_date.strftime('%d/%m/%Y') if history.membership_end_date else ''"/>
-                                        </span>
+                                        <span class="gym-membership-end-date" t-field="history.membership_end_date"/>
                                         <span class="gym-membership-date-range">
                                             <t t-esc="'%s - %s' % (history.membership_start_date.strftime('%d/%m/%Y') if history.membership_start_date else '', history.membership_end_date.strftime('%d/%m/%Y') if history.membership_end_date else '')"/>
                                         </span>
                                     </td>
-                                    <td><t t-esc="history.remark or ''"/></td>
+                                    <td><span t-field="history.remark"/></td>
 
                                     <td>
                                         <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="record" t-value="history"/>
                                             <t t-set="status" t-value="history.status"/>
-                                            <t t-set="status_label" t-value="dict(history._fields['status'].selection).get(history.status, history.status or '')"/>
+                                            <t t-set="status_field" t-value="'status'"/>
                                         </t>
                                     </td>
                                 </tr>
@@ -280,30 +277,26 @@
                                 <tr class="gym-clickable-plan-row">
                                     <td>
                                         <a t-att-href="'/my/gym/workout/%s' % workout.plan_id.id"
-                                        class="text-decoration-none fw-bold">
-                                            <t t-esc="workout.plan_id.code or ''"/>
-                                        </a>
+                                        t-field="workout.plan_id.code"
+                                        class="text-decoration-none fw-bold"/>
                                         <a t-att-href="'/my/gym/workout/%s' % workout.plan_id.id" class="gym-card-link-overlay" aria-label="Open workout plan"/>
                                     </td>
-                                    <td><t t-esc="workout.plan_id.name or ''"/></td>
-                                    <td><t t-esc="workout.member_id.name or ''"/></td>
-                                    <td><t t-esc="workout.trainer_id.name or ''"/></td>
+                                    <td><span t-field="workout.plan_id"/></td>
+                                    <td><span t-field="workout.member_id"/></td>
+                                    <td><span t-field="workout.trainer_id"/></td>
                                     <td>
-                                        <span class="gym-plan-start-date">
-                                            <t t-esc="workout.start_date.strftime('%d/%m/%Y') if workout.start_date else ''"/>
-                                        </span>
+                                        <span class="gym-plan-start-date" t-field="workout.start_date"/>
                                         <span class="gym-plan-date-range">
                                             <t t-esc="'%s - %s' % (workout.start_date.strftime('%d/%m/%Y') if workout.start_date else '', workout.end_date.strftime('%d/%m/%Y') if workout.end_date else '')"/>
                                         </span>
                                     </td>
-                                    <td class="gym-plan-end-date">
-                                        <t t-esc="workout.end_date.strftime('%d/%m/%Y') if workout.end_date else ''"/>
-                                    </td>
-                                    <td><t t-esc="workout.days or ''"/></td>
+                                    <td class="gym-plan-end-date"><span t-field="workout.end_date"/></td>
+                                    <td><span t-field="workout.days"/></td>
                                     <td>
                                         <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="record" t-value="workout"/>
                                             <t t-set="status" t-value="workout.state"/>
-                                            <t t-set="status_label" t-value="dict(workout._fields['state'].selection).get(workout.state, workout.state or '')"/>
+                                            <t t-set="status_field" t-value="'state'"/>
                                         </t>
                                     </td>
                                 </tr>
@@ -323,14 +316,12 @@
 
                 <!-- Header -->
                 <div class="gym-plan-detail-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:28px;">
-                    <h4 class="gym-plan-detail-title" style="margin:0; font-weight:700; color:#212529;">
-                        <t t-esc="workout_plan.name or ''"/>
-                    </h4>
+                    <h4 class="gym-plan-detail-title" style="margin:0; font-weight:700; color:#212529;" t-field="workout_plan.name"/>
                     <div t-if="assignments" class="gym-plan-detail-date" style="color:#6c757d; font-size:14px; margin-top:6px; display:flex; align-items:center; gap:6px;">
                         <i class="fa fa-calendar-o"/>
-                        <t t-esc="assignments[0].start_date.strftime('%d %b %Y') if assignments[0].start_date else ''"/>
+                        <span t-field="assignments[0].start_date"/>
                         <span>–</span>
-                        <t t-esc="assignments[0].end_date.strftime('%d %b %Y') if assignments[0].end_date else ''"/>
+                        <span t-field="assignments[0].end_date"/>
                     </div>
                     <a href="/my/gym/workout" class="btn btn-primary gym-plan-detail-back" aria-label="Back to Workout Plans"
                        style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-weight:600; white-space:nowrap;">
@@ -362,22 +353,18 @@
                                     <tr>
                                         <td style="padding:14px 26px; white-space:nowrap;">
                                             <span class="badge rounded-pill bg-primary text-white"
-                                                style="padding:6px 12px; font-size:12px; font-weight:700;">
-                                                <t t-esc="dict(exercise._fields['day'].selection).get(exercise.day, exercise.day or '')"/>
-                                            </span>
+                                                style="padding:6px 12px; font-size:12px; font-weight:700;"
+                                                t-field="exercise.day"/>
                                         </td>
 
-                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;">
-                                            <t t-esc="exercise.exercise_id.name or ''"/>
-                                        </td>
+                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;"><span t-field="exercise.exercise_id"/></td>
 
                                         <td style="padding:14px;">
                                             <div style="display:flex; flex-direction:column; gap:6px;">
                                                 <t t-foreach="exercise.exercise_step_ids"
                                                 t-as="step">
-                                                    <span style="display:inline-block; padding:4px 10px; border-radius:6px; background:#f8f9fa; border:1px solid #e9ecef; color:#495057; font-size:12px; width:fit-content;">
-                                                        <t t-esc="step.name or ''"/>
-                                                    </span>
+                                                    <span style="display:inline-block; padding:4px 10px; border-radius:6px; background:#f8f9fa; border:1px solid #e9ecef; color:#495057; font-size:12px; width:fit-content;"
+                                                          t-field="step.name"/>
                                                 </t>
                                             </div>
                                         </td>
@@ -415,17 +402,11 @@
                                             </t>
                                         </td>
 
-                                        <td style="padding:14px; white-space:nowrap;">
-                                            <t t-esc="exercise.sets or 0"/>
-                                        </td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="exercise.sets"/></td>
 
-                                        <td style="padding:14px; white-space:nowrap;">
-                                            <t t-esc="exercise.reps or ''"/>
-                                        </td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="exercise.reps"/></td>
 
-                                        <td style="padding:14px 26px; white-space:nowrap;">
-                                            <t t-esc="exercise.rest or ''"/>
-                                        </td>
+                                        <td style="padding:14px 26px; white-space:nowrap;"><span t-field="exercise.rest"/></td>
                                     </tr>
                                 </t>
 
@@ -462,33 +443,25 @@
                                 <tr class="gym-clickable-plan-row">
                                     <td>
                                         <a t-att-href="'/my/gym/diet/%s' % diet.plan_id.id"
-                                           class="text-decoration-none fw-bold">
-                                            <t t-esc="diet.plan_id.code or ''"/>
-                                        </a>
+                                           t-field="diet.plan_id.code"
+                                           class="text-decoration-none fw-bold"/>
                                         <a t-att-href="'/my/gym/diet/%s' % diet.plan_id.id" class="gym-card-link-overlay" aria-label="Open diet plan"/>
                                     </td>
+                                    <td><span t-field="diet.plan_id"/></td>
+                                    <td><span t-field="diet.member_id"/></td>
+                                    <td><span t-field="diet.trainer_id"/></td>
                                     <td>
-                                      
-                                            <t t-esc="diet.plan_id.name or ''"/>
-                    
-                                    </td>
-                                    <td><t t-esc="diet.member_id.name or ''"/></td>
-                                    <td><t t-esc="diet.trainer_id.name or ''"/></td>
-                                    <td>
-                                        <span class="gym-plan-start-date">
-                                            <t t-esc="diet.start_date.strftime('%d/%m/%Y') if diet.start_date else ''"/>
-                                        </span>
+                                        <span class="gym-plan-start-date" t-field="diet.start_date"/>
                                         <span class="gym-plan-date-range">
                                             <t t-esc="'%s - %s' % (diet.start_date.strftime('%d/%m/%Y') if diet.start_date else '', diet.end_date.strftime('%d/%m/%Y') if diet.end_date else '')"/>
                                         </span>
                                     </td>
-                                    <td class="gym-plan-end-date">
-                                        <t t-esc="diet.end_date.strftime('%d/%m/%Y') if diet.end_date else ''"/>
-                                    </td>
+                                    <td class="gym-plan-end-date"><span t-field="diet.end_date"/></td>
                                     <td>
                                         <t t-call="iPredict_gym_portal.portal_status_badge">
+                                            <t t-set="record" t-value="diet"/>
                                             <t t-set="status" t-value="diet.state"/>
-                                            <t t-set="status_label" t-value="dict(diet._fields['state'].selection).get(diet.state, diet.state or '')"/>
+                                            <t t-set="status_field" t-value="'state'"/>
                                         </t>
                                     </td>
                                 </tr>
@@ -508,14 +481,12 @@
 
                 <!-- Header -->
                 <div class="gym-plan-detail-header" style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:28px;">
-                    <h4 class="gym-plan-detail-title" style="margin:0; font-weight:700; color:#212529;">
-                        <t t-esc="diet_plan.name or ''"/>
-                    </h4>
+                    <h4 class="gym-plan-detail-title" style="margin:0; font-weight:700; color:#212529;" t-field="diet_plan.name"/>
                     <div t-if="assignments" class="gym-plan-detail-date" style="color:#6c757d; font-size:14px; margin-top:6px; display:flex; align-items:center; gap:6px;">
                         <i class="fa fa-calendar-o"/>
-                        <t t-esc="assignments[0].start_date.strftime('%d %b %Y') if assignments[0].start_date else ''"/>
+                        <span t-field="assignments[0].start_date"/>
                         <span>–</span>
-                        <t t-esc="assignments[0].end_date.strftime('%d %b %Y') if assignments[0].end_date else ''"/>
+                        <span t-field="assignments[0].end_date"/>
                     </div>
                     <a href="/my/gym/diet" class="btn btn-primary gym-plan-detail-back" aria-label="Back to Diet Plans"
                        style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-weight:600; white-space:nowrap;">
@@ -537,7 +508,7 @@
                                 </span>
                                 <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Calories</span>
                             </div>
-                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f' % diet_plan.total_calories"/></div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;" t-field="diet_plan.total_calories"/>
                         </div>
                         <div class="gym-nutrition-summary-item" style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(13,110,253,0.06); border:1px solid rgba(13,110,253,0.15);">
                             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -546,7 +517,9 @@
                                 </span>
                                 <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Protein</span>
                             </div>
-                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_protein"/></div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;">
+                                <span t-field="diet_plan.total_protein"/><span> g</span>
+                            </div>
                         </div>
                         <div class="gym-nutrition-summary-item" style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(25,135,84,0.06); border:1px solid rgba(25,135,84,0.15);">
                             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -555,7 +528,9 @@
                                 </span>
                                 <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Carbs</span>
                             </div>
-                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_carbs"/></div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;">
+                                <span t-field="diet_plan.total_carbs"/><span> g</span>
+                            </div>
                         </div>
                         <div class="gym-nutrition-summary-item" style="flex:1; min-width:150px; border-radius:12px; padding:18px; background:rgba(255,193,7,0.10); border:1px solid rgba(255,193,7,0.25);">
                             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -564,7 +539,9 @@
                                 </span>
                                 <span style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:.4px; font-weight:600;">Fat</span>
                             </div>
-                            <div style="font-size:22px; font-weight:700; color:#212529;"><t t-esc="'%.2f g' % diet_plan.total_fat"/></div>
+                            <div style="font-size:22px; font-weight:700; color:#212529;">
+                                <span t-field="diet_plan.total_fat"/><span> g</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -596,20 +573,25 @@
                                     <tr>
                                         <td style="padding:14px 26px; white-space:nowrap;">
                                             <span class="badge rounded-pill bg-primary text-white"
-                                                  style="padding:6px 12px; font-size:12px; font-weight:700;">
-                                                <t t-esc="dict(meal._fields['meal_time'].selection).get(meal.meal_time, meal.meal_time or '')"/>
-                                            </span>
+                                                  style="padding:6px 12px; font-size:12px; font-weight:700;"
+                                                  t-field="meal.meal_time"/>
                                         </td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f' % meal.start_time"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f' % meal.end_time"/></td>
-                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;"><t t-esc="meal.food_id.name or ''"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.quantity"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="meal.uom_id.name or ''"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f' % meal.calories"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.protein"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.carbs"/></td>
-                                        <td style="padding:14px; white-space:nowrap;"><t t-esc="'%.2f g' % meal.fat"/></td>
-                                        <td style="padding:14px 26px; color:#6c757d;"><t t-esc="meal.note or ''"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="meal.start_time"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="meal.end_time"/></td>
+                                        <td style="padding:14px; font-weight:600; color:#212529; white-space:nowrap;"><span t-field="meal.food_id"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="meal.quantity"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="meal.uom_id"/></td>
+                                        <td style="padding:14px; white-space:nowrap;"><span t-field="meal.calories"/></td>
+                                        <td style="padding:14px; white-space:nowrap;">
+                                            <span t-field="meal.protein"/><span> g</span>
+                                        </td>
+                                        <td style="padding:14px; white-space:nowrap;">
+                                            <span t-field="meal.carbs"/><span> g</span>
+                                        </td>
+                                        <td style="padding:14px; white-space:nowrap;">
+                                            <span t-field="meal.fat"/><span> g</span>
+                                        </td>
+                                        <td style="padding:14px 26px; color:#6c757d;"><span t-field="meal.note"/></td>
                                     </tr>
                                 </t>
                                 <tr t-if="not diet_plan.meal_line_ids">
@@ -654,12 +636,12 @@
                         <tbody>
                             <t t-foreach="measurements" t-as="measurement">
                                 <tr>
-                                    <td><t t-esc="measurement.member_ids.name or ''"/></td>
-                                    <td><t t-esc="measurement.measurement_date.strftime('%d/%m/%Y') if measurement.measurement_date else ''"/></td>       
-                                    <td><t t-esc="'%.2f' % measurement.weight if measurement.weight else ''"/></td>
-                                    <td><t t-esc="'%.2f' % measurement.height if measurement.height else ''"/></td>
-                                    <td><t t-esc="'%.2f' % measurement.bmi if measurement.bmi else ''"/></td>
-                                    <td><t t-esc="'%.2f' % measurement.bmr if measurement.bmr else ''"/></td>
+                                    <td><span t-field="measurement.member_ids"/></td>
+                                    <td><span t-field="measurement.measurement_date"/></td>
+                                    <td><span t-field="measurement.weight"/></td>
+                                    <td><span t-field="measurement.height"/></td>
+                                    <td><span t-field="measurement.bmi"/></td>
+                                    <td><span t-field="measurement.bmr"/></td>
                                 </tr>
                             </t>
                             <tr t-if="not measurements">
@@ -691,25 +673,13 @@
                                 <tbody>
                                     <t t-foreach="attendances" t-as="attendance">
                                         <tr>
-                                            <td>
-                                                <t t-esc="attendance.membership_id.name or ''"/>
-                                            </td>
+                                            <td><span t-field="attendance.membership_id"/></td>
+
+                                            <td><span t-field="attendance.member_id"/></td>
+                                            <td><span t-field="attendance.check_in"/></td>
 
                                             <td>
-                                                <t t-call="iPredict_gym_portal.portal_status_badge">
-                                                    <t t-set="status" t-value="attendance.membership_id.status"/>
-                                                    <t t-set="status_label" t-value="dict(attendance.membership_id._fields['status'].selection).get(attendance.membership_id.status, attendance.membership_id.status or '')"/>
-                                                </t>
-                                            </td>
-
-                                            <td>
-                                                <t t-esc="attendance_datetime.get(attendance.id, {}).get('check_in', '')"/>
-                                            </td>
-
-                                            <td>
-                                                <t t-if="attendance.check_out">
-                                                    <t t-esc="attendance_datetime.get(attendance.id, {}).get('check_out', '')"/>
-                                                </t>
+                                                <span t-if="attendance.check_out" t-field="attendance.check_out"/>
                                                 <span t-else="" class="text-muted">—</span>
                                             </td>
 
@@ -823,13 +793,13 @@
             <div t-if="trial" class="mt-3 p-3 rounded bg-warning" style="width: 100%;">
                 <div style="font-size: 17px; font-weight: 600; color: #212529; margin-bottom: 8px;">
                     <i class="fa fa-id-card-o me-2"/>
-                    <span t-esc="trial.membership_plan_id.name"/>
+                    <span t-field="trial.membership_plan_id"/>
                 </div>
                 <div style="font-size: 13px; color: #212529; line-height: 1.6;">
                     <strong>Date:</strong>
-                    <span t-esc="trial.start_date.strftime('%d/%m/%Y') if trial.start_date else ''"/>
+                    <span t-field="trial.start_date"/>
                     <strong> to </strong>
-                    <span t-esc="trial.end_date.strftime('%d/%m/%Y') if trial.end_date else ''"/>
+                    <span t-field="trial.end_date"/>
                 </div>
             </div>
             <div t-if="membership and not trial"
@@ -837,18 +807,18 @@
                  style="width: 100%;">
                 <div t-attf-style="font-size: 17px; font-weight: 600; margin-bottom: 8px; color: #{'#212529' if membership.status == 'frozen' else '#ffffff'};">
                     <i class="fa fa-id-card-o me-2"/>
-                    <span t-esc="membership.membership_plan_id.name"/>
+                    <span t-field="membership.membership_plan_id"/>
                 </div>
                 <div t-attf-style="font-size: 13px; line-height: 1.6; color: #{'#212529' if membership.status == 'frozen' else '#ffffff'};">
                     <div t-if="membership.status != 'expired'">
                         <strong>Date:</strong>
-                        <span t-esc="membership.membership_start_date.strftime('%d/%m/%Y') if membership.membership_start_date else ''"/>
+                        <span t-field="membership.membership_start_date"/>
                         <strong> to </strong>
-                        <span t-esc="membership.membership_end_date.strftime('%d/%m/%Y') if membership.membership_end_date else ''"/>
+                        <span t-field="membership.membership_end_date"/>
                     </div>
                     <div t-if="membership.status == 'expired'">
                         <strong>Date:</strong>
-                        <span t-esc="membership.membership_end_date.strftime('%d/%m/%Y') if membership.membership_end_date else ''"/>
+                        <span t-field="membership.membership_end_date"/>
                     </div>
                 </div>
             </div>

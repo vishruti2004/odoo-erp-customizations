@@ -12,12 +12,21 @@ class SaleOrder(models.Model):
     membership_plan_id = fields.Many2one("gym.membership.plan", string="Membership Plan", related="partner_id.membership_plan_id", store=True)
     is_membership_expired = fields.Boolean(string="Membership Expired", compute="_compute_is_membership_expired", store=False)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            vals["company_id"] = self.env.company.id
+        return super().create(vals_list)
+
     @api.depends("partner_id.membership_end_date")
     def _compute_is_membership_expired(self):
         today = date.today()
+
         for order in self:
             if order.partner_id.membership_end_date:
-                order.is_membership_expired = order.partner_id.membership_end_date < today
+                order.is_membership_expired = (
+                    order.partner_id.membership_end_date < today
+                )
             else:
                 order.is_membership_expired = False
 
@@ -25,6 +34,7 @@ class SaleOrder(models.Model):
 
     def _get_member_sequence(self, company):
         Sequence = self.env["ir.sequence"].sudo()
+
         sequence = Sequence.search(
             [
                 ("code", "=", "gym.member"),
@@ -49,28 +59,19 @@ class SaleOrder(models.Model):
         MembershipPlan = self.env["gym.membership.plan"]
         MembershipHistory = self.env["gym.membership.history"].sudo()
 
+        # CHECK ACTIVE MEMBERSHIP IN THE CURRENT SALE ORDER COMPANY
         for order in self:
             partner = order.partner_id
-            if partner.company_id and partner.company_id != order.company_id:
-                raise ValidationError(
-                    _(
-                        "The member %s belongs to %s, but this Sale Order belongs to %s."
-                    )
-                    % (
-                        partner.name,
-                        partner.company_id.name,
-                        order.company_id.name,
-                    )
-                )
 
-        for order in self:
-            partner = order.partner_id
             for line in order.order_line:
                 plan = MembershipPlan.search(
                     [
                         ("product_id", "=", line.product_template_id.id),
+                        "|",
                         ("company_id", "=", order.company_id.id),
+                        ("company_id", "=", False),
                     ],
+                    order="company_id desc",
                     limit=1,
                 )
 
@@ -89,7 +90,8 @@ class SaleOrder(models.Model):
                 if active_membership:
                     raise ValidationError(
                         _(
-                            "%s already has an active membership. Only one active membership is allowed."
+                            "%s already has an active membership. "
+                            "Only one active membership is allowed."
                         )
                         % partner.name
                     )
@@ -98,14 +100,19 @@ class SaleOrder(models.Model):
 
         res = super().action_confirm()
 
+        # CREATE MEMBERSHIP AFTER SALE ORDER CONFIRMATION
         for order in self:
             partner = order.partner_id
+
             for line in order.order_line:
                 plan = MembershipPlan.search(
                     [
                         ("product_id", "=", line.product_template_id.id),
+                        "|",
                         ("company_id", "=", order.company_id.id),
+                        ("company_id", "=", False),
                     ],
+                    order="company_id desc",
                     limit=1,
                 )
 
@@ -118,7 +125,6 @@ class SaleOrder(models.Model):
                     "is_gym_member": True,
                     "membership_plan_id": plan.id,
                     "membership_start_date": start_date,
-                    "company_id": order.company_id.id,
                 }
 
                 if not partner.member_code:
@@ -128,17 +134,21 @@ class SaleOrder(models.Model):
                 partner.write(partner_vals)
 
                 # REACTIVATE ATTENDANCE EMPLOYEE ON RENEWAL
-
                 if partner.attendance_employee_id:
                     employee = partner.attendance_employee_id
-                    if not employee.active:
-                        employee.write({"active": True})
 
+                    if not employee.active:
+                        employee.write({
+                            "active": True,
+                        })
+
+                # CREATE MEMBERSHIP HISTORY COMPANY-WISE
                 MembershipHistory.create({
                     "member_id": partner.id,
                     "membership_plan_id": plan.id,
                     "membership_start_date": partner.membership_start_date,
                     "membership_end_date": partner.membership_end_date,
+                    "company_id": order.company_id.id,
                     "status": "active",
                     "remark": "Membership Created",
                 })
@@ -156,6 +166,7 @@ class SaleOrder(models.Model):
             "name": "/",
             "state": "draft",
             "date_order": fields.Datetime.now(),
+            "company_id": self.company_id.id,
         })
 
         new_order.message_post(
@@ -175,7 +186,9 @@ class SaleOrder(models.Model):
         res = super().action_cancel()
 
         history = self.env["gym.membership.history"].sudo().search(
-            [("renewal_sale_order_id", "=", self.id)],
+            [
+                ("renewal_sale_order_id", "=", self.id),
+            ],
             limit=1,
         )
 
@@ -187,7 +200,9 @@ class SaleOrder(models.Model):
     def unlink(self):
         for order in self:
             history = self.env["gym.membership.history"].sudo().search(
-                [("renewal_sale_order_id", "=", order.id)],
+                [
+                    ("renewal_sale_order_id", "=", order.id),
+                ],
                 limit=1,
             )
 

@@ -43,4 +43,6 @@
         <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_user'))]"/>
     </record>
 
+    
+
 </odoo>

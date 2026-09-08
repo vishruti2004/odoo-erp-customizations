@@ -30,7 +30,7 @@
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile o_kanban_dashboard">
-                <!-- Fields used by Kanban -->
+
                 <field name="member_code"/>
                 <field name="name"/>
                 <field name="membership_plan_id"/>
@@ -41,11 +41,14 @@
 
                 <templates>
                     <t t-name="card">
-<div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3
-    #{record.is_frozen.raw_value ? 'border border-info' : record.remaining_days.raw_value &lt;= 0 ? 'border border-danger' : 'border border-success'}">                            <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3
+                            #{record.is_frozen.raw_value ? 'border border-info' : record.remaining_days.raw_value &lt;= 0 ? 'border border-danger' : 'border border-success'}">
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <strong class="fs-5 fw-bold text-dark">
                                     <field name="name"/>
                                 </strong>
+
                                 <span class="badge text-bg-secondary">
                                     <field name="member_code"/>
                                 </span>
@@ -75,17 +78,79 @@
                                 <t t-if="record.is_frozen.raw_value">
                                     <span class="badge text-bg-info">Frozen</span>
                                 </t>
+
                                 <t t-elif="record.remaining_days.raw_value &lt;= 0">
                                     <span class="badge text-bg-danger">Expired</span>
                                 </t>
+
                                 <t t-else="">
                                     <span class="badge text-bg-success">Active</span>
                                 </t>
                             </div>
+
                         </div>
                     </t>
                 </templates>
+
             </kanban>
+        </field>
+    </record>
+
+
+    <!-- ===================================================================== -->
+    <!-- MEMBERS SEARCH VIEW                                                   -->
+    <!-- ===================================================================== -->
+
+    <record id="view_gym_members_search" model="ir.ui.view">
+        <field name="name">res.partner.gym.members.search</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Search Members">
+
+                <field name="name"/>
+                <field name="member_code"/>
+                <field name="membership_plan_id"/>
+
+                <filter
+                    name="filter_active_members"
+                    string="Active Membership"
+                    domain="[('remaining_days', '&gt;', 0), ('is_frozen', '=', False)]"/>
+
+                <filter
+                    name="filter_expired_members"
+                    string="Expired Membership"
+                    domain="[('remaining_days', '&lt;=', 0)]"/>
+
+                <filter
+                    name="filter_frozen_members"
+                    string="Frozen Members"
+                    domain="[('is_frozen', '=', True)]"/>
+
+                <filter
+                    name="filter_upcoming_members"
+                    string="Upcoming Membership"
+                    domain="[('membership_start_date', '&gt;', context_today())]"/>
+
+                <separator/>
+
+                <group>
+                    <filter
+                        name="group_membership_plan"
+                        string="Membership Plan"
+                        context="{'group_by': 'membership_plan_id'}"/>
+
+                    <filter
+                        name="group_membership_start"
+                        string="Membership Start Date"
+                        context="{'group_by': 'membership_start_date'}"/>
+
+                    <filter
+                        name="group_membership_end"
+                        string="Membership End Date"
+                        context="{'group_by': 'membership_end_date'}"/>
+                </group>
+
+            </search>
         </field>
     </record>
 
@@ -99,6 +164,8 @@
         <field name="res_model">res.partner</field>
         <field name="domain">[('is_gym_member', '=', True)]</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_gym_members_search"/>
+
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {

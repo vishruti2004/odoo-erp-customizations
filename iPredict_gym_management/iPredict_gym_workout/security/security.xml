@@ -30,5 +30,4 @@
         <field name="model_id" ref="model_gym_workout_plan_exercise_line"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
-
 </odoo>

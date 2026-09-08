@@ -10,7 +10,7 @@ class GymMembershipHistory(models.Model):
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "membership_start_date desc, id desc"
 
-    company_id = fields.Many2one("res.company", string="Company", related="member_id.company_id", store=True, readonly=True, index=True)
+    company_id = fields.Many2one("res.company", string="Company", store=True, readonly=True, index=True)
     member_id = fields.Many2one("res.partner", string="Member", required=True, ondelete="cascade", tracking=True, domain="[('is_gym_member', '=', True)]")
     member_code = fields.Char(related="member_id.member_code", store=True, string="Member Code")
     display_member_id = fields.Char(string="Member ID", compute="_compute_display_member_id", store=True)
@@ -42,23 +42,18 @@ class GymMembershipHistory(models.Model):
             )
 
     # CONSTRAINTS
-    @api.constrains("member_id", "membership_plan_id")
+    @api.constrains("membership_plan_id", "company_id")
     def _check_company(self):
         for record in self:
-            if not record.member_id:
-                continue
-
-            member_company = record.member_id.company_id
-
             if (
                 record.membership_plan_id
-                and member_company
-                and record.membership_plan_id.company_id != member_company
+                and record.membership_plan_id.company_id
+                and record.membership_plan_id.company_id != record.company_id
             ):
                 raise ValidationError(
                     _(
-                        "The Membership Plan and Member must belong "
-                        "to the same company."
+                        "The Membership Plan must belong to the same company "
+                        "as the membership history."
                     )
                 )
 
@@ -71,8 +66,7 @@ class GymMembershipHistory(models.Model):
             if vals.get("name"):
                 continue
 
-            company_id = vals.get("company_id")
-
+            company_id = vals.get("company_id") or self.env.company.id
             # company_id is related, so normally get company from member
             if not company_id and vals.get("member_id"):
                 member = self.env["res.partner"].browse(

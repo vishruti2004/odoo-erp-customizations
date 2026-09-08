@@ -486,7 +486,9 @@
     }
 }
 
-
+/* ==========================================================================
+   DETAIL PAGE HEADER (Workout / Diet detail)
+   ========================================================================== */
 .o_gym_detail_header {
     display: flex;
     flex-wrap: wrap;
@@ -569,6 +571,9 @@
     }
 }
 
+/* ==========================================================================
+   NUTRITION SUMMARY GRID (Diet detail)
+   ========================================================================== */
 .o_gym_nutri_grid {
     padding: 22px 26px;
     display: flex;
@@ -652,6 +657,9 @@
     }
 }
 
+/* ==========================================================================
+   EXERCISE STEP CHIPS (Workout Detail)
+   ========================================================================== */
 .o_gym_step_list {
     display: flex;
     flex-direction: column;
@@ -836,8 +844,13 @@
     }
 }
 
-@media (max-width: 767.98px) {
+/* Desktop: show only the actual Start Date / End Date fields */
+.gym-plan-date-range,
+.gym-membership-date-range {
+    display: none !important;
+}
 
+@media (max-width: 767.98px) {
     .gym-membership-table tbody > tr:not(:has(td[colspan])),
     .gym-measurement-table tbody > tr:not(:has(td[colspan])),
     .gym-attendance-table tbody > tr:not(:has(td[colspan])),
@@ -870,6 +883,9 @@
         text-transform: uppercase !important;
     }
 
+    /* ----------------------------------------------------------------------
+       Main Workout / Diet Plans
+       ---------------------------------------------------------------------- */
 
     .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(7)):not(:has(thead > tr > th:nth-child(8))),
     .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) {
@@ -999,6 +1015,13 @@
         line-height: 1.3 !important;
     }
 
+    /* Trainer value */
+    .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(7)):not(:has(thead > tr > th:nth-child(8))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4),
+    .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) {
+        font-size: 13px !important;
+        line-height: 1.3 !important;
+    }
+
     .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(7)):not(:has(thead > tr > th:nth-child(8))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6),
     .table-responsive > table.table:not(.mb-0):has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6) {
         display: none !important;
@@ -1024,6 +1047,14 @@
         border-radius: 50rem !important;
     }
 
+    /* ----------------------------------------------------------------------
+       Workout Detail - Mobile
+       Day + Exercise on left
+       Image on top-right
+       Sets | Reps | Rest Time | Video in one row
+       Steps full width
+       ---------------------------------------------------------------------- */
+
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) {
         display: block !important;
         width: 100% !important;
@@ -1031,174 +1062,246 @@
         border-spacing: 0 !important;
     }
 
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) thead,
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) thead {
+        display: none !important;
+    }
+
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody {
         display: block !important;
         width: 100% !important;
     }
 
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) thead {
-        display: none !important;
-    }
-
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) {
+        position: relative !important;
         display: grid !important;
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-        grid-template-rows: auto auto auto auto !important;
-        column-gap: 10px !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.15fr) !important;
+        grid-template-rows: 30px 30px 52px auto !important;
+        column-gap: 8px !important;
         row-gap: 0 !important;
         width: 100% !important;
         margin: 0 0 16px !important;
         padding: 8px 12px !important;
+        box-sizing: border-box !important;
         background: #ffffff !important;
+        overflow: visible !important;
         border: 1px solid #e7eaed !important;
         border-radius: 14px !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
     }
 
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td {
         min-width: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
+        width: auto !important;
+        max-width: none !important;
         margin: 0 !important;
-        padding: 5px 4px !important;
+        padding: 0 !important;
         box-sizing: border-box !important;
         border: 0 !important;
-        line-height: 1.3 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        line-height: 1.2 !important;
         overflow-wrap: anywhere !important;
     }
 
-    /* Left side: Day + Exercise */
+    /* Day */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(1) {
         grid-column: 1 / 4 !important;
         grid-row: 1 !important;
         align-self: start !important;
+        padding: 2px 4px 0 !important;
     }
 
+    /* Exercise */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(2) {
         grid-column: 1 / 4 !important;
         grid-row: 2 !important;
-        padding-top: 2px !important;
+        align-self: start !important;
+        padding: 0 4px 3px !important;
         font-size: 13px !important;
         font-weight: 700 !important;
-        line-height: 1.25 !important;
-        border: 0 !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
 
-    /* Right side: Image on top */
+    /* Image - only top-right */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) {
-        grid-column: 4 / 7 !important;
-        grid-row: 1 !important;
-        padding: 4px !important;
-        border: 0 !important;
-        align-self: start !important;
+        position: absolute !important;
+        top: 5px !important;
+        right: 12px !important;
+        width: 54px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        z-index: 5 !important;
+        text-align: right !important;
+        line-height: 1 !important;
     }
 
-    /* Right side: Video below Image */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) {
-        grid-column: 4 / 7 !important;
-        grid-row: 2 !important;
-        padding: 4px !important;
-        border: 0 !important;
-        align-self: start !important;
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4)::before {
+        content: "IMAGE" !important;
+        display: block !important;
+        margin: 0 0 2px !important;
+        font-size: 7px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+        color: #6c757d !important;
+        text-align: right !important;
     }
 
-    /* Empty Image / Video sections disappear completely. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4):not(:has(img)),
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5):not(:has(a)) {
-        display: none !important;
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) > img:first-of-type {
+        display: block !important;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
+        max-width: 42px !important;
+        max-height: 42px !important;
+        object-fit: cover !important;
+        border-radius: 5px !important;
+        margin: 0 0 0 auto !important;
+        cursor: zoom-in !important;
     }
 
-    /* Metrics: Sets | Reps | Rest Time */
+    /* Sets */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6) {
-        grid-column: 1 / 3 !important;
+        grid-column: 1 !important;
         grid-row: 3 !important;
-        border-top: 1px solid #edf0f2 !important;
     }
 
+    /* Reps */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7) {
-        grid-column: 3 / 5 !important;
+        grid-column: 2 !important;
         grid-row: 3 !important;
-        border-top: 1px solid #edf0f2 !important;
     }
 
+    /* Rest Time */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8) {
-        grid-column: 5 / 7 !important;
+        grid-column: 3 !important;
         grid-row: 3 !important;
-        padding-left: calc(66.666% + 7px) !important;
+    }
+
+    /* Video - label and link align with Rest Time */
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) {
+        grid-column: 4 !important;
+        grid-row: 3 !important;
+        position: relative !important;
+        display: block !important;
+        height: 52px !important;
+        min-height: 52px !important;
+        padding: 0 0 2px !important;
+        margin: 0 !important;
         border-top: 1px solid #edf0f2 !important;
-        border-bottom: 0 !important;
         box-sizing: border-box !important;
+        background: transparent !important;
+        text-align: right !important;
     }
 
-    /* Steps full width at the bottom */
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5)::before {
+        content: "VIDEO" !important;
+        position: absolute !important;
+        top: 6px !important;
+        right: 0 !important;
+        display: block !important;
+        margin: 0 !important;
+        font-size: 7px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+        color: #6c757d !important;
+        text-align: right !important;
+    }
+
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) a {
+        position: absolute !important;
+        top: 28px !important;
+        right: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 3px !important;
+        margin: 0 !important;
+        font-size: 10px !important;
+        transform: translateY(-6px) !important;
+        line-height: 1 !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        text-decoration: none !important;
+    }
+
+    /* Stats row */
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6),
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7),
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8) {
+        height: 52px !important;
+        min-height: 52px !important;
+        padding: 6px 4px !important;
+        border-top: 1px solid #edf0f2 !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+    }
+
+    /* Steps - full width below the stats row */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3) {
-        grid-column: 1 / 7 !important;
+        grid-column: 1 / 5 !important;
         grid-row: 4 !important;
-        padding-top: 9px !important;
-        border-bottom: 0 !important;
+        padding: 8px 4px 4px !important;
+        margin: 0 !important;
+        border: 0 !important;
+        font-size: 11px !important;
+        line-height: 1.3 !important;
+        background: transparent !important;
     }
 
-    /* Small labels */
+    /* Labels */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(1)::before,
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(2)::before {
         content: none !important;
         display: none !important;
     }
 
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4)::before { content: "IMAGE" !important; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5)::before { content: "VIDEO" !important; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before { content: "SETS" !important; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7)::before { content: "REPS" !important; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8)::before { content: "REST TIME" !important; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3)::before { content: "STEPS" !important; }
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3)::before {
+        content: "STEPS" !important;
+    }
 
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td::before {
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before {
+        content: "SETS" !important;
+    }
+
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7)::before {
+        content: "REPS" !important;
+    }
+
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8)::before {
+        content: "REST TIME" !important;
+    }
+
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3)::before,
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before,
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7)::before,
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8)::before {
         display: block !important;
-        margin-bottom: 4px !important;
-        color: #6c757d !important;
+        margin-bottom: 3px !important;
         font-size: 8px !important;
         font-weight: 700 !important;
+        line-height: 1 !important;
+        color: #6c757d !important;
         letter-spacing: .3px !important;
-        line-height: 1.2 !important;
         text-transform: uppercase !important;
     }
 
-    /* Thumbnail */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) > img:first-of-type {
-        display: block !important;
-        width: 128px !important;
-        height: 128px !important;
-        max-width: 128px !important;
-        max-height: 128px !important;
-        object-fit: cover !important;
-        border-radius: 8px !important;
-        cursor: zoom-in !important;
+    /* Empty media */
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4):not(:has(img)),
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5):not(:has(a)) {
+        display: none !important;
     }
 
-    /* Video link */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) a {
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 5px !important;
-        font-size: 12px !important;
-        line-height: 1.25 !important;
-        white-space: nowrap !important;
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4):not(:has(img))::before,
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5):not(:has(a))::before {
+        content: none !important;
+        display: none !important;
     }
-
-    /* Lightbox is independent from the 128px thumbnail. */
-    .gym-exercise-image-lightbox img {
-        width: auto !important;
-        min-width: 0 !important;
-        max-width: 92vw !important;
-        height: auto !important;
-        max-height: 88vh !important;
-        object-fit: contain !important;
-        border-radius: 0 !important;
-    }
-
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) {
         display: block !important;
         width: 100% !important;
@@ -1252,7 +1355,7 @@
     }
 
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) {
-        grid-column: 3 / 5 !important;
+        grid-column: 2 / 5 !important;
         grid-row: 1 !important;
         display: flex !important;
         align-items: center !important;
@@ -1271,7 +1374,16 @@
     /* From | To | Quantity | UoM */
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(2) { grid-column: 1; grid-row: 2; }
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(3) { grid-column: 2; grid-row: 2; }
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) { grid-column: 3; grid-row: 2; }
+    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) {
+        grid-column: 3 !important;
+        grid-row: 2 !important;
+        display: block !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+        text-align: left !important;
+        visibility: visible !important;
+    }
     .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(11)) tbody > tr:not(:has(td[colspan])) > td:nth-child(6) { grid-column: 4; grid-row: 2; }
 
     /* Calories | Protein | Carbs | Fat */
@@ -1321,6 +1433,10 @@
         font-size: 11px !important;
     }
 
+    /* ----------------------------------------------------------------------
+       Membership / Measurement / Attendance shared card base
+       ---------------------------------------------------------------------- */
+
     .gym-membership-table,
     .gym-measurement-table,
     .gym-attendance-table {
@@ -1369,6 +1485,10 @@
         overflow-wrap: anywhere !important;
     }
 
+    /* Membership:
+       Row 1 = ID | Status
+       Row 2 = Plan
+       Row 3 = Remark By | Start - End Date */
 
     .gym-membership-table tbody > tr:not(:has(td[colspan])) > td:nth-child(1) {
         grid-column: 1;
@@ -1514,6 +1634,11 @@
     .gym-measurement-table tbody > tr:not(:has(td[colspan])) > td:nth-child(5)::before { content: "BMI"; }
     .gym-measurement-table tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before { content: "BMR"; }
 
+    /* Attendance:
+       Row 1 = Membership Code | Total Time
+       Row 2 = Check In | Check Out
+       Member stays in XML but is hidden only on mobile. */
+
     .gym-attendance-table tbody > tr:not(:has(td[colspan])) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         grid-template-rows: auto auto !important;
@@ -1647,6 +1772,11 @@
         line-height: 1.2 !important;
     }
 
+    /* ----------------------------------------------------------------------
+       Workout / Diet detail header
+       Title + date stay stacked; arrow occupies the unused right space.
+       ---------------------------------------------------------------------- */
+
     .gym-plan-detail-header {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) 34px !important;
@@ -1720,215 +1850,5 @@
         letter-spacing: .3px !important;
         margin-bottom: 4px !important;
         text-transform: uppercase !important;
-    }
-}
-
-@media (max-width: 767.98px) {
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-        column-gap: 10px !important;
-        row-gap: 0 !important;
-        align-items: start !important;
-        width: 100% !important;
-        padding: 8px 12px !important;
-        box-sizing: border-box !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td {
-        min-width: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        border: 0 !important;
-        line-height: 1.3 !important;
-        overflow-wrap: anywhere !important;
-    }
-
-    /* Left column: Monday stays above Exercise. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(1) {
-        grid-column: 1 !important;
-        grid-row: 1 !important;
-        padding: 4px 6px 4px 4px !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(2) {
-        grid-column: 1 !important;
-        grid-row: 2 !important;
-        padding: 4px 6px 8px 4px !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        line-height: 1.25 !important;
-        border: 0 !important;
-    }
-
-    /* Right column: Image above Video. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) {
-        grid-column: 2 !important;
-        grid-row: 1 / 3 !important;
-        padding: 4px !important;
-        border: 0 !important;
-        align-self: start !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) {
-        grid-column: 2 !important;
-        grid-row: 3 !important;
-        padding: 4px !important;
-        border: 0 !important;
-        align-self: start !important;
-    }
-
-    /* When image exists, keep its natural 128px thumbnail. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) > img:first-of-type {
-        display: block !important;
-        width: 128px !important;
-        height: 128px !important;
-        max-width: 128px !important;
-        max-height: 128px !important;
-        object-fit: cover !important;
-        border-radius: 8px !important;
-        cursor: zoom-in !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4):not(:has(img)),
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5):not(:has(a)) {
-        display: none !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])):has(> td:nth-child(4):not(:has(img))) > td:nth-child(5) {
-        grid-column: 2 !important;
-        grid-row: 1 / 3 !important;
-        align-self: start !important;
-        padding: 4px !important;
-    }
-
-    /* Video label/link */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5)::before {
-        content: "VIDEO" !important;
-        display: block !important;
-        margin-bottom: 4px !important;
-        color: #6c757d !important;
-        font-size: 8px !important;
-        font-weight: 700 !important;
-        line-height: 1.2 !important;
-        letter-spacing: .3px !important;
-        text-transform: uppercase !important;
-    }
-
-    /* Image label */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4)::before {
-        content: "IMAGE" !important;
-        display: block !important;
-        margin-bottom: 4px !important;
-        color: #6c757d !important;
-        font-size: 8px !important;
-        font-weight: 700 !important;
-        line-height: 1.2 !important;
-        letter-spacing: .3px !important;
-        text-transform: uppercase !important;
-    }
-
-    /* Metrics: Sets | Reps | Rest Time. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6) {
-        grid-column: 1 !important;
-        grid-row: 4 !important;
-        border-top: 1px solid #edf0f2 !important;
-        padding: 7px 4px !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7) {
-        grid-column: 2 !important;
-        grid-row: 4 !important;
-        border-top: 1px solid #edf0f2 !important;
-        padding: 7px 4px !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8) {
-        grid-column: 1 / 3 !important;
-        grid-row: 4 !important;
-        border-top: 1px solid #edf0f2 !important;
-        padding: 7px 4px !important;
-        transform: translateX(100%) !important;
-        width: 50% !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) {
-        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(1) {
-        grid-column: 1 / 4 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(2) {
-        grid-column: 1 / 4 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(4) {
-        grid-column: 4 / 7 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(5) {
-        grid-column: 4 / 7 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6) {
-        grid-column: 1 / 3 !important;
-        grid-row: 4 !important;
-        transform: none !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7) {
-        grid-column: 3 / 5 !important;
-        grid-row: 4 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8) {
-        grid-column: 5 / 7 !important;
-        grid-row: 4 !important;
-        transform: none !important;
-        width: 100% !important;
-    }
-
-    /* Steps: full width and smaller label/text. */
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3) {
-        grid-column: 1 / 7 !important;
-        grid-row: 5 !important;
-        padding: 8px 4px !important;
-        border: 0 !important;
-        font-size: 11px !important;
-        line-height: 1.3 !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3)::before,
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before,
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7)::before,
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8)::before {
-        display: block !important;
-        margin-bottom: 4px !important;
-        color: #6c757d !important;
-        font-size: 8px !important;
-        font-weight: 700 !important;
-        line-height: 1.2 !important;
-        letter-spacing: .3px !important;
-        text-transform: uppercase !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(3)::before {
-        content: "STEPS" !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(6)::before {
-        content: "SETS" !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(7)::before {
-        content: "REPS" !important;
-    }
-
-    .table-responsive > table.table.mb-0:has(thead > tr > th:nth-child(8)):not(:has(thead > tr > th:nth-child(9))) tbody > tr:not(:has(td[colspan])) > td:nth-child(8)::before {
-        content: "REST TIME" !important;
     }
 }

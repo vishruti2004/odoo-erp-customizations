@@ -38,6 +38,7 @@ This module manages the complete membership lifecycle including:
     "data": [
         # Security
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
 
         # Data
         "data/mail_template.xml",

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="gym_membership_plan_company_rule" model="ir.rule">
+        <field name="name">Membership Plan Company Access</field>
+        <field name="model_id" ref="model_gym_membership_plan"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin')), (4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+    <record id="gym_membership_trial_company_rule" model="ir.rule">
+        <field name="name">Membership Trial Company Access</field>
+        <field name="model_id" ref="model_gym_membership_trial"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin')), (4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+    <record id="gym_member_measurement_company_rule" model="ir.rule">
+        <field name="name">Member Measurement Company Access</field>
+        <field name="model_id" ref="model_gym_member_measurement"/>
+        <field name="domain_force">[('company_id', '=', company_id)]</field>
+        <field name="groups" eval="[(4, ref('iPredict_gym_base.group_gym_admin')), (4, ref('iPredict_gym_base.group_gym_user'))]"/>
+    </record>
+
+    <!-- <record id="gym_member_branch_visibility_rule" model="ir.rule">
+        <field name="name">Gym Member Branch Visibility</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            ['|',
+                ('is_gym_member', '=', False),
+                ('membership_history_ids.company_id', '=', company_id)
+            ]
+        </field>
+    </record> -->
+
+</odoo>
