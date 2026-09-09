@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_3d_user,stock.3d.user,model_stock_location,base.group_user,1,0,0,0
+access_stock_3d_manager,stock.3d.manager,model_stock_location,stock.group_stock_manager,1,1,1,1
+access_stock_3d_controller,stock.3d.controller,model_stock_location,base.group_system,1,0,0,0

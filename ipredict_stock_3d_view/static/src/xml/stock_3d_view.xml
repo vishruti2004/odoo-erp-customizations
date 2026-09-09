@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <div t-name="ipredict_stock_3d_view.Stock3DView"
+         class="o_stock_3d_view d-flex flex-column h-100 w-100">
+
+        <div class="o_3d_canvas_wrapper flex-grow-1 position-relative">
+            <div t-ref="canvas" class="o_3d_canvas w-100 h-100"/>
+
+            <!-- Overlay UI -->
+            <div class="o_3d_overlay position-absolute top-0 start-0 p-3">
+                <div class="bg-white rounded shadow-sm p-2 d-flex gap-2 flex-wrap">
+                    <input type="text" class="form-control form-control-sm"
+                           t-model="state.searchQuery"
+                           placeholder="Search Location or Product..."
+                           style="width: 250px;"/>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            t-on-click="clearSearch">Clear</button>
+                    <button class="btn btn-sm btn-outline-primary"
+                            t-on-click="toggleHeatmap">
+                        <t t-if="state.heatmapEnabled">Heatmap ON</t>
+                        <t t-else="">Heatmap OFF</t>
+                    </button>
+                    <button class="btn btn-sm btn-outline-success"
+                            t-on-click="toggleWalkMode">
+                        <t t-if="state.walkMode">Walk Mode ON</t>
+                        <t t-else="">Walk Mode OFF</t>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Legend (bottom-left) -->
+            <div class="o_3d_legend position-absolute bottom-0 start-0 p-3">
+                <div class="rounded shadow-lg p-3"
+                     style="background: rgba(15, 23, 42, 0.85); color: #ffffff; font-size: 13px; min-width: 140px;">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#22c55e;"/>
+                        <span>In use</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#f59e0b;"/>
+                        <span>Almost full</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#ef4444;"/>
+                        <span>Overloaded</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#3b82f6;"/>
+                        <span>No capacity</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#9ca3af;"/>
+                        <span>Empty</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Panel -->
+            <div class="o_3d_detail_panel position-absolute bottom-0 end-0 p-3"
+                 t-if="state.selectedLocation">
+                <div class="bg-white rounded shadow-lg p-3" style="width: 400px; max-height: 70vh; overflow-y: auto;">
+                    <!-- Name -->
+                    <h5 t-esc="state.selectedLocation.complete_name"/>
+
+                    <!-- Stats -->
+                    <div class="d-flex justify-content-between">
+                        <span t-esc="'On Hand: ' + state.selectedLocation.on_hand"/>
+                        <span t-esc="'Capacity: ' + state.selectedLocation.capacity"/>
+                        <span t-esc="'Fill: ' + state.selectedLocation.fill_percentage + '%'"/>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mt-1">
+                        <div class="progress-bar"
+                             t-att-class="state.selectedLocation.fill_percentage > 80 ? 'bg-danger' : state.selectedLocation.fill_percentage > 50 ? 'bg-warning' : 'bg-success'"
+                             t-att-style="'width:' + state.selectedLocation.fill_percentage + '%'"/>
+                    </div>
+
+                    <hr/>
+
+                    <!-- Products with t-key -->
+                    <p><strong>Products Stored:</strong></p>
+                    <t t-if="state.selectedLocation.product_ids.length === 0">
+                        <span class="text-muted">No products stored.</span>
+                    </t>
+                    <t t-else="">
+                        <div t-foreach="state.selectedLocation.product_ids" t-as="pid" t-key="pid.id">
+                            <span class="badge bg-secondary me-1" t-esc="pid.name"/>
+                        </div>
+                    </t>
+
+                    <!-- Buttons -->
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-secondary" t-on-click="closeDetail">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</templates>

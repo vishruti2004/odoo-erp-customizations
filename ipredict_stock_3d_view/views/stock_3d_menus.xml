@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_stock_3d_root" name="3D Warehouse" sequence="100"
+              parent="stock.menu_stock_root" groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_stock_3d_view" name="3D View" parent="menu_stock_3d_root"
+              action="action_stock_3d_view" sequence="10"/>
+</odoo>

@@ -1,0 +1,40 @@
+.o_stock_3d_view {
+    width: 100%;
+    height: 100%;
+    background-color: #f0f2f5;
+}
+
+.o_3d_canvas_wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.o_3d_canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: #e8ecf1;
+}
+
+.o_3d_overlay {
+    pointer-events: none;
+}
+.o_3d_overlay > * {
+    pointer-events: auto;
+}
+
+.o_3d_detail_panel {
+    pointer-events: none;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px;
+    max-width: 90%;
+}
+.o_3d_detail_panel > * {
+    pointer-events: auto;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
