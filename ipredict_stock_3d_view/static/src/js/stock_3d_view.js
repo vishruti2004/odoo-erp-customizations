@@ -6,8 +6,6 @@ import { useService } from "@web/core/utils/hooks";
 
 const actionRegistry = registry.category("actions");
 
-// ---- CONSTANTS ----
-const STOCK_BOX_COLOR = 0xf3ce8a;
 const STATUS_COLORS = {
     inUse: "#22c55e",
     almostFull: "#f59e0b",
@@ -16,17 +14,21 @@ const STATUS_COLORS = {
     empty: "#9ca3af",
 };
 
+const hexToInt = (hex, fallback) => {
+    if (!hex) return fallback;
+    try { return parseInt(String(hex).replace('#', ''), 16); }
+    catch (e) { return fallback; }
+};
+
 export class Stock3DView extends Component {
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.canvasRef = useRef("canvas");
 
-        // ---- THREE.JS OBJECTS ----
         this.scene = null;
         this.camera = null;
         this.renderer = null;
-        this.labelRenderer = null;
         this.animationFrame = null;
         this.raycaster = null;
         this.mouse = null;
@@ -39,16 +41,23 @@ export class Stock3DView extends Component {
         this.forkliftProgress = 0;
         this.forkliftSpeed = 0.002;
 
-        // ---- STATE ----
+        // ---- Fly-to state ----
+        this._flyingTo = false;
+        this._prevCameraPos = null;
+        this._prevOrbitTarget = null;
+
+        this._highlightedLabel = null;
+
         this.state = useState({
             searchQuery: "",
             heatmapEnabled: false,
             walkMode: false,
-            selectedLocation: null,   
-            selectedProduct: null,    
+            selectedLocation: null,
+            selectedProduct: null,
             locations: [],
             products: [],
             filteredLocations: [],
+            flying: false,
         });
 
         this.isOrbiting = false;
@@ -56,7 +65,6 @@ export class Stock3DView extends Component {
         this.lastY = 0;
         this.orbitTarget = null;
 
-        // ---- EVENT HANDLERS ----
         this.resizeHandler = this.onResize.bind(this);
         this.boundOnMouseDown = this.onMouseDown.bind(this);
         this.boundOnMouseMove = this.onMouseMove.bind(this);
@@ -88,15 +96,8 @@ export class Stock3DView extends Component {
                 this.renderer.domElement.removeEventListener("wheel", this.boundOnWheel);
                 this.renderer.dispose();
             }
-            if (this.labelRenderer) {
-                this.labelRenderer.domElement.remove();
-            }
         });
     }
-
-    // ====================================================================
-    //  LOAD LIBRARIES
-    // ====================================================================
 
     async loadThreeJS() {
         if (window.THREE) {
@@ -108,14 +109,11 @@ export class Stock3DView extends Component {
             const script = document.createElement("script");
             script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
             script.onload = async () => {
-                console.log("✅ Three.js loaded from CDN");
                 await this.loadGLTFLoader();
                 this.threeLoaded = true;
                 resolve();
             };
-            script.onerror = () => {
-                reject(new Error("Failed to load Three.js from CDN"));
-            };
+            script.onerror = () => reject(new Error("Failed to load Three.js"));
             document.head.appendChild(script);
         });
     }
@@ -125,21 +123,11 @@ export class Stock3DView extends Component {
         return new Promise((resolve) => {
             const script = document.createElement("script");
             script.src = "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js";
-            script.onload = () => {
-                console.log("✅ GLTFLoader loaded:", !!window.THREE.GLTFLoader);
-                resolve();
-            };
-            script.onerror = () => {
-                console.warn("⚠️ GLTFLoader load failed");
-                resolve();
-            };
+            script.onload = () => resolve();
+            script.onerror = () => resolve();
             document.head.appendChild(script);
         });
     }
-
-    // ====================================================================
-    //  LOAD DATA FROM ODOO
-    // ====================================================================
 
     async loadData() {
         try {
@@ -148,33 +136,23 @@ export class Stock3DView extends Component {
                 this.state.locations = result.locations;
                 this.state.products = result.products || [];
                 this.state.filteredLocations = this.state.locations;
-                console.log("✅ Loaded locations:", this.state.locations.length);
             } else {
-                this.notification.add("No 3D locations found. Please configure locations.", { type: "warning" });
+                this.notification.add("No 3D locations found.", { type: "warning" });
             }
         } catch (e) {
-            console.error("❌ 3D data load error:", e);
+            console.error("3D data load error:", e);
             this.notification.add("Failed to load warehouse data.", { type: "danger" });
         }
     }
 
-    // ====================================================================
-    //  INIT THREE.JS SCENE
-    // ====================================================================
-
     initScene() {
-        if (!this.threeLoaded || !window.THREE) {
-            console.error("❌ Three.js not loaded yet");
-            return;
-        }
-
+        if (!this.threeLoaded || !window.THREE) return;
         const container = this.canvasRef.el;
         if (!container) return;
 
         const width = container.clientWidth || window.innerWidth;
         const height = container.clientHeight || window.innerHeight;
 
-        // ---- MAIN RENDERER ----
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xf0f2f5);
 
@@ -188,440 +166,495 @@ export class Stock3DView extends Component {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
 
-        // ---- CSS2D RENDERER (optional) ----
-        if (window.THREE.CSS2DRenderer) {
-            this.labelRenderer = new THREE.CSS2DRenderer();
-            this.labelRenderer.setSize(width, height);
-            this.labelRenderer.domElement.style.position = 'absolute';
-            this.labelRenderer.domElement.style.top = '0px';
-            this.labelRenderer.domElement.style.left = '0px';
-            this.labelRenderer.domElement.style.pointerEvents = 'none';
-            container.style.position = 'relative';
-            container.appendChild(this.labelRenderer.domElement);
-            console.log("✅ CSS2DRenderer initialized");
-        } else {
-            console.warn("⚠️ CSS2DRenderer not available, labels will use Sprites");
-        }
-
-        // ---- LIGHTING ----
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.85);
         this.scene.add(ambient);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
         dirLight.position.set(20, 30, 20);
         dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -40;
+        dirLight.shadow.camera.right = 40;
+        dirLight.shadow.camera.top = 40;
+        dirLight.shadow.camera.bottom = -40;
         this.scene.add(dirLight);
 
-        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+        const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
         dirLight2.position.set(-20, 10, -20);
         this.scene.add(dirLight2);
 
-        // ---- RAYCASTER ----
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
         this.orbitTarget = new THREE.Vector3(0, 0, 0);
     }
 
-    // ====================================================================
-    //  RENDER SCENE
-    // ====================================================================
-
     renderScene() {
-        console.log("🔵 renderScene called, locations:", this.state.locations.length);
-
         if (!this.scene || !this.threeLoaded) return;
 
-        // Clear previous objects
-        this.rackMeshes.forEach(obj => this.scene.remove(obj));
+        this.rackMeshes.forEach(obj => { if (obj.parent) obj.parent.remove(obj); });
         this.rackMeshes = [];
-        this.labelObjects.forEach(obj => {
-            if (obj.parent) obj.parent.remove(obj);
-        });
+        this.labelObjects.forEach(obj => { if (obj.parent) obj.parent.remove(obj); });
         this.labelObjects = [];
+        this._highlightedLabel = null;
 
         this.drawFloor();
-        this.drawRacks();
 
-        // Create forklift and path (if not already created)
-        if (!this.forklift) {
-            this.createForklift();
-        }
-        if (!this.forkliftPath) {
-            this.createForkliftPath();
-        }
+        const locations = this.state.searchQuery
+            ? this.state.locations.filter(l =>
+                (l.complete_name || l.name).toLowerCase()
+                    .includes(this.state.searchQuery.toLowerCase()))
+            : this.state.locations;
+
+        this.state.filteredLocations = locations;
+
+        locations.forEach(loc => this.drawRack(loc));
+
+        if (!this.forklift) this.createForklift();
+        if (!this.forkliftPath) this.createForkliftPath();
 
         this.fitCamera();
         this.animate();
     }
 
-    // ---- FLOOR ----
     drawFloor() {
-        const gridHelper = new THREE.GridHelper(60, 20, 0x888888, 0xcccccc);
+        const gridHelper = new THREE.GridHelper(80, 40, 0x888888, 0xcccccc);
         gridHelper.position.y = -0.01;
         this.scene.add(gridHelper);
         this.rackMeshes.push(gridHelper);
     }
 
-    // ---- DRAW RACKS ----
-    drawRacks() {
-        console.log("🟢 drawRacks called, locations:", this.state.locations.length);
-
-        const locations = this.state.searchQuery
-            ? this.state.locations.filter(l =>
-                (l.complete_name || l.name).toLowerCase().includes(this.state.searchQuery.toLowerCase())
-              )
-            : this.state.locations;
-
-        this.state.filteredLocations = locations;
-
-        locations.forEach((loc) => {
-            this.drawRack(loc);
-        });
-    }
-
-    // ---- DRAW RACK (GLB + Stock Boxes) ----
     drawRack(loc) {
-        console.log("🟡 Drawing rack:", loc.complete_name);
+        const group = new THREE.Group();
 
-        if (!window.THREE.GLTFLoader) {
-            console.warn("⚠️ GLTFLoader not available, skipping rack:", loc.complete_name);
-            return;
+        const heatmapOn = this.state.heatmapEnabled;
+        const status = this.getRackStatus(loc);
+
+        let uprightHex, beamHex, slatHex;
+
+        if (heatmapOn) {
+            const baseHex = parseInt(status.color.replace('#', ''), 16);
+            const baseColor = new THREE.Color(baseHex);
+
+            const uColor = baseColor.clone().multiplyScalar(0.75);
+            uprightHex = uColor.getHex();
+            beamHex = baseHex;
+            const sColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.45);
+            slatHex = sColor.getHex();
+        } else {
+            uprightHex = hexToInt(loc.color_upright, 0x4F6489);
+            beamHex = hexToInt(loc.color_beam, 0xF4C842);
+            slatHex = hexToInt(loc.color_slat, 0xD5D5D5);
         }
 
-        const cx = loc.pos_x;
-        const cz = loc.pos_z;
-        const floorY = loc.pos_y;
+        const uprightMat = new THREE.MeshStandardMaterial({
+            color: uprightHex, metalness: 0.15, roughness: 0.65,
+        });
+        const beamMat = new THREE.MeshStandardMaterial({
+            color: beamHex, metalness: 0.1, roughness: 0.55,
+        });
+        const slatMat = new THREE.MeshStandardMaterial({
+            color: slatHex, metalness: 0.05, roughness: 0.85,
+        });
 
-        const loader = new THREE.GLTFLoader();
-        const modelPath = '/ipredict_stock_3d_view/static/src/models/rack+de+pallet.glb';
+        const L = loc.rack_length || 3.0;
+        const W = loc.rack_width || 1.2;
+        const H = loc.rack_height || 3.0;
+        const levels = Math.max(1, loc.shelf_levels || 5);
+        const bins = Math.max(1, loc.bins_per_level || 3);
+        const postW = loc.post_thickness || 0.09;
+        const postD = postW * 0.8;
+        const beamH = loc.beam_height || 0.16;
+        const beamD = 0.05;
+        const slatH = 0.025;
+        const braceT = 0.035;
 
-        loader.load(modelPath, (gltf) => {
-            const rack = gltf.scene;
-            rack.scale.set(0.5, 0.5, 0.5);
+        // Uprights
+        const frameCount = bins + 1;
+        const frameSpacing = L / bins;
+        for (let i = 0; i < frameCount; i++) {
+            const xPos = -L / 2 + i * frameSpacing;
 
-            // ---- Get actual GLB dimensions ----
-            const box = new THREE.Box3().setFromObject(rack);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            const boxCenter = new THREE.Vector3();
-            box.getCenter(boxCenter);
-            const minY = box.min.y;
+            const fp = new THREE.Mesh(new THREE.BoxGeometry(postW, H, postD), uprightMat);
+            fp.position.set(xPos, H / 2, W / 2 - postD / 2);
+            fp.castShadow = true; fp.receiveShadow = true;
+            group.add(fp);
 
-            // ---- Center the GLB ----
-            rack.position.x += (cx - boxCenter.x);
-            rack.position.z += (cz - boxCenter.z);
-            rack.position.y += (floorY - minY);
+            const bp = new THREE.Mesh(new THREE.BoxGeometry(postW, H, postD), uprightMat);
+            bp.position.set(xPos, H / 2, -W / 2 + postD / 2);
+            bp.castShadow = true; bp.receiveShadow = true;
+            group.add(bp);
 
-            // ---- Heatmap (optional) ----
-            if (this.state.heatmapEnabled) {
-                const color = new THREE.Color().setHSL(0.3 - (loc.fill_percentage / 100) * 0.3, 1, 0.5);
-                rack.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        child.material = child.material.clone();
-                        child.material.color.set(color);
-                    }
-                });
+            [0.06, H - 0.06].forEach(y => {
+                const tie = new THREE.Mesh(
+                    new THREE.BoxGeometry(postW * 0.7, braceT, W - postD),
+                    uprightMat
+                );
+                tie.position.set(xPos, y, 0);
+                group.add(tie);
+            });
+        }
+
+        // X-bracing
+        [-L / 2, L / 2].forEach(xPos => {
+            const spanZ = W - postD * 2;
+            const spanY = H - 0.2;
+            const diagLen = Math.sqrt(spanZ * spanZ + spanY * spanY);
+            const diagAngle = Math.atan2(spanZ, spanY);
+
+            const d1 = new THREE.Mesh(new THREE.BoxGeometry(braceT, diagLen, braceT), uprightMat);
+            d1.position.set(xPos, H / 2, 0);
+            d1.rotation.x = diagAngle;
+            group.add(d1);
+
+            const d2 = new THREE.Mesh(new THREE.BoxGeometry(braceT, diagLen, braceT), uprightMat);
+            d2.position.set(xPos, H / 2, 0);
+            d2.rotation.x = -diagAngle;
+            group.add(d2);
+        });
+
+        // Shelves
+        const levelYs = [];
+        const bottomY = 0.15 + beamH / 2;
+        const topY = H - 0.15 - beamH / 2;
+        const usable = topY - bottomY;
+        const step = levels > 1 ? usable / (levels - 1) : 0;
+
+        for (let i = 0; i < levels; i++) {
+            const y = bottomY + i * step;
+            levelYs.push(y);
+
+            [W / 2 - beamD / 2 - postD / 2 + 0.02,
+             -W / 2 + beamD / 2 + postD / 2 - 0.02].forEach(z => {
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(L, beamH, beamD), beamMat);
+                beam.position.set(0, y, z);
+                beam.castShadow = true; beam.receiveShadow = true;
+                group.add(beam);
+            });
+
+            const innerW = W - 2 * postD - beamD;
+            if (innerW > 0.05) {
+                const slatCount = Math.max(8, Math.floor(L * 7));
+                const slatSpacing = L / slatCount;
+                const slatWidth = slatSpacing * 0.5;
+                for (let s = 0; s < slatCount; s++) {
+                    const sx = -L / 2 + slatSpacing * (s + 0.5);
+                    const slat = new THREE.Mesh(
+                        new THREE.BoxGeometry(slatWidth, slatH, innerW),
+                        slatMat
+                    );
+                    slat.position.set(sx, y + beamH / 2 - slatH / 2 - 0.001, 0);
+                    slat.castShadow = true; slat.receiveShadow = true;
+                    group.add(slat);
+                }
             }
+        }
 
-            rack.userData = { locationId: loc.id, type: 'rack' };
+        this.renderSlotBoxes(group, loc, levelYs, L, W, bins, beamH);
 
-            this.scene.add(rack);
-            this.rackMeshes.push(rack);
+        const catcher = new THREE.Mesh(
+            new THREE.BoxGeometry(L + 0.1, H + 0.1, W + 0.1),
+            new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+            })
+        );
+        catcher.position.set(0, H / 2, 0);
+        catcher.userData = {
+            type: 'rack',
+            locationId: loc.id,
+            isClickCatcher: true,
+        };
+        catcher.renderOrder = -1;
+        group.add(catcher);
 
-            // ---- ADD STOCK BOXES (1 Product = 1 Box) ----
-            this.addStockBoxes(loc, cx, floorY, cz, size);
+        group.position.set(loc.pos_x, loc.pos_y, loc.pos_z);
+        group.userData = { type: 'rack', locationId: loc.id };
 
-            // ---- LABEL ----
-            const labelY = floorY + size.y + 0.35;
-            this.addLabel(loc, cx, labelY, cz);
+        this.scene.add(group);
+        this.rackMeshes.push(group);
 
-        }, undefined, (error) => {
-            console.warn("⚠️ GLB rack not loaded for:", loc.complete_name, error);
+        const labelY = loc.pos_y + H + 1.0;
+        this.addLabel(loc, loc.pos_x, labelY, loc.pos_z, group);
+    }
+
+
+          // ==================== SLOT BOXES ====================
+    renderSlotBoxes(rackGroup, loc, levelYs, L, W, bins, beamH) {
+        const binWidth = L / bins;
+        const boxW = Math.min(binWidth * 0.55, 0.42);
+        const boxH = 0.20;
+        const boxD = Math.min(W * 0.55, 0.45);
+        const defaultColor = hexToInt(loc.color_box, 0xE8C89A);
+
+        const slots = loc.slots || [];
+
+        slots.forEach((slot) => {
+            const lvl = slot.level;
+            const bin = slot.bin;
+            if (lvl == null || bin == null) return;
+            if (lvl < 0 || lvl >= levelYs.length) return;
+            if (bin < 0 || bin >= bins) return;
+
+            const xPos = -L / 2 + binWidth * (bin + 0.5);
+
+            const slotCenterY = levelYs[lvl] + beamH / 2 + boxH / 2 + 0.02;
+
+            const products = slot.products || [];
+            const displayName = slot.location_name || slot.complete_name || '';
+
+            if (products.length > 0) {
+                // ---- Box hoy — box + label upar ----
+                let topBoxY = slotCenterY + boxH / 2;
+
+                products.forEach((prod, pIdx) => {
+                    const color = hexToInt(prod.color, defaultColor);
+                    const box = new THREE.Mesh(
+                        new THREE.BoxGeometry(boxW, boxH, boxD),
+                        new THREE.MeshStandardMaterial({
+                            color, roughness: 0.7, metalness: 0.05,
+                        })
+                    );
+                    const yOffset = slotCenterY + pIdx * (boxH + 0.02);
+                    box.position.set(xPos, yOffset, 0);
+                    box.castShadow = true; box.receiveShadow = true;
+                    box.userData = {
+                        type: 'product',
+                        productId: prod.id,
+                        product_name: prod.name,
+                        quantity: prod.qty,
+                        locationId: slot.location_id,
+                        location_name: slot.complete_name || displayName,
+                    };
+                    rackGroup.add(box);
+                    topBoxY = yOffset + boxH / 2;
+                });
+
+                // Label ABOVE box
+                const labelY = topBoxY + 0.13;
+                this.addSlotLabel(
+                    rackGroup, displayName,
+                    xPos, labelY, 0,
+                    binWidth, true
+                );
+            } else {
+                this.addSlotLabel(
+                    rackGroup, displayName,
+                    xPos, slotCenterY, 0,
+                    binWidth, false
+                );
+            }
         });
     }
 
-    addStockBoxes(loc, cx, floorY, cz, rackSize) {
-        const rack_length = rackSize.x;
-        const rack_width = rackSize.z;
-        const rack_height = rackSize.y;
-
-        let shelf_levels = loc.shelf_levels > 0 ? loc.shelf_levels : 5;
-        let bins_per_level = loc.bins_per_level > 0 ? loc.bins_per_level : 2;
-
-        const MAX_SHELF_LEVELS = 10;
-        if (shelf_levels > MAX_SHELF_LEVELS) {
-            console.warn(`⚠️ shelf_levels (${shelf_levels}) capped to ${MAX_SHELF_LEVELS} for visibility.`);
-            shelf_levels = MAX_SHELF_LEVELS;
-        }
-        if (bins_per_level < 1) bins_per_level = 2;
-
-        let productIds = loc.product_ids || [];
-        let productCount = productIds.length;
-
-        if (productCount === 0) return;
-
-        const shelfHeight = rack_height / (shelf_levels + 1);
-        const widthPerBin = rack_length / bins_per_level;
-        const boxSize = Math.min(widthPerBin - 0.1, 0.4);
-        const totalSlots = shelf_levels * bins_per_level;
-
-        for (let i = 0; i < productCount; i++) {
-            const slotIndex = i % totalSlots;
-            const stackLevel = Math.floor(i / totalSlots);
-
-            const level = Math.floor(slotIndex / bins_per_level);
-            const bin = slotIndex % bins_per_level;
-
-            const xOff = bin * widthPerBin + widthPerBin / 2 - rack_length / 2 + 0.1;
-            const yOff = floorY + (level + 0.5) * shelfHeight + 0.05 + stackLevel * 0.22;
-
-            const prodGeo = new THREE.BoxGeometry(boxSize, 0.2, boxSize);
-            const prodMat = new THREE.MeshStandardMaterial({
-                color: STOCK_BOX_COLOR,
-                roughness: 0.6,
-                metalness: 0.0,
-            });
-            const prod = new THREE.Mesh(prodGeo, prodMat);
-            prod.position.set(cx + xOff, yOff, cz);
-            prod.castShadow = true;
-            prod.receiveShadow = true;
-
-            const productId = productIds[i];
-            prod.userData = {
-                productId: productId,
-                type: 'product',
-                locationId: loc.id,
-            };
-
-            this.scene.add(prod);
-            this.rackMeshes.push(prod);
-        }
+    formatQty(qty) {
+        const rounded = Math.round((qty || 0) * 100) / 100;
+        return `${rounded} pcs`;
     }
 
-    // ---- LABEL (Sprite) ----
-    addLabel(loc, x, y, z) {
-        if (!this.threeLoaded || !window.THREE) {
-            console.warn("⚠️ Three.js not loaded, label skipped for:", loc.name);
-            return;
+    
+    addSlotLabel(parentGroup, text, x, y, z, binWidth, occupied) {
+        if (!this.threeLoaded || !window.THREE || !text) return null;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 320;
+        canvas.height = 96;
+        const w = canvas.width, h = canvas.height, r = 22;
+
+        // Unified dark pill background for both states.
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        ctx.beginPath();
+        ctx.moveTo(r, 0);
+        ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r);
+        ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
+        ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
+        ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = occupied ? 'rgba(34,197,94,0.55)' : 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        const dotX = 30, dotY = h / 2;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 10, 0, Math.PI * 2);
+        ctx.fillStyle = occupied ? '#22c55e' : '#9ca3af';
+        if (occupied) {
+            ctx.shadowColor = '#22c55e';
+            ctx.shadowBlur = 12;
         }
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        const maxTextWidth = w - 58;
+        let fontSize = 34;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        let displayText = text;
+        ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+        while (ctx.measureText(displayText).width > maxTextWidth && fontSize > 18) {
+            fontSize -= 2;
+            ctx.font = `600 ${fontSize}px Arial, sans-serif`;
+        }
+        if (ctx.measureText(displayText).width > maxTextWidth) {
+            while (displayText.length > 3 && ctx.measureText(displayText + '…').width > maxTextWidth) {
+                displayText = displayText.slice(0, -1);
+            }
+            displayText += '…';
+        }
+        ctx.fillText(displayText, 54, h / 2 + 1);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: tex, transparent: true, depthTest: false, depthWrite: false,
+        }));
+        sprite.position.set(x, y, z);
+
+        const aspect = canvas.width / canvas.height;
+        const targetWidth = Math.min(binWidth * 0.60, 0.70);       
+        const targetHeight = targetWidth / aspect;
+        sprite.scale.set(targetWidth, targetHeight, 1);
+        sprite.userData.baseScale = { x: targetWidth, y: targetHeight };
+        sprite.renderOrder = 2;
+
+        parentGroup.add(sprite);
+        this.labelObjects.push(sprite);
+        return sprite;
+    }
+
+    addLabel(loc, x, y, z, parentGroup) {
+        if (!this.threeLoaded || !window.THREE) return;
 
         const status = this.getRackStatus(loc);
-        const codeText = loc.code_3d || loc.complete_name || loc.name;
-        const hasCapacity = loc.capacity_3d > 0 && loc.fill_percentage !== null && loc.fill_percentage !== undefined;
-        const pctText = hasCapacity ? `${Math.round(loc.fill_percentage)}%` : "-";
+        const codeText = loc.code_3d || loc.name;
+        const hasCap = loc.capacity > 0 && loc.fill_percentage != null;
+        const pctText = hasCap ? `${Math.round(loc.fill_percentage)}%` : "-";
         const mainText = `${codeText}  ${pctText}`;
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 512;
+        canvas.width = 768;       
         canvas.height = 128;
+        const w = canvas.width, h = canvas.height, r = 30;
 
-        // Background (rounded pill)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.80)';
-        const radius = 30;
-        const w = canvas.width;
-        const h = canvas.height;
+        // Background
+        ctx.fillStyle = 'rgba(0,0,0,0.80)';
         ctx.beginPath();
-        ctx.moveTo(radius, 0);
-        ctx.lineTo(w - radius, 0);
-        ctx.quadraticCurveTo(w, 0, w, radius);
-        ctx.lineTo(w, h - radius);
-        ctx.quadraticCurveTo(w, h, w - radius, h);
-        ctx.lineTo(radius, h);
-        ctx.quadraticCurveTo(0, h, 0, h - radius);
-        ctx.lineTo(0, radius);
-        ctx.quadraticCurveTo(0, 0, radius, 0);
+        ctx.moveTo(r, 0);
+        ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r);
+        ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
+        ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
+        ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
         ctx.closePath();
         ctx.fill();
-
         ctx.strokeStyle = 'rgba(255,255,255,0.20)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.lineWidth = 2; ctx.stroke();
 
-        // Status Dot
-        const dotX = 40;
-        const dotY = h / 2;
-        const dotRadius = 14;
+        // Status dot
         ctx.beginPath();
-        ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+        ctx.arc(40, h / 2, 14, 0, Math.PI * 2);
         ctx.fillStyle = status.color;
         ctx.shadowColor = status.color;
-        ctx.shadowBlur = 12;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
 
-        // Text
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 42px Arial, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(mainText, dotX + dotRadius + 16, dotY + 2);
 
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        const material = new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true,
-            depthTest: false,
-            depthWrite: false,
-        });
-        const sprite = new THREE.Sprite(material);
+        const maxWidth = w - 70 - 25;
+        let fontSize = 46;
+        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+        while (ctx.measureText(mainText).width > maxWidth && fontSize > 22) {
+            fontSize -= 2;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+        }
+        ctx.fillText(mainText, 70, h / 2 + 2);
 
-        // ---- Position ----
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: tex, transparent: true, depthTest: false, depthWrite: false,
+        }));
         sprite.position.set(x, y, z);
-
-        // ---- Scale ----
         const aspect = canvas.width / canvas.height;
-        const labelHeight = 0.55;
-        sprite.scale.set(labelHeight * aspect, labelHeight, 1);
-
+        sprite.scale.set(0.55 * aspect, 0.55, 1);
         this.scene.add(sprite);
         this.labelObjects.push(sprite);
-        console.log(`🏷️ Label added for: ${loc.name} at (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
     }
 
-    // ---- STATUS ----
     getRackStatus(loc) {
-        const capacity = loc.capacity_3d;
-        const pct = loc.fill_percentage;
-
-        if (!capacity || capacity <= 0 || pct === null || pct === undefined) {
-            return { color: STATUS_COLORS.noCapacity, label: "No capacity" };
-        }
-        if (pct <= 0) {
-            return { color: STATUS_COLORS.empty, label: "Empty" };
-        }
-        if (pct >= 100) {
-            return { color: STATUS_COLORS.overloaded, label: "Overloaded" };
-        }
-        if (pct >= 80) {
-            return { color: STATUS_COLORS.almostFull, label: "Almost full" };
-        }
-        return { color: STATUS_COLORS.inUse, label: "In use" };
+        const cap = loc.capacity, pct = loc.fill_percentage;
+        if (!cap || cap <= 0 || pct == null) return { color: STATUS_COLORS.noCapacity };
+        if (pct <= 0) return { color: STATUS_COLORS.empty };
+        if (pct >= 100) return { color: STATUS_COLORS.overloaded };
+        if (pct >= 80) return { color: STATUS_COLORS.almostFull };
+        return { color: STATUS_COLORS.inUse };
     }
 
-    // ====================================================================
-    //  FORKLIFT 
-    // ====================================================================
+    collectProducts(node) {
+        const map = {};
+        const walk = (n) => {
+            (n.products || []).forEach(p => {
+                if (!map[p.id]) {
+                    map[p.id] = { id: p.id, name: p.name, qty: 0, color: p.color };
+                }
+                map[p.id].qty += (p.qty || 0);
+            });
+            (n.children || []).forEach(walk);
+        };
+        walk(node);
+        return Object.values(map);
+    }
 
     createForklift() {
-        if (!window.THREE || !window.THREE.GLTFLoader) {
-            console.warn("⚠️ GLTFLoader not available, using fallback forklift");
-            this.createFallbackForklift();
-            return;
-        }
-
+        if (!window.THREE || !window.THREE.GLTFLoader) return;
         const loader = new THREE.GLTFLoader();
-        const modelPath = '/ipredict_stock_3d_view/static/src/models/Gabelstapler.glb';
-
-        loader.load(modelPath, (gltf) => {
+        loader.load('/ipredict_stock_3d_view/static/src/models/Gabelstapler.glb', (gltf) => {
             this.forklift = gltf.scene;
             this.forklift.scale.set(0.12, 0.12, 0.12);
             this.forklift.position.set(0, 0.2, 0);
             this.scene.add(this.forklift);
-            console.log("✅ Forklift GLB loaded successfully!");
-        }, undefined, (error) => {
-            console.warn("⚠️ Forklift GLB load failed, using fallback:", error);
-            this.createFallbackForklift();
-        });
-    }
-
-    createFallbackForklift() {
-        const group = new THREE.Group();
-
-        const bodyGeo = new THREE.BoxGeometry(0.8, 0.3, 1.5);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff5722 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.15;
-        group.add(body);
-
-        const cabinGeo = new THREE.BoxGeometry(0.6, 0.3, 0.6);
-        const cabinMat = new THREE.MeshStandardMaterial({ color: 0x2196f3 });
-        const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-        cabin.position.set(0, 0.45, -0.3);
-        group.add(cabin);
-
-        const wheelGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.05, 8);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const wheelPositions = [
-            [-0.3, 0.05, 0.5],
-            [0.3, 0.05, 0.5],
-            [-0.3, 0.05, -0.5],
-            [0.3, 0.05, -0.5]
-        ];
-        wheelPositions.forEach(pos => {
-            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-            wheel.rotation.x = Math.PI / 2;
-            wheel.position.set(pos[0], pos[1], pos[2]);
-            group.add(wheel);
-        });
-
-        const forkGeo = new THREE.BoxGeometry(0.05, 0.02, 0.5);
-        const forkMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 });
-        const forkPositions = [
-            [-0.2, 0.05, 0.8],
-            [0.2, 0.05, 0.8]
-        ];
-        forkPositions.forEach(pos => {
-            const fork = new THREE.Mesh(forkGeo, forkMat);
-            fork.position.set(pos[0], pos[1], pos[2]);
-            group.add(fork);
-        });
-
-        group.scale.set(0.3, 0.3, 0.3);
-        this.scene.add(group);
-        this.forklift = group;
-        console.log("🟡 Fallback forklift created");
+        }, undefined, () => {});
     }
 
     createForkliftPath() {
         const points = [
-            new THREE.Vector3(-6, 0.2, -6),
-            new THREE.Vector3(-4, 0.2, -3),
-            new THREE.Vector3(-2, 0.2, 0),
-            new THREE.Vector3(2, 0.2, 0),
-            new THREE.Vector3(4, 0.2, -3),
-            new THREE.Vector3(6, 0.2, -6),
-            new THREE.Vector3(4, 0.2, -8),
-            new THREE.Vector3(-4, 0.2, -8),
-            new THREE.Vector3(-6, 0.2, -6)
+            new THREE.Vector3(-8, 0.2, -8),
+            new THREE.Vector3(-4, 0.2, -4),
+            new THREE.Vector3(0, 0.2, 0),
+            new THREE.Vector3(4, 0.2, -4),
+            new THREE.Vector3(8, 0.2, -8),
+            new THREE.Vector3(4, 0.2, -10),
+            new THREE.Vector3(-4, 0.2, -10),
+            new THREE.Vector3(-8, 0.2, -8),
         ];
-
         this.forkliftPath = new THREE.CatmullRomCurve3(points);
-
-        const curvePoints = this.forkliftPath.getPoints(50);
-        const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
-        const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-        const curveLine = new THREE.Line(geometry, material);
-        this.scene.add(curveLine);
-        this.rackMeshes.push(curveLine);
-        console.log("🟢 Forklift path created (far from racks)");
     }
 
-    // ====================================================================
-    //  CAMERA
-    // ====================================================================
-
+    // ==================== CAMERA ====================
     computeSceneBounds() {
         let minX = Infinity, maxX = -Infinity;
         let minZ = Infinity, maxZ = -Infinity;
         let maxY = 0;
 
-        this.state.locations.forEach((loc) => {
-            const rackWidth = 1.0;
-            const rackDepth = 1.0;
-
-            minX = Math.min(minX, loc.pos_x);
-            maxX = Math.max(maxX, loc.pos_x + rackWidth);
-            minZ = Math.min(minZ, loc.pos_z);
-            maxZ = Math.max(maxZ, loc.pos_z + rackDepth);
-            maxY = Math.max(maxY, loc.pos_y + 2.0);
+        this.state.locations.forEach(loc => {
+            const L = loc.rack_length || 3;
+            const W = loc.rack_width || 1.2;
+            const H = loc.rack_height || 3;
+            minX = Math.min(minX, loc.pos_x - L / 2);
+            maxX = Math.max(maxX, loc.pos_x + L / 2);
+            minZ = Math.min(minZ, loc.pos_z - W / 2);
+            maxZ = Math.max(maxZ, loc.pos_z + W / 2);
+            maxY = Math.max(maxY, loc.pos_y + H);
         });
 
         if (!isFinite(minX)) {
             return { centerX: 0, centerZ: 0, sizeX: 10, sizeZ: 10, maxY: 2 };
         }
-
         return {
             centerX: (minX + maxX) / 2,
             centerZ: (minZ + maxZ) / 2,
@@ -633,60 +666,34 @@ export class Stock3DView extends Component {
 
     fitCamera() {
         if (!this.camera || !this.state.locations.length) return;
-
-        const bounds = this.computeSceneBounds();
-        const footprint = Math.max(bounds.sizeX, bounds.sizeZ);
-        const distance = Math.max(footprint * 1.4, 15);
-
-        this.orbitTarget.set(bounds.centerX, Math.min(bounds.maxY / 2, 3), bounds.centerZ);
-
-        this.camera.position.set(
-            bounds.centerX + distance,
-            distance * 0.55,
-            bounds.centerZ + distance
-        );
+        const b = this.computeSceneBounds();
+        const dist = Math.max(Math.max(b.sizeX, b.sizeZ) * 1.4, 15);
+        this.orbitTarget.set(b.centerX, Math.min(b.maxY / 2, 3), b.centerZ);
+        this.camera.position.set(b.centerX + dist, dist * 0.55, b.centerZ + dist);
         this.camera.lookAt(this.orbitTarget);
-
-        console.log("📷 Camera position:", this.camera.position);
     }
 
-    // ====================================================================
-    //  ANIMATION LOOP
-    // ====================================================================
-
+    // ==================== ANIMATION ====================
     animate() {
         this.animationFrame = requestAnimationFrame(() => this.animate());
-
         if (this.forklift && this.forkliftPath) {
             this.forkliftProgress += this.forkliftSpeed;
-            if (this.forkliftProgress > 1) {
-                this.forkliftProgress = 0;
-            }
-
-            const position = this.forkliftPath.getPoint(this.forkliftProgress);
-            this.forklift.position.copy(position);
-
-            const tangent = this.forkliftPath.getTangent(this.forkliftProgress);
-            this.forklift.lookAt(position.clone().add(tangent));
+            if (this.forkliftProgress > 1) this.forkliftProgress = 0;
+            const p = this.forkliftPath.getPoint(this.forkliftProgress);
+            this.forklift.position.copy(p);
+            const t = this.forkliftPath.getTangent(this.forkliftProgress);
+            this.forklift.lookAt(p.clone().add(t));
         }
-
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
         }
-        if (this.labelRenderer && this.scene && this.camera) {
-            this.labelRenderer.render(this.scene, this.camera);
-        }
     }
 
-    // ====================================================================
-    //  MOUSE EVENTS (Box Click → Product Details, Rack Click → Rack Details)
-    // ====================================================================
-
     getMousePos(e) {
-        const rect = this.renderer.domElement.getBoundingClientRect();
+        const r = this.renderer.domElement.getBoundingClientRect();
         return {
-            x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
-            y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+            x: ((e.clientX - r.left) / r.width) * 2 - 1,
+            y: -((e.clientY - r.top) / r.height) * 2 + 1,
         };
     }
 
@@ -697,64 +704,82 @@ export class Stock3DView extends Component {
         this.mouse.y = pos.y;
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const intersects = this.raycaster.intersectObjects(this.rackMeshes, true);
+        const hits = this.raycaster.intersectObjects(this.rackMeshes, true);
 
-        if (intersects.length) {
-            let hit = intersects[0].object;
-            let targetType = null;
-            let targetId = null;
-            let locationId = null;
+        if (hits.length) {
+            let productData = null;
+            let rackData = null;
 
-            while (hit) {
-                if (hit.userData && hit.userData.type) {
-                    targetType = hit.userData.type;
-                    if (targetType === 'product') {
-                        targetId = hit.userData.productId;
-                        locationId = hit.userData.locationId;
-                    } else if (targetType === 'rack') {
-                        targetId = hit.userData.locationId;
+            for (const h of hits) {
+                let obj = h.object;
+                while (obj) {
+                    if (obj.userData && obj.userData.type) {
+                        if (obj.userData.type === 'product' && !productData) {
+                            productData = obj.userData;
+                        } else if (obj.userData.type === 'rack' && !rackData) {
+                            rackData = obj.userData;
+                        }
+                        break;
                     }
-                    break;
+                    obj = obj.parent;
                 }
-                hit = hit.parent;
+                if (productData) break;
             }
 
-            // ---- BOX (Product) CLICK: Show Product Detail Panel ----
-            if (targetType === 'product' && targetId) {
-                const product = (this.state.products || []).find(p => p.id === targetId);
-                const loc = this.state.locations.find(l => l.id === locationId);
-                let quantity = 0;
-                if (loc && loc.product_quantities) {
-                    quantity = loc.product_quantities[targetId] || 0;
-                }
+            if (productData) {
                 this.state.selectedProduct = {
-                    id: targetId,
-                    name: product ? product.name : `Product ${targetId}`,
-                    quantity: quantity,
-                    location_name: loc ? loc.complete_name : '',
+                    id: productData.productId,
+                    name: productData.product_name,
+                    quantity: productData.quantity,
+                    location_name: productData.location_name,
                 };
+                this.state.selectedLocation = null;
+                this.highlightSlotLabel(productData.labelSprite);
                 return;
             }
 
-            // ---- RACK CLICK: Show Rack Detail Panel ----
-            if (targetType === 'rack' && targetId) {
-                const loc = this.state.locations.find(l => l.id === targetId);
+            if (rackData) {
+                const loc = this.state.locations.find(l => l.id === rackData.locationId);
                 if (loc) {
-                    this.state.selectedLocation = loc;
-                    this.state.heatmapEnabled = false;
+                    const allProducts = this.collectProducts(loc);
+                    this.state.selectedLocation = {
+                        ...loc,
+                        products_info: allProducts,
+                    };
+                    this.state.selectedProduct = null;
+                    if (this._flyingTo) {
+                        this._flyingTo = false;
+                        this.state.flying = false;
+                    }
                     return;
                 }
             }
         }
 
-        // ---- Click on empty space: clear both panels ----
         this.state.selectedProduct = null;
         this.state.selectedLocation = null;
-
-        // ---- Orbit start ----
+        this.highlightSlotLabel(null);
         this.isOrbiting = true;
         this.lastX = e.clientX;
         this.lastY = e.clientY;
+
+        if (this._flyingTo) {
+            this._flyingTo = false;
+            this.state.flying = false;
+        }
+    }
+
+    highlightSlotLabel(sprite) {
+        if (this._highlightedLabel && this._highlightedLabel !== sprite) {
+            const base = this._highlightedLabel.userData.baseScale;
+            if (base) this._highlightedLabel.scale.set(base.x, base.y, 1);
+        }
+        if (sprite) {
+            const base = sprite.userData.baseScale;
+            if (base) sprite.scale.set(base.x * 1.25, base.y * 1.25, 1);
+            sprite.renderOrder = 5;
+        }
+        this._highlightedLabel = sprite || null;
     }
 
     onMouseMove(e) {
@@ -764,50 +789,42 @@ export class Stock3DView extends Component {
             this.lastX = e.clientX;
             this.lastY = e.clientY;
 
-            const target = this.orbitTarget;
-            const radius = this.camera.position.distanceTo(target);
-            const theta = Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z) + dx;
-            let phi = Math.acos((this.camera.position.y - target.y) / radius) + dy;
+            const t = this.orbitTarget;
+            const radius = this.camera.position.distanceTo(t);
+            const theta = Math.atan2(this.camera.position.x - t.x, this.camera.position.z - t.z) + dx;
+            let phi = Math.acos((this.camera.position.y - t.y) / radius) + dy;
             phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi));
 
-            this.camera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
-            this.camera.position.y = target.y + radius * Math.cos(phi);
-            this.camera.position.z = target.z + radius * Math.sin(phi) * Math.cos(theta);
-            this.camera.lookAt(target);
+            this.camera.position.x = t.x + radius * Math.sin(phi) * Math.sin(theta);
+            this.camera.position.y = t.y + radius * Math.cos(phi);
+            this.camera.position.z = t.z + radius * Math.sin(phi) * Math.cos(theta);
+            this.camera.lookAt(t);
         }
     }
 
-    onMouseUp() {
-        this.isOrbiting = false;
-    }
+    onMouseUp() { this.isOrbiting = false; }
 
     onWheel(e) {
         e.preventDefault();
-        const target = this.orbitTarget;
-        const radius = this.camera.position.distanceTo(target);
-        const newRadius = Math.max(2, Math.min(80, radius + (e.deltaY > 0 ? 1 : -1)));
-        const dir = this.camera.position.clone().sub(target).normalize();
-        this.camera.position.copy(target).add(dir.multiplyScalar(newRadius));
-        this.camera.lookAt(target);
+        const t = this.orbitTarget;
+        const r = this.camera.position.distanceTo(t);
+        const nr = Math.max(2, Math.min(100, r + (e.deltaY > 0 ? 1 : -1)));
+        const dir = this.camera.position.clone().sub(t).normalize();
+        this.camera.position.copy(t).add(dir.multiplyScalar(nr));
+        this.camera.lookAt(t);
     }
 
     onResize() {
         if (!this.camera || !this.renderer) return;
-        const container = this.canvasRef.el;
-        const w = container.clientWidth || window.innerWidth;
-        const h = container.clientHeight || window.innerHeight;
+        const c = this.canvasRef.el;
+        const w = c.clientWidth || window.innerWidth;
+        const h = c.clientHeight || window.innerHeight;
         this.camera.aspect = w / h;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(w, h);
-        if (this.labelRenderer) {
-            this.labelRenderer.setSize(w, h);
-        }
     }
 
-    // ====================================================================
-    //  UI ACTIONS
-    // ====================================================================
-
+    // ==================== UI ACTIONS ====================
     clearSearch() {
         this.state.searchQuery = "";
         this.renderScene();
@@ -820,35 +837,61 @@ export class Stock3DView extends Component {
 
     toggleWalkMode() {
         this.state.walkMode = !this.state.walkMode;
-        if (this.state.walkMode) {
-            this.camera.position.set(this.camera.position.x, 1.6, this.camera.position.z);
-        } else {
-            this.camera.position.set(this.camera.position.x, 5, this.camera.position.z);
-        }
+        this.camera.position.set(
+            this.camera.position.x,
+            this.state.walkMode ? 1.6 : 5,
+            this.camera.position.z
+        );
     }
 
     flyToSelected() {
         if (!this.state.selectedLocation) return;
+
+        if (this._flyingTo) {
+            if (this._prevCameraPos && this._prevOrbitTarget) {
+                this.camera.position.copy(this._prevCameraPos);
+                this.orbitTarget.copy(this._prevOrbitTarget);
+                this.camera.lookAt(this.orbitTarget);
+            }
+            this._flyingTo = false;
+            this.state.flying = false;
+            return;
+        }
+
+        this._prevCameraPos = this.camera.position.clone();
+        this._prevOrbitTarget = this.orbitTarget.clone();
+
         const loc = this.state.selectedLocation;
         const target = new THREE.Vector3(
             loc.pos_x,
-            loc.pos_y + 1.5,
+            loc.pos_y + (loc.rack_height || 3) / 2,
             loc.pos_z
         );
         this.orbitTarget.copy(target);
-        this.camera.position.set(target.x + 5, target.y + 3, target.z + 8);
+        this.camera.position.set(
+            target.x + 5,
+            target.y + 2,
+            target.z + 6
+        );
         this.camera.lookAt(target);
+
+        this._flyingTo = true;
+        this.state.flying = true;
     }
 
     closeDetail() {
         this.state.selectedLocation = null;
+        if (this._flyingTo) {
+            this._flyingTo = false;
+            this.state.flying = false;
+        }
     }
 
     closeProductDetail() {
         this.state.selectedProduct = null;
+        this.highlightSlotLabel(null);
     }
 }
 
 Stock3DView.template = "ipredict_stock_3d_view.Stock3DView";
-
 actionRegistry.add("stock_3d_view", Stock3DView);

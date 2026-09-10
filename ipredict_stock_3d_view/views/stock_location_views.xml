@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- 1. 'View in 3D Warehouse' button - naya header row ma, sheet ni pehla -->
     <record id="view_stock_location_form_3d_button" model="ir.ui.view">
         <field name="name">stock.location.form.3d.button</field>
         <field name="model">stock.location</field>
@@ -18,7 +17,6 @@
         </field>
     </record>
 
-    <!-- 2. 3D Properties ટેબ (નીચે) -->
     <record id="view_stock_location_form_3d" model="ir.ui.view">
         <field name="name">stock.location.form.3d</field>
         <field name="model">stock.location</field>
@@ -26,9 +24,12 @@
         <field name="arch" type="xml">
             <xpath expr="//form/sheet" position="inside">
                 <notebook name="3d_properties_notebook" string="3D Properties">
-                    <page name="3d_properties" string="3D Visualization">
+
+                    <!-- 3D Rack — badha locations ma dekhse -->
+                    <page name="3d_properties" string=" 3D Rack">
                         <group string="3D Configuration">
                             <field name="show_in_3d"/>
+                            <field name="code_3d"/>
                         </group>
                         <group string="Position">
                             <field name="pos_x"/>
@@ -43,12 +44,31 @@
                             <field name="bins_per_level"/>
                             <field name="capacity"/>
                         </group>
+                        <group string="Rack Appearance">
+                            <field name="color_upright"/>
+                            <field name="color_beam"/>
+                            <field name="color_slat"/>
+                            <field name="color_box"/>
+                            <field name="post_thickness"/>
+                            <field name="beam_height"/>
+                        </group>
                         <group string="Live Stock Data">
                             <field name="on_hand" readonly="1"/>
                             <field name="fill_percentage" readonly="1" widget="progressbar"/>
                             <field name="product_ids" readonly="1" widget="many2many_tags"/>
                         </group>
                     </page>
+
+                    <!-- Rack Slots — badha locations ma dekhse -->
+                    <page name="rack_slots" string="Rack Slots">
+                        <group colspan="2">
+                            <field name="slot_grid_json"
+                                   widget="slot_grid"
+                                   nolabel="1"
+                                   colspan="2"/>
+                        </group>
+                    </page>
+
                 </notebook>
             </xpath>
         </field>

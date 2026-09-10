@@ -40,8 +40,14 @@ Features:
 
             "ipredict_stock_3d_view/static/src/lib/CSS2DRenderer.js",
             "ipredict_stock_3d_view/static/src/js/stock_3d_view.js",
+            "ipredict_stock_3d_view/static/src/js/slot_grid.js",
+
             "ipredict_stock_3d_view/static/src/xml/stock_3d_view.xml",
+            "ipredict_stock_3d_view/static/src/xml/slot_grid.xml",
+
             "ipredict_stock_3d_view/static/src/css/stock_3d_view.css",
+            "ipredict_stock_3d_view/static/src/css/slot_grid.css",
+
         ],
     },
 

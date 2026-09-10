@@ -38,3 +38,143 @@
 .progress-bar {
     transition: width 0.3s ease;
 }
+
+/* ============================================================
+   PRODUCT POPUP (nice design)
+   ============================================================ */
+.o_product_popup {
+    width: 340px;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25),
+                0 4px 12px rgba(15, 23, 42, 0.15);
+    overflow: hidden;
+    animation: o_popup_in 0.18s ease-out;
+
+    /* ---- Header ---- */
+    .o_product_popup_header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: #ffffff;
+        position: relative;
+
+        .o_product_popup_icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.20);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .o_product_popup_titles {
+            flex-grow: 1;
+            min-width: 0;
+
+            .o_product_popup_label {
+                font-size: 10px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                opacity: 0.85;
+            }
+
+            .o_product_popup_title {
+                font-size: 15px;
+                font-weight: 700;
+                margin-top: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        .o_product_popup_close {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.35);
+                transform: scale(1.05);
+            }
+        }
+    }
+
+    /* ---- Body ---- */
+    .o_product_popup_body {
+        padding: 14px 16px;
+
+        .o_product_popup_row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+
+            &:last-child {
+                border-bottom: none;
+                padding-bottom: 4px;
+            }
+
+            .o_product_popup_key {
+                font-size: 12px;
+                color: #64748b;
+                font-weight: 500;
+
+                i {
+                    margin-right: 6px;
+                    color: #94a3b8;
+                }
+            }
+
+            .o_product_popup_qty {
+                font-size: 16px;
+                font-weight: 700;
+                color: #6366f1;
+                background: #eef2ff;
+                padding: 4px 12px;
+                border-radius: 8px;
+            }
+
+            .o_product_popup_loc {
+                font-size: 12px;
+                color: #0f172a;
+                font-weight: 600;
+                background: #f1f5f9;
+                padding: 4px 10px;
+                border-radius: 6px;
+                max-width: 200px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+    }
+}
+
+@keyframes o_popup_in {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

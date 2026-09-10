@@ -28,7 +28,7 @@
                 </div>
             </div>
 
-            <!-- Status Legend (bottom-left) -->
+            <!-- Status Legend -->
             <div class="o_3d_legend position-absolute bottom-0 start-0 p-3">
                 <div class="rounded shadow-lg p-3"
                      style="background: rgba(15, 23, 42, 0.85); color: #ffffff; font-size: 13px; min-width: 140px;">
@@ -55,46 +55,109 @@
                 </div>
             </div>
 
-            <!-- Detail Panel -->
+            <!-- Rack Detail Panel -->
             <div class="o_3d_detail_panel position-absolute bottom-0 end-0 p-3"
                  t-if="state.selectedLocation">
-                <div class="bg-white rounded shadow-lg p-3" style="width: 400px; max-height: 70vh; overflow-y: auto;">
-                    <!-- Name -->
+                <div class="bg-white rounded shadow-lg p-3" style="width: 420px; max-height: 70vh; overflow-y: auto;">
                     <h5 t-esc="state.selectedLocation.complete_name"/>
 
-                    <!-- Stats -->
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between small">
                         <span t-esc="'On Hand: ' + state.selectedLocation.on_hand"/>
                         <span t-esc="'Capacity: ' + state.selectedLocation.capacity"/>
                         <span t-esc="'Fill: ' + state.selectedLocation.fill_percentage + '%'"/>
                     </div>
 
-                    <!-- Progress Bar -->
-                    <div class="progress mt-1">
+                    <div class="progress mt-1" style="height: 12px;">
                         <div class="progress-bar"
-                             t-att-class="state.selectedLocation.fill_percentage > 80 ? 'bg-danger' : state.selectedLocation.fill_percentage > 50 ? 'bg-warning' : 'bg-success'"
-                             t-att-style="'width:' + state.selectedLocation.fill_percentage + '%'"/>
+                             t-att-class="state.selectedLocation.fill_percentage >= 100 ? 'bg-danger'
+                                 : state.selectedLocation.fill_percentage >= 80 ? 'bg-warning'
+                                 : state.selectedLocation.fill_percentage > 0 ? 'bg-success'
+                                 : 'bg-secondary'"
+                             t-att-style="'width:' + Math.min(state.selectedLocation.fill_percentage, 100) + '%'"/>
                     </div>
 
                     <hr/>
 
-                    <!-- Products with t-key -->
-                    <p><strong>Products Stored:</strong></p>
-                    <t t-if="state.selectedLocation.product_ids.length === 0">
-                        <span class="text-muted">No products stored.</span>
+                    <p class="mb-1"><strong>Rack Configuration:</strong></p>
+                    <div class="d-flex flex-wrap gap-2 mb-3 small">
+                        <span class="badge bg-light text-dark">L: <t t-esc="state.selectedLocation.rack_length"/> m</span>
+                        <span class="badge bg-light text-dark">W: <t t-esc="state.selectedLocation.rack_width"/> m</span>
+                        <span class="badge bg-light text-dark">H: <t t-esc="state.selectedLocation.rack_height"/> m</span>
+                        <span class="badge bg-light text-dark">Levels: <t t-esc="state.selectedLocation.shelf_levels"/></span>
+                        <span class="badge bg-light text-dark">Bins/Level: <t t-esc="state.selectedLocation.bins_per_level"/></span>
+                    </div>
+
+                    <p class="mb-1"><strong>Products Stored:</strong></p>
+                    <t t-if="!state.selectedLocation.products_info or state.selectedLocation.products_info.length === 0">
+                        <span class="text-muted small">No products stored.</span>
                     </t>
                     <t t-else="">
-                        <div t-foreach="state.selectedLocation.product_ids" t-as="pid" t-key="pid.id">
-                            <span class="badge bg-secondary me-1" t-esc="pid.name"/>
-                        </div>
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr t-foreach="state.selectedLocation.products_info" t-as="prod" t-key="prod.id">
+                                    <td class="py-1">
+                                        <span t-esc="prod.name"/>
+                                    </td>
+                                    <td class="py-1 text-end" style="width: 90px;">
+                                        <span class="badge bg-secondary" t-esc="prod.qty"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </t>
 
-                    <!-- Buttons -->
-                    <div class="mt-2">
+                    <div class="mt-3 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" t-on-click="flyToSelected">
+                            <t t-if="state.flying">
+                                <i class="fa fa-undo me-1"/> Back
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-plane me-1"/> Fly To
+                            </t>
+                        </button>
                         <button class="btn btn-sm btn-secondary" t-on-click="closeDetail">Close</button>
                     </div>
                 </div>
             </div>
+<!-- Product Detail Panel -->
+<div class="o_3d_detail_panel position-absolute bottom-0 end-0 p-3"
+     t-if="state.selectedProduct">
+    <div class="o_product_popup">
+        <!-- Header -->
+        <div class="o_product_popup_header">
+            <div class="o_product_popup_icon">
+                <i class="fa fa-cube"/>
+            </div>
+            <div class="o_product_popup_titles">
+                <div class="o_product_popup_label">Product</div>
+                <div class="o_product_popup_title" t-esc="state.selectedProduct.name"/>
+            </div>
+            <button class="o_product_popup_close"
+                    t-on-click="closeProductDetail"
+                    title="Close">
+                <i class="fa fa-times"/>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="o_product_popup_body">
+            <div class="o_product_popup_row">
+                <span class="o_product_popup_key">
+                    <i class="fa fa-cubes"/> Quantity
+                </span>
+                <span class="o_product_popup_qty"
+                      t-esc="state.selectedProduct.quantity"/>
+            </div>
+            <div class="o_product_popup_row">
+                <span class="o_product_popup_key">
+                    <i class="fa fa-map-marker"/> Location
+                </span>
+                <span class="o_product_popup_loc"
+                      t-esc="state.selectedProduct.location_name"/>
+            </div>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </templates>

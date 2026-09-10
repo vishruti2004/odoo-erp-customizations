@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="ipredict_stock_3d_view.SlotGridField">
+        <div class="o_slot_grid_wrap">
+
+            <t t-if="!parsed">
+                <div class="o_slot_empty text-muted small p-3">
+                    Enable <strong>Show in 3D</strong> first.
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Assignment Panel -->
+                <div class="o_slot_assignment_panel">
+                    <div class="o_slot_assignment_row">
+
+                        <div class="o_slot_field">
+                            <label class="o_slot_label">Child Location</label>
+                            <select class="form-select form-select-sm" t-on-change="onChildChange">
+                                <option value="">-- Select child location --</option>
+                                <option t-foreach="children"
+                                        t-as="ch"
+                                        t-key="ch.id"
+                                        t-att-value="ch.id"
+                                        t-esc="ch.complete_name"/>
+                            </select>
+                        </div>
+
+                        <div class="o_slot_action_area">
+                            <button type="button"
+                                    class="btn btn-primary btn-sm"
+                                    t-att-disabled="!canAssign"
+                                    t-on-click="onAssignClick">
+                                <i class="fa fa-link me-1"/>
+                                <t t-esc="assignButtonLabel"/>
+                            </button>
+
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm"
+                                    t-if="canUnassign"
+                                    t-on-click="onUnassignClick">
+                                <i class="fa fa-unlink me-1"/>
+                                <t t-esc="unassignButtonLabel"/>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Selection Information -->
+                    <div class="o_slot_selection_info">
+                        <t t-if="selectedChild">
+                            <span class="o_slot_selection_item">
+                                <strong>Child:</strong>
+                                <t t-esc="selectedChildName"/>
+                            </span>
+                        </t>
+
+                        <t t-if="selectionText">
+                            <span class="o_slot_selection_item">
+                                <strong>Selected:</strong>
+                                <t t-esc="selectionText"/>
+                            </span>
+                        </t>
+
+                        <t t-if="!selectedChild">
+                            <span class="text-muted">Select a child location first.</span>
+                        </t>
+
+                        <t t-elif="!selectionText">
+                            <span class="text-muted">Select one or more slots, or select a row.</span>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Rack Information -->
+                <div class="o_slot_info_bar">
+                    <span class="o_slot_info_badge">
+                        <strong>Rack:</strong>
+                        <t t-esc="parsed.levels"/> levels × <t t-esc="parsed.bins"/> bins
+                    </span>
+
+                    <span class="o_slot_info_badge o_slot_assigned_badge">
+                        <strong>Assigned:</strong>
+                        <t t-esc="assignedCount"/>
+                    </span>
+                </div>
+
+                <!-- Slot Grid -->
+                <table class="o_slot_grid">
+                    <tbody>
+                        <tr t-foreach="grid" t-as="row" t-key="row.level">
+
+                            <!-- Level -->
+                            <td t-att-class="'o_slot_row_header' + (row.isSelected ? ' o_slot_row_selected' : '')"
+                                t-on-click="() => this.onRowClick(row)"
+                                title="Select row">
+                                <strong><t t-esc="row.label"/></strong>
+                            </td>
+
+                            <!-- Slots -->
+                            <td t-foreach="row.cells"
+                                t-as="cell"
+                                t-key="cell.bin"
+                                t-att-class="'o_slot_cell' + (cell.isAssigned ? ' o_slot_assigned' : ' o_slot_available') + (cell.isSelected ? ' o_slot_selected' : '')"
+                                t-on-click="() => this.onCellClick(cell)">
+
+                                <div class="o_slot_cell_content">
+                                    <t t-if="cell.isAssigned">
+                                        <span class="o_slot_child_name">
+                                            <t t-esc="cell.childName"/>
+                                        </span>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="o_slot_cell_label">
+                                            B<t t-esc="cell.bin + 1"/>
+                                        </span>
+                                    </t>
+
+                                    <t t-if="cell.isSelected">
+                                        <span class="o_slot_selected_icon">
+                                            <i class="fa fa-check"/>
+                                        </span>
+                                    </t>
+                                </div>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Legend -->
+                <div class="o_slot_legend">
+                    <div class="o_slot_legend_item">
+                        <span class="o_slot_dot o_slot_dot_available"/>
+                        <span>Available</span>
+                    </div>
+
+                    <div class="o_slot_legend_item">
+                        <span class="o_slot_dot o_slot_dot_assigned"/>
+                        <span>Assigned</span>
+                    </div>
+                </div>
+
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,224 @@
+.o_slot_assignment_panel {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+    background: #fff;
+}
+
+.o_slot_assignment_row {
+    display: flex;
+    align-items: end;
+    gap: 16px;
+}
+
+.o_slot_field {
+    width: 320px;
+}
+
+.o_slot_label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.o_slot_action_area {
+    display: flex;
+    gap: 8px;
+}
+
+.o_slot_selection_info {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+}
+
+.o_slot_selection_item {
+    margin-right: 24px;
+}
+
+.o_slot_info_bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.o_slot_info_badge {
+    background: #e9ecef;
+    border-radius: 5px;
+    padding: 5px 9px;
+    font-size: 12px;
+}
+
+.o_slot_assigned_badge {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.o_slot_grid {
+    border-collapse: separate;
+    border-spacing: 5px;
+}
+
+.o_slot_row_header {
+    width: 70px;
+    text-align: center;
+    vertical-align: middle;
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.o_slot_row_header:hover {
+    background: #e2e6ea;
+}
+
+.o_slot_row_selected {
+    background: #cfe2ff !important;
+    border-color: #0d6efd !important;
+}
+
+.o_slot_cell {
+    position: relative;
+    min-width: 110px;
+    height: 48px;
+    text-align: center;
+    vertical-align: middle;
+    border: 2px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.o_slot_cell_content {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.o_slot_available {
+    background: #eef7ff;
+    border-color: #b6d9ff;
+    color: #4d6f91;
+}
+
+.o_slot_available:hover {
+    background: #dceeff;
+    border-color: #86bfff;
+}
+
+.o_slot_assigned {
+    background: #d1e7dd !important;
+    border-color: #75b798 !important;
+    color: #0f5132 !important;
+    font-weight: 600;
+}
+
+.o_slot_assigned:hover {
+    background: #badbcc !important;
+}
+
+.o_slot_taken {
+    background: #d1e7dd !important;
+    border-color: #75b798 !important;
+    color: #0f5132 !important;
+    font-weight: 600;
+}
+
+.o_slot_selected {
+    background: #cfe2ff !important;
+    border-color: #0d6efd !important;
+    color: #084298 !important;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+
+.o_slot_selected_icon {
+    position: absolute;
+    top: 3px;
+    right: 5px;
+    font-size: 11px;
+    color: #0d6efd;
+}
+
+.o_slot_legend {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #495057;
+}
+
+.o_slot_legend_item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.o_slot_dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1px solid;
+}
+
+.o_slot_dot_available {
+    background: #eef7ff;
+    border-color: #b6d9ff;
+}
+
+.o_slot_dot_assigned {
+    background: #d1e7dd;
+    border-color: #75b798;
+}
+
+.o_slot_available {
+    background: #d1e7dd;
+    border-color: #75b798;
+    color: #0f5132;
+}
+
+.o_slot_available:hover {
+    background: #badbcc;
+}
+
+.o_slot_assigned {
+    background: #f8d7da !important;
+    border-color: #ea868f !important;
+    color: #842029 !important;
+    font-weight: 600;
+}
+
+.o_slot_assigned:hover {
+    background: #f1b0b7 !important;
+}
+
+.o_slot_selected {
+    background: #cfe2ff !important;
+    border: 2px solid #0d6efd !important;
+    color: #084298 !important;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+
+.o_slot_row_selected {
+    background: #cfe2ff !important;
+    border-color: #0d6efd !important;
+    color: #084298;
+}
+
+.o_slot_dot_available {
+    background: #d1e7dd;
+    border-color: #75b798;
+}
+
+.o_slot_dot_assigned {
+    background: #f8d7da;
+    border-color: #ea868f;
+}
