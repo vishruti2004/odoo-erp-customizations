@@ -25,7 +25,6 @@
             <xpath expr="//form/sheet" position="inside">
                 <notebook name="3d_properties_notebook" string="3D Properties">
 
-                    <!-- 3D Rack — badha locations ma dekhse -->
                     <page name="3d_properties" string=" 3D Rack">
                         <group string="3D Configuration">
                             <field name="show_in_3d"/>
@@ -35,6 +34,7 @@
                             <field name="pos_x"/>
                             <field name="pos_y"/>
                             <field name="pos_z"/>
+                            <field name="rotation_y"/>   
                         </group>
                         <group string="Rack Dimensions">
                             <field name="rack_length"/>
@@ -42,14 +42,12 @@
                             <field name="rack_height"/>
                             <field name="shelf_levels"/>
                             <field name="bins_per_level"/>
-                            <field name="capacity"/>
                         </group>
                         <group string="Rack Appearance">
                             <field name="color_upright"/>
                             <field name="color_beam"/>
                             <field name="color_slat"/>
                             <field name="color_box"/>
-                            <field name="post_thickness"/>
                             <field name="beam_height"/>
                         </group>
                         <group string="Live Stock Data">
@@ -59,7 +57,6 @@
                         </group>
                     </page>
 
-                    <!-- Rack Slots — badha locations ma dekhse -->
                     <page name="rack_slots" string="Rack Slots">
                         <group colspan="2">
                             <field name="slot_grid_json"
