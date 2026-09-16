@@ -1,5 +1,6 @@
 from odoo import api, fields, models
 
+
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
@@ -18,10 +19,8 @@ class HrAttendance(models.Model):
             attendance.work_hours_without_break = attendance.worked_hours
             resource = attendance.employee_id.resource_id
 
-            if resource and not resource._is_flexible() and attendance.check_in and attendance.check_out:
+            if attendance.employee_id.company_id.attendance_work_time_without_break and resource and not resource._is_flexible() and attendance.check_in and attendance.check_out:
                 delta = attendance.check_out - attendance.check_in
                 attendance.worked_hours = delta.total_seconds() / 3600.0
             else:
                 attendance.worked_hours = attendance.worked_hours
-
-   

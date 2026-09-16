@@ -26,7 +26,8 @@
     ],
 
     "data": [  
-        "views/hr_attandance_views.xml",   
+        "views/hr_attandance_views.xml",
+        "views/res_config_settings_views.xml",
     ],
 
     "license": "LGPL-3",

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_inherit_work_time" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.work.time</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//block[@name='overtime_settings']" position="inside">
+                <setting string="Calculate Work Hours Without Break"
+                         help="Enable custom attendance work hours calculation with break deduction.">
+                    <field name="attendance_work_time_without_break"/>
+                </setting>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
