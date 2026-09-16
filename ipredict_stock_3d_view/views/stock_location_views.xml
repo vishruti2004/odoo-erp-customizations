@@ -44,10 +44,10 @@
                             <field name="bins_per_level"/>
                         </group>
                         <group string="Rack Appearance">
-                            <field name="color_upright"/>
-                            <field name="color_beam"/>
-                            <field name="color_slat"/>
-                            <field name="color_box"/>
+                            <field name="color_upright" widget="color"/>
+                            <field name="color_beam" widget="color"/>
+                            <field name="color_slat" widget="color"/>
+                            <field name="color_box" widget="color"/>
                             <field name="beam_height"/>
                         </group>
                         <group string="Live Stock Data">

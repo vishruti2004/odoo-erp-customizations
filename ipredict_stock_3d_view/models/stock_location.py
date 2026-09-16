@@ -90,7 +90,9 @@ class StockLocation(models.Model):
         compute="_compute_3d_stock_data", compute_sudo=True,
     )
 
-  
+    # ============================================================
+    #  COMPUTE: Slot grid JSON
+    # ============================================================
     @api.depends('show_in_3d', 'shelf_levels', 'bins_per_level',
                  'rack_slot_ids', 'rack_slot_ids.level',
                  'rack_slot_ids.bin', 'rack_slot_ids.location_id',
@@ -129,6 +131,9 @@ class StockLocation(models.Model):
                 'slots': slots,
             })
 
+    # ============================================================
+    #  ACTION: Toggle single slot
+    # ============================================================
     def action_toggle_slot(self, level, bin, child_id):
         self.ensure_one()
         if not self.show_in_3d:
@@ -161,6 +166,9 @@ class StockLocation(models.Model):
         })
         return True
 
+    # ============================================================
+    #  ACTION: Bulk assign/unassign
+    # ============================================================
     def action_bulk_slots(self, cells, child_id, assign):
         self.ensure_one()
         if not self.show_in_3d:
@@ -198,6 +206,9 @@ class StockLocation(models.Model):
                         })
         return True
 
+    # ============================================================
+    #  ACTION: Move whole slot (swap safe)
+    # ============================================================
     def action_move_slot(self, from_level, from_bin, to_level, to_bin, product_location_id=None):
         self.ensure_one()
         if not self.show_in_3d:
@@ -258,7 +269,9 @@ class StockLocation(models.Model):
 
         return True
 
-
+    # ============================================================
+    #  ACTION: Move SINGLE BOX (quant) — same rack only
+    # ============================================================
     @api.model
     def action_move_box_3d(self, rack_id, quant_id, from_level, from_bin, to_level, to_bin):
         """Move a SINGLE quant (one box) to a target slot within the SAME rack."""
@@ -337,7 +350,9 @@ class StockLocation(models.Model):
                         child.unlink()
         return True
 
-
+    # ============================================================
+    #  COMPUTE: Stock data
+    # ============================================================
     @api.depends('storage_category_id', 'storage_category_id.max_weight')
     def _compute_3d_stock_data(self):
         Quant = self.env['stock.quant']
@@ -356,6 +371,9 @@ class StockLocation(models.Model):
             )
             loc.product_ids = [(6, 0, quants.mapped('product_id').ids)]
 
+    # ============================================================
+    #  HELPER: Find warehouse for a location
+    # ============================================================
     def _find_warehouse(self, loc):
         """Walk up to find warehouse root."""
         current = loc
@@ -374,6 +392,9 @@ class StockLocation(models.Model):
             return loc.warehouse_id
         return None
 
+    # ============================================================
+    #  SERIALIZE for 3D
+    # ============================================================
     def _serialize_location(self, loc, depth=0):
         if depth > 10:
             return None
@@ -389,6 +410,8 @@ class StockLocation(models.Model):
             'name': q.product_id.name,
             'qty': q.quantity,
             'color': q.product_id.color or '#3498db',
+            'image_url': '/web/image/product.product/%s/image_128' % q.product_id.id,
+
         } for q in quants]
 
         children = Location.search([
@@ -412,6 +435,8 @@ class StockLocation(models.Model):
                 'name': q.product_id.name,
                 'qty': q.quantity,
                 'color': q.product_id.color or '#3498db',
+                'image_url': '/web/image/product.product/%s/image_128' % q.product_id.id,
+
             } for q in child_quants]
 
             slots.append({
@@ -457,10 +482,10 @@ class StockLocation(models.Model):
             'storage_category_name': loc.storage_category_id.name or '',
             'on_hand': loc.on_hand,
             'fill_percentage': loc.fill_percentage,
-            'color_upright': loc.color_upright or '#4F6489',
-            'color_beam': loc.color_beam or '#F4C842',
-            'color_slat': loc.color_slat or '#D5D5D5',
-            'color_box': loc.color_box or '#E8C89A',
+            'color_upright': loc.color_upright,
+            'color_beam': loc.color_beam ,
+            'color_slat': loc.color_slat,
+            'color_box': loc.color_box ,
             'beam_height': loc.beam_height or 0.16,
             'slots': slots,
             'products': products,
@@ -508,6 +533,9 @@ class StockLocation(models.Model):
             } for p in all_products],
         }
 
+    # ============================================================
+    #  ADD RACK PANEL — Available locations
+    # ============================================================
     @api.model
     def get_available_locations_for_3d(self):
         locations = self.search([
@@ -526,7 +554,9 @@ class StockLocation(models.Model):
             })
         return result
 
-
+    # ============================================================
+    #  MOVE RACK IN 3D — Save new X/Z position
+    # ============================================================
     @api.model
     def action_move_rack_3d(self, location_id, pos_x, pos_z):
         loc = self.browse(location_id)
@@ -538,7 +568,9 @@ class StockLocation(models.Model):
         })
         return True
 
-
+    # ============================================================
+    #  ADD/EDIT RACK — Setup 3D params
+    # ============================================================
     @api.model
     def setup_rack_3d(self, location_id, params):
         loc = self.browse(location_id)
@@ -566,6 +598,9 @@ class StockLocation(models.Model):
             'capacity': loc.capacity or 0.0,
         }
 
+    # ============================================================
+    #  DELETE RACK — Remove from 3D + DB
+    # ============================================================
     @api.model
     def delete_rack_from_3d(self, location_id):
         loc = self.browse(location_id)
@@ -613,3 +648,30 @@ class StockLocation(models.Model):
         except Exception as e:
             _logger.exception("Error deleting rack %s: %s", loc.complete_name, e)
             return {'error': str(e)}
+
+    def action_view_location_products_3d(self):
+        self.ensure_one()
+
+       
+        action = self.env['ir.actions.actions']._for_xml_id(
+            'stock.act_product_location_open'
+        )
+
+        # Pass the selected 3D location to the standard Odoo product view.
+        action['context'] = {
+            'location': self.id,
+            'active_id': self.id,
+            'active_model': 'stock.location',
+
+            'search_default_real_stock_available': 1,
+            'search_default_virtual_stock_available': 1,
+            'search_default_virtual_stock_negative': 1,
+            'search_default_real_stock_negative': 1,
+
+            'create': False,
+        }
+
+        action['name'] = 'Products'
+        action['target'] = 'current'
+
+        return action

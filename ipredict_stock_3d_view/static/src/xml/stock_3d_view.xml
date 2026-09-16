@@ -3,79 +3,75 @@
     <div t-name="ipredict_stock_3d_view.Stock3DView"
          class="o_stock_3d_view d-flex flex-column h-100 w-100">
 
-        <div class="o_3d_canvas_wrapper flex-grow-1 position-relative">
-            <div t-ref="canvas" class="o_3d_canvas w-100 h-100"/>
+        <!-- ⭐ HEADER — Full width -->
+        <div class="o_3d_header flex-shrink-0 bg-white border-bottom">
+            <div class="o_3d_toolbar_filters d-flex gap-2 flex-wrap align-items-center">
+                <select class="form-select form-select-sm"
+                        t-att-value="state.selectedWarehouse"
+                        t-on-change="onWarehouseChange">
+                    <option value="">All Warehouses</option>
+                    <t t-foreach="state.warehouses" t-as="wh" t-key="wh.id">
+                        <option t-att-value="wh.id" t-esc="wh.name"/>
+                    </t>
+                </select>
 
-            <!-- Top Toolbar -->
-            <div class="o_3d_overlay position-absolute top-0 start-0 p-3 w-100">
-                <div class="bg-white rounded shadow-sm p-2 d-flex gap-2 flex-wrap align-items-center">
-
-                    <div class="o_3d_toolbar_filters d-flex gap-2 flex-wrap align-items-center">
-                        <select class="form-select form-select-sm"
-                                style="min-width: 200px; max-width: 260px;"
-                                t-att-value="state.selectedWarehouse"
-                                t-on-change="onWarehouseChange">
-                            <option value="">All Warehouses</option>
-                            <t t-foreach="state.warehouses" t-as="wh" t-key="wh.id">
-                                <option t-att-value="wh.id" t-esc="wh.name"/>
-                            </t>
-                        </select>
-
-                        <div class="o_search_wrap flex-grow-1" style="max-width: 400px;">
-                            <input type="text" class="form-control form-control-sm"
-                                t-att-value="state.searchQuery"
-                                t-on-input="onSearchInput"
-                                placeholder="Search Location or Product..."
-                                autocomplete="off"
-                                autocorrect="off"
-                                autocapitalize="off"
-                                spellcheck="false"
-                                style="padding-right: 32px;"/>
-                            <button class="o_search_clear_btn"
-                                    t-if="state.searchQuery"
-                                    t-on-click="clearSearch"
-                                    title="Clear search">
-                                <i class="fa fa-times"/>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="o_3d_toolbar_actions d-flex gap-2 flex-wrap align-items-center">
-                        <button class="btn btn-sm btn-outline-primary"
-                                t-on-click="toggleHeatmap">
-                            <t t-if="state.heatmapEnabled">Heatmap ON</t>
-                            <t t-else="">Heatmap OFF</t>
-                        </button>
-                        <button class="btn btn-sm btn-outline-success"
-                                t-on-click="toggleWalkMode">
-                            <t t-if="state.walkMode">Walk Mode ON</t>
-                            <t t-else="">Walk Mode OFF</t>
-                        </button>
-
-                        <button t-if="state.editRackMode"
-                                class="btn btn-sm btn-primary"
-                                t-on-click="toggleAddPanel">
-                            <i class="fa fa-plus me-1"/> Add Rack
-                        </button>
-
-                        <button t-if="!state.editRackMode"
-                                class="btn btn-sm btn-secondary"
-                                t-on-click="toggleEditRackMode"
-                                title="Enable drag &amp; drop for racks and boxes">
-                            <i class="fa fa-pencil me-1"/> Edit Layout
-                        </button>
-
-                        <button t-if="state.editRackMode"
-                                class="btn btn-sm btn-success"
-                                t-on-click="saveLayoutChanges"
-                                title="Save layout changes and exit edit mode">
-                            <i class="fa fa-save me-1"/> Save
-                        </button>
-                    </div>
+                <div class="o_search_wrap">
+                    <input type="text" class="form-control form-control-sm"
+                        t-att-value="state.searchQuery"
+                        t-on-input="onSearchInput"
+                        placeholder="Search Location or Product..."
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false"/>
+                    <button class="btn btn-sm btn-light o_search_clear_btn"
+                            t-if="state.searchQuery"
+                            t-on-click="clearSearch"
+                            title="Clear search">
+                        <i class="fa fa-times"/>
+                    </button>
                 </div>
             </div>
 
-            <!-- ADD/EDIT RACK PANEL (Right side) -->
+            <div class="o_3d_toolbar_actions">
+                <button class="btn btn-sm btn-outline-primary"
+                        t-on-click="toggleHeatmap">
+                    <t t-if="state.heatmapEnabled">Heatmap ON</t>
+                    <t t-else="">Heatmap OFF</t>
+                </button>
+                <button class="btn btn-sm btn-outline-success"
+                        t-on-click="toggleWalkMode">
+                    <t t-if="state.walkMode">Walk Mode ON</t>
+                    <t t-else="">Walk Mode OFF</t>
+                </button>
+
+                <button t-if="state.editRackMode"
+                        class="btn btn-sm btn-primary"
+                        t-on-click="toggleAddPanel">
+                    <i class="fa fa-plus me-1"/> Add Rack
+                </button>
+
+                <button t-if="!state.editRackMode"
+                        class="btn btn-sm btn-secondary"
+                        t-on-click="toggleEditRackMode"
+                        title="Enable drag &amp; drop for racks and boxes">
+                    <i class="fa fa-pencil me-1"/> Edit Layout
+                </button>
+
+                <button t-if="state.editRackMode"
+                        class="btn btn-sm btn-success"
+                        t-on-click="saveLayoutChanges"
+                        title="Save layout changes and exit edit mode">
+                    <i class="fa fa-save me-1"/> Save
+                </button>
+            </div>
+        </div>
+
+        <!-- ⭐ CANVAS WRAPPER -->
+        <div class="o_3d_canvas_wrapper flex-grow-1 position-relative">
+            <div t-ref="canvas" class="o_3d_canvas w-100 h-100"/>
+
+            <!-- ADD/EDIT RACK PANEL -->
             <div class="o_add_rack_panel" t-if="state.addPanelOpen">
                 <div class="o_add_rack_header">
                     <h5>
@@ -86,7 +82,7 @@
                             <i class="fa fa-cube me-2"/> Configure Rack
                         </t>
                     </h5>
-                    <button class="o_close_btn" t-on-click="toggleAddPanel">
+                    <button class="btn btn-sm btn-light" t-on-click="toggleAddPanel">
                         <i class="fa fa-times"/>
                     </button>
                 </div>
@@ -114,7 +110,6 @@
                         </small>
                     </div>
 
-                    <!-- Dimensions -->
                     <div class="o_form_section">
                         <div class="o_form_section_title">
                             <i class="fa fa-arrows-alt me-1"/> Dimensions (m)
@@ -141,7 +136,6 @@
                         </div>
                     </div>
 
-                    <!-- Structure -->
                     <div class="o_form_section">
                         <div class="o_form_section_title">
                             <i class="fa fa-th-large me-1"/> Structure
@@ -162,7 +156,6 @@
                         </div>
                     </div>
 
-                    <!-- Position -->
                     <div class="o_form_section">
                         <div class="o_form_section_title">
                             <i class="fa fa-map-marker me-1"/> Position
@@ -209,7 +202,7 @@
                 </div>
             </div>
 
-            <!-- Status Legend (always open, normal box) -->
+            <!-- Status Legend -->
             <div class="o_3d_legend">
                 <div class="rounded shadow-lg p-3"
                      style="background: rgba(15, 23, 42, 0.85); color: #ffffff; font-size: 13px; min-width: 140px;">
@@ -236,16 +229,17 @@
                 </div>
             </div>
 
-            <!-- Rack Detail Panel (bottom-right) -->
+            <!-- Rack Detail Panel -->
             <div class="o_3d_detail_panel position-absolute bottom-0 end-0 p-3"
                  t-if="state.selectedLocation and !state.addPanelOpen">
                 <div class="bg-white rounded shadow-lg p-3 position-relative o_rack_detail_content"
                          style="width: 420px; max-height: 70vh; overflow-y: auto;">
-                            <button t-on-click="closeDetail"
-                                    title="Close"
-                                    style="position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: none; border-radius: 6px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; font-size: 14px; padding: 0;">
-                                <i class="fa fa-times"/>
-                            </button>
+                    <button class="btn btn-sm btn-light"
+                            t-on-click="closeDetail"
+                            title="Close"
+                            style="position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border: none; border-radius: 6px; background: #f1f5f9; color: #475569; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; font-size: 14px; padding: 0;">
+                        <i class="fa fa-times"/>
+                    </button>
                     <h5 t-esc="state.selectedLocation.complete_name"/>
 
                     <div class="d-flex justify-content-between small">
@@ -282,10 +276,7 @@
                     <t t-else="">
                         <table class="table table-sm table-borderless mb-0">
                             <tbody>
-                                <!-- Show first 5 OR all if expanded -->
-                                <t t-foreach="state.productsExpanded
-                                             ? state.selectedLocation.products_info
-                                             : state.selectedLocation.products_info.slice(0, 5)"
+                                <t t-foreach="state.selectedLocation.products_info.slice(0, 5)"
                                    t-as="prod" t-key="prod.id">
                                     <tr>
                                         <td class="py-1"><span t-esc="prod.name"/></td>
@@ -297,20 +288,15 @@
                             </tbody>
                         </table>
 
-                        <!-- Show More / Show Less button -->
                         <t t-if="state.selectedLocation.products_info.length > 5">
-                            <button class="btn btn-sm btn-link p-0 mt-2"
-                                    t-on-click="toggleProductsExpanded"
-                                    style="text-decoration: none; color: #6366f1; font-weight: 600; font-size: 12px;">
-                                <t t-if="!state.productsExpanded">
-                                    <i class="fa fa-chevron-down me-1"/>
-                                    Show <t t-esc="state.selectedLocation.products_info.length - 5"/> more
-                                </t>
-                                <t t-else="">
-                                    <i class="fa fa-chevron-up me-1"/>
-                                    Show Less
-                                </t>
-                            </button>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-link p-0"
+                                        t-on-click="openLocationProducts"
+                                        style="text-decoration: none;">
+                                    <i class="fa fa-external-link me-1"/>
+                                    Show more
+                                </button>
+                            </div>
                         </t>
                     </t>
 
@@ -345,13 +331,15 @@
                 <div class="o_product_popup">
                     <div class="o_product_popup_header">
                         <div class="o_product_popup_icon">
-                            <i class="fa fa-cube"/>
+                            <img t-att-src="state.selectedProduct.image_url"
+                                 t-att-alt="state.selectedProduct.name"
+                                 class="o_product_popup_img"/>
                         </div>
                         <div class="o_product_popup_titles">
                             <div class="o_product_popup_label">Product</div>
                             <div class="o_product_popup_title" t-esc="state.selectedProduct.name"/>
                         </div>
-                        <button class="o_product_popup_close"
+                        <button class="btn btn-sm btn-light"
                                 t-on-click="closeProductDetail"
                                 title="Close">
                             <i class="fa fa-times"/>
@@ -369,7 +357,7 @@
                         <div class="o_product_popup_row">
                             <span class="o_product_popup_key">
                                 <i class="fa fa-map-marker"/> Location
-                                </span>
+                            </span>
                             <span class="o_product_popup_loc"
                                   t-esc="state.selectedProduct.location_name"/>
                         </div>

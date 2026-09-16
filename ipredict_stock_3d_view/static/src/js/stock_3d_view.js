@@ -34,6 +34,7 @@ export class Stock3DView extends Component {
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
+        this.action = useService("action"); 
         this.canvasRef = useRef("canvas");
 
         this.scene = null;
@@ -79,7 +80,6 @@ export class Stock3DView extends Component {
             searchQuery: "", heatmapEnabled: false, walkMode: false,
             selectedLocation: null, selectedProduct: null,
             locations: [], products: [], filteredLocations: [],
-            productsExpanded: false,
             flying: false,
             addPanelOpen: false,
             editMode: false,
@@ -764,6 +764,7 @@ export class Stock3DView extends Component {
                         rackGroup: rackGroup,
                         boxW, boxH, boxD, binWidth,
                         isMatch: isMatch,
+                        image_url: prod.image_url, 
                         initialPos: box.position.clone(),
                     };
                     rackGroup.add(box);
@@ -891,8 +892,8 @@ export class Stock3DView extends Component {
         if (!this.threeLoaded || !window.THREE) return;
         const status = this.getRackStatus(loc);
         const codeText = loc.code_3d || loc.name;
-        const hasCap = loc.capacity > 0 && loc.fill_percentage != null;
-        const pctText = hasCap ? `${Math.round(loc.fill_percentage)}%` : "-";
+        const pct = Math.round(loc.fill_percentage || 0);
+        const pctText = `${pct}%`;
         const mainText = `${codeText}  ${pctText}`;
 
         const canvas = document.createElement('canvas');
@@ -1016,11 +1017,40 @@ export class Stock3DView extends Component {
 
     fitCamera() {
         if (!this.camera) return;
+        
         const b = this.computeSceneBounds();
-        const dist = Math.max(Math.max(b.sizeX, b.sizeZ) * 1.4, 15);
-        this.orbitTarget.set(b.centerX, Math.min(b.maxY / 2, 3), b.centerZ);
-        this.camera.position.set(b.centerX + dist, dist * 0.55, b.centerZ + dist);
+        
+        const centerX = b.centerX;
+        const centerY = Math.min(b.maxY / 2, 1.8); 
+        const centerZ = b.centerZ;
+        
+        const radius = Math.sqrt(
+            (b.sizeX / 2) ** 2 +
+            (b.sizeZ / 2) ** 2 +
+            (b.maxY / 2) ** 2
+        );
+        
+        const fov = this.camera.fov * Math.PI / 180;
+        const aspect = this.camera.aspect;
+        const fovH = 2 * Math.atan(Math.tan(fov / 2) * aspect);
+        const effectiveFov = Math.min(fov, fovH);
+        
+        let distance = radius / Math.sin(effectiveFov / 2);
+        distance *= 1.15;                       
+        distance = Math.max(distance, 6);       
+        
+        
+        this.orbitTarget.set(centerX, centerY, centerZ);
+        
+        const angleV = Math.PI / 10;      
+        
+        const camX = centerX;                                    
+        const camY = centerY + distance * Math.sin(angleV);
+        const camZ = centerZ + distance * Math.cos(angleV);
+        
+        this.camera.position.set(camX, camY, camZ);
         this.camera.lookAt(this.orbitTarget);
+        this.camera.updateProjectionMatrix();
     }
 
     animate() {
@@ -1167,6 +1197,7 @@ export class Stock3DView extends Component {
                     location_name: ud.location_name,
                     slotLevel: ud.slotLevel,
                     slotBin: ud.slotBin,
+                    image_url: ud.image_url,
                 };
                 this.state.selectedLocation = null;
                 return;
@@ -1178,7 +1209,7 @@ export class Stock3DView extends Component {
                     const allProducts = this.collectProducts(loc);
                     this.state.selectedLocation = { ...loc, products_info: allProducts };
                     this.state.selectedProduct = null;
-                    this.state.productsExpanded = false;  
+
                     if (this._flyingTo) { this._flyingTo = false; this.state.flying = false; }
                     return;
                 }
@@ -1388,7 +1419,6 @@ export class Stock3DView extends Component {
                     const allProducts = this.collectProducts(loc);
                     this.state.selectedLocation = { ...loc, products_info: allProducts };
                     this.state.selectedProduct = null;
-                    this.state.productsExpanded = false;   
                 }
                 return;
             }
@@ -1644,7 +1674,7 @@ export class Stock3DView extends Component {
 
             this.notification.add(
                 isEdit
-                    ? `Rack "${result.name}" updated`
+                    ? ` Rack "${result.name}" updated`
                     : ` "${result.name}" added to 3D view`,
                 { type: "success" }
             );
@@ -1703,9 +1733,21 @@ export class Stock3DView extends Component {
         this._flyingTo = true;
         this.state.flying = true;
     }
+    async openLocationProducts() {
+        const loc = this.state.selectedLocation;
+        if (!loc) return;
 
-    toggleProductsExpanded() {
-        this.state.productsExpanded = !this.state.productsExpanded;
+        try {
+            const action = await this.orm.call(
+                "stock.location",
+                "action_view_location_products_3d",
+                [[loc.id]]
+            );
+            this.action.doAction(action);
+        } catch (e) {
+            console.error("Open products error:", e);
+            this.notification.add("Could not open product list.", { type: "danger" });
+        }
     }
 
    
