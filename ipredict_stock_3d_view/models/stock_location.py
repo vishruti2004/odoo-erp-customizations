@@ -24,7 +24,6 @@ class StockLocationRackSlot(models.Model):
 
     _unique_slot = models.Constraint(
         'UNIQUE(parent_rack_id, level, bin)',
-        'Aa slot already assigned che bija child ne!'
     )
 
 
