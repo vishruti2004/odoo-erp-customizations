@@ -1,219 +1,223 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-inherit="mail.Thread" t-inherit-mode="extension">
-        <xpath expr="//t[@t-foreach='messages']" position="before">
-            <div class="o-advanced-chatter-main-search px-2 py-2 d-flex align-items-center gap-2">
-                <div class="o-advanced-chatter-keyword flex-grow-1">
-                    <div class="position-relative">
-                        <i class="fa fa-search o-advanced-chatter-search-icon"/>
-                        <input type="text"
-                               class="form-control o-advanced-chatter-search-input"
-                               placeholder="Search in message content..."
-                               t-att-value="advancedFilterState.filters.keyword"
-                               t-on-input="onKeywordInput"
-                               t-on-focus="onKeywordFocus"
-                               t-on-blur="onKeywordBlur"
-                               t-on-keydown="onKeywordKeydown"/>
-                        <button t-if="advancedFilterState.filters.keyword"
-                                type="button"
-                                class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-1 p-1 text-muted"
-                                t-on-mousedown.prevent="clearKeywordSearch"
-                                title="Clear search">
-                            <i class="fa fa-times"/>
-                        </button>
-                        <div t-if="advancedFilterState.showSuggestions and advancedFilterState.filters.keyword.trim()"
-                             class="o-advanced-chatter-search-dropdown">
-                            <t t-foreach="searchSuggestionGroups" t-as="group" t-key="group.key">
-                                <!-- Message suggestion -->
-                                <div t-if="group.key === 'message'"
-                                     class="o-advanced-chatter-search-suggestion"
-                                     t-on-mousedown.prevent="() => this.selectSearchSuggestion(group)">
-                                    Search <b t-esc="group.label"/> for: <span class="text-primary fst-italic" t-esc="advancedFilterState.filters.keyword"/>
-                                </div>
-                                <t t-else="">
-                                    <!-- Single suggestion -->
-                                    <t t-if="group.items.length === 1">
-                                        <div class="o-advanced-chatter-search-suggestion"
-                                             t-on-mousedown.prevent="() => this.selectSearchSuggestion(group, group.items[0])">
-                                            Search <b t-esc="group.label"/> for: <span class="text-primary fst-italic" t-esc="advancedFilterState.filters.keyword"/>
-                                        </div>
-                                    </t>
-                                    <!-- Multiple suggestions -->
-                                    <t t-else="">
-                                        <div class="o-advanced-chatter-search-suggestion o-advanced-chatter-search-group"
-                                             t-on-mousedown.prevent="() => this.toggleSuggestionGroup(group.key)">
-                                            <i t-att-class="advancedFilterState.expandedSuggestionGroup === group.key ? 'fa fa-caret-down me-2' : 'fa fa-caret-right me-2'"/>
-                                            Search <b t-esc="group.label"/> for: <span class="text-primary fst-italic" t-esc="advancedFilterState.filters.keyword"/>
-                                        </div>
-                                        <t t-if="advancedFilterState.expandedSuggestionGroup === group.key">
-                                            <div t-foreach="group.items"
-                                                 t-as="item"
-                                                 t-key="item.id || item.value || item.name"
-                                                 class="o-advanced-chatter-search-suggestion ps-4"
-                                                 t-on-mousedown.prevent="() => this.selectSearchSuggestion(group, item)">
-                                                <t t-esc="item.label || item.name"/>
-                                                <t t-if="item.default_code">
-                                                    <span class="text-muted ms-1">[<t t-esc="item.default_code"/>]</span>
-                                                </t>
-                                            </div>
-                                        </t>
-                                    </t>
-                                </t>
-                            </t>
-                        </div>
-                    </div>
-                </div>
-                <button type="button"
-                        class="btn btn-outline-secondary o-advanced-chatter-filter-button text-nowrap"
-                        t-on-click="toggleAdvancedFilters">
-                    <i class="fa fa-filter me-1"/>
-                    Advanced Filters
-                    <i t-att-class="advancedFilterState.showAdvancedFilters ? 'fa fa-chevron-up ms-1' : 'fa fa-chevron-down ms-1'"/>
-                </button>
-            </div>
+    <t t-inherit="mail.Chatter" t-inherit-mode="extension">
 
-            <!-- Advanced Filters -->
-            <div t-if="advancedFilterState.showAdvancedFilters" class="o-advanced-chatter-filter-panel mx-2 mb-2 p-3 border rounded">
-                <!-- Date -->
+        <xpath expr="//div[contains(@class, 'o-mail-Chatter-topbar')]" position="inside">
+            <button type="button"
+                    class="btn btn-link text-action"
+                    title="Advanced Filters"
+                    aria-label="Advanced Filters"
+                    t-on-click="toggleAdvancedFilters">
+                <i class="fa fa-filter" role="img"/>
+            </button>
+        </xpath>
+
+        <xpath expr="//div[contains(@class, 'o-mail-Chatter-content')]" position="before">
+            <div t-if="advancedFilterState.showAdvancedFilters"
+                 class="o-advanced-chatter-filter-panel mx-2 mb-2 p-3 border rounded">
                 <div class="row g-2 mb-3">
                     <div class="col-md-6">
                         <label class="form-label">From Date</label>
-                        <input type="date" class="form-control form-control-sm" t-model="advancedFilterState.filters.dateFrom"/>
+                        <input type="date"
+                               class="form-control form-control-sm"
+                               t-model="advancedFilterState.filters.dateFrom"
+                               t-on-change="applyAdvancedFilters"/>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">To Date</label>
-                        <input type="date" class="form-control form-control-sm" t-model="advancedFilterState.filters.dateTo"/>
+                        <input type="date"
+                               class="form-control form-control-sm"
+                               t-model="advancedFilterState.filters.dateTo"
+                               t-on-change="applyAdvancedFilters"/>
                     </div>
                 </div>
 
-                <!-- Message filters -->
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="form-label">User / Author</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.userId">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.userId"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Users</option>
-                            <option t-foreach="conversationAuthors" t-as="user" t-key="user.id" t-att-value="user.id">
+                            <option t-foreach="conversationAuthors"
+                                    t-as="user"
+                                    t-key="user.id"
+                                    t-att-value="user.id">
                                 <t t-esc="user.name"/>
                             </option>
                         </select>
                     </div>
+
                     <div class="col-md-4">
                         <label class="form-label">Message Type</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.messageType">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.messageType"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Types</option>
-                            <option t-foreach="conversationMessageTypes" t-as="type" t-key="type.value" t-att-value="type.value">
+                            <option t-foreach="conversationMessageTypes"
+                                    t-as="type"
+                                    t-key="type.value"
+                                    t-att-value="type.value">
                                 <t t-esc="type.label"/>
                             </option>
                         </select>
                     </div>
+
                     <div class="col-md-4">
                         <label class="form-label">Message Subtype</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.subtypeId">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.subtypeId"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Subtypes</option>
-                            <option t-foreach="conversationSubtypes" t-as="subtype" t-key="subtype.id" t-att-value="subtype.id">
+                            <option t-foreach="conversationSubtypes"
+                                    t-as="subtype"
+                                    t-key="subtype.id"
+                                    t-att-value="subtype.id">
                                 <t t-esc="subtype.name"/>
                             </option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Activity filters: shown ONLY when this chatter has activities -->
                 <div t-if="conversationActivities.length" class="row g-2 mb-3">
-                    <!-- Activity Type -->
                     <div class="col-md-4">
                         <label class="form-label">Activity Type</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.activityTypeId">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.activityTypeId"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Activity Types</option>
-                            <option t-foreach="conversationActivityTypes" t-as="activityType" t-key="activityType.id" t-att-value="activityType.id">
+                            <option t-foreach="conversationActivityTypes"
+                                    t-as="activityType"
+                                    t-key="activityType.id"
+                                    t-att-value="activityType.id">
                                 <t t-esc="activityType.name"/>
                             </option>
                         </select>
                     </div>
-                    <!-- Activity User -->
+
                     <div class="col-md-4">
                         <label class="form-label">Activity User</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.activityUserId">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.activityUserId"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Activity Users</option>
-                            <option t-foreach="conversationActivityUsers" t-as="activityUser" t-key="activityUser.id" t-att-value="activityUser.id">
+                            <option t-foreach="conversationActivityUsers"
+                                    t-as="activityUser"
+                                    t-key="activityUser.id"
+                                    t-att-value="activityUser.id">
                                 <t t-esc="activityUser.name"/>
                             </option>
                         </select>
                     </div>
-                    <!-- Activity Status -->
+
                     <div class="col-md-4">
                         <label class="form-label">Activity Status</label>
-                        <select class="form-select form-select-sm" t-model="advancedFilterState.filters.activityState">
+                        <select class="form-select form-select-sm"
+                                t-model="advancedFilterState.filters.activityState"
+                                t-on-change="applyAdvancedFilters">
                             <option value="">All Activity Statuses</option>
-                            <option t-foreach="conversationActivityStates" t-as="activityState" t-key="activityState.value" t-att-value="activityState.value">
+                            <option t-foreach="conversationActivityStates"
+                                    t-as="activityState"
+                                    t-key="activityState.value"
+                                    t-att-value="activityState.value">
                                 <t t-esc="activityState.label"/>
                             </option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Buttons - unchanged -->
                 <div class="d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="exportAdvancedResults">
-                        <i class="fa fa-download me-1"/> Export Results
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            t-on-click="clearAdvancedFilters">
+                        <i class="fa fa-times me-1"/>
+                        Clear Filters
                     </button>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-sm btn-secondary" t-on-click="clearAdvancedFilters">
-                            Clear
-                        </button>
-                        <button type="button" class="btn btn-sm btn-primary" t-on-click="applyAdvancedFilters" t-att-disabled="advancedFilterState.searching">
-                            <i t-if="advancedFilterState.searching" class="fa fa-circle-o-notch fa-spin me-1"/> Apply Filters
-                        </button>
-                    </div>
+
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            t-on-click="exportAdvancedResults">
+                        <i class="fa fa-download me-1"/>
+                        Export Results
+                    </button>
                 </div>
             </div>
+        </xpath>
+    </t>
 
-            <!-- No messages -->
-            <div t-if="advancedFilterState.applied and !filteredMessages.length and !advancedFilterState.filters.includeActivities" class="text-center text-muted py-4">
-                No messages found for the selected filters.
-            </div>
+    <t t-inherit="mail.Thread" t-inherit-mode="extension">
+        <xpath expr="//t[@t-set='messages' and @t-value='orderedMessages']"
+               position="replace">
+            <t t-set="messages"
+               t-value="filteredMessages"/>
+        </xpath>
+    </t>
 
-            <!-- Filtered activities -->
-            <t t-if="advancedFilterState.applied and advancedFilterState.filters.includeActivities">
-                <div t-if="filteredActivities.length" class="o-advanced-chatter-activities mt-2 mb-3">
-                    <div class="fw-bold text-muted mb-2">
-                        <i class="fa fa-tasks me-1"/> Filtered Activities
-                    </div>
-                    <div class="border rounded">
-                        <t t-foreach="filteredActivities" t-as="activity" t-key="activity.id">
-                            <div class="px-3 py-2 border-bottom">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong>
-                                        <t t-esc="activity.activity_type_id?.[1] || 'Activity'"/>
-                                    </strong>
-                                    <span class="text-muted small">
-                                        <t t-esc="activity.date_deadline"/>
-                                    </span>
-                                </div>
-                                <div class="small">
-                                    <t t-esc="activity.summary || ''"/>
-                                </div>
-                                <div class="small text-muted">
-                                    <t t-if="activity.user_id">
-                                        <t t-esc="activity.user_id[1]"/>
-                                    </t>
-                                    <t t-if="activity.state">
-                                        - <t t-esc="activity.state"/>
-                                    </t>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
-                </div>
+    <t t-inherit="mail.SearchMessageInput" t-inherit-mode="extension">
 
-                <div t-if="!filteredActivities.length" class="text-center text-muted py-2">
-                    No activities found for the selected filters.
-                </div>
-            </t>
+        <xpath expr="//input[hasclass('o_searchview_input')]" position="attributes">
+            <attribute name="t-on-input">onKeywordSync</attribute>
+            <attribute name="t-on-focus">onKeywordFocusSync</attribute>
+            <attribute name="t-on-blur">onKeywordBlurSync</attribute>
         </xpath>
 
-        <!-- Use filtered messages in the existing Thread -->
-        <xpath expr="//t[@t-set='messages' and @t-value='orderedMessages']" position="replace">
-            <t t-set="messages" t-value="filteredMessages"/>
+        <xpath expr="//div[hasclass('o-mail-SearchMessageInput')]" position="after">
+
+            <div t-if="env.advancedChatterSearch
+                        and env.advancedChatterSearch.advancedFilterState.showSuggestions
+                        and env.advancedChatterSearch.advancedFilterState.filters.keyword.trim()"
+                 class="o-advanced-chatter-search-dropdown">
+
+                <t t-foreach="env.advancedChatterSearch.searchSuggestionGroups" t-as="group" t-key="group.key">
+
+                    <div t-if="group.key === 'message'"
+                         class="o-advanced-chatter-search-suggestion"
+                         t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group)">
+                        Search <b t-esc="group.label"/> for:
+                        <span class="text-primary fst-italic"
+                              t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                    </div>
+
+                    <t t-else="">
+
+                        <t t-if="group.items.length === 1">
+                            <div class="o-advanced-chatter-search-suggestion"
+                                 t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group, group.items[0])">
+                                Search <b t-esc="group.label"/> for:
+                                <span class="text-primary fst-italic"
+                                      t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                            </div>
+                        </t>
+
+                        <t t-else="">
+                            <div class="o-advanced-chatter-search-suggestion o-advanced-chatter-search-group"
+                                 t-on-mousedown.prevent="() => this.toggleAdvancedGroup(group.key)">
+                                <i t-att-class="advancedDropdownState.expandedGroup === group.key
+                                    ? 'fa fa-caret-down me-2'
+                                    : 'fa fa-caret-right me-2'"/>
+                                Search <b t-esc="group.label"/> for:
+                                <span class="text-primary fst-italic"
+                                      t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                            </div>
+
+                            <t t-if="advancedDropdownState.expandedGroup === group.key">
+                                <div t-foreach="group.items"
+                                     t-as="item"
+                                     t-key="item.id || item.value || item.name"
+                                     class="o-advanced-chatter-search-suggestion ps-4"
+                                     t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group, item)">
+                                    <t t-esc="item.label || item.name"/>
+                                    <t t-if="item.default_code">
+                                        <span class="text-muted ms-1">
+                                            [<t t-esc="item.default_code"/>]
+                                        </span>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </div>
         </xpath>
     </t>
 </templates>
