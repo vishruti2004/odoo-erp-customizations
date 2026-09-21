@@ -45,7 +45,6 @@
     justify-content: center;
 }
 
-/* NEW: live suggestion dropdown (mimics Odoo's default control-panel search) */
 .o-advanced-chatter-search-dropdown {
     position: absolute;
     top: calc(100% + 2px);
@@ -90,4 +89,111 @@
 .o-advanced-chatter-search-suggestion.ps-4 {
     font-size: 0.85rem;
     color: #212529;
+}
+
+.dropdown-menu:has(.o-advanced-chatter-filter-panel) {
+    min-width: 500px !important;
+    max-width: 550px;
+    padding: 0.5rem 1rem !important; 
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+
+.dropdown-menu:has(.o-advanced-chatter-filter-panel) > .dropdown-item {
+    width: 33.3333% !important;
+    flex: 0 0 33.3333% !important;
+    padding: 0.1rem 0 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    font-size: 0.9rem !important;
+    display: flex !important;
+    align-items: center !important;
+    color: #23264a;
+}
+
+.dropdown-menu:has(.o-advanced-chatter-filter-panel) .dropdown-item input[type="radio"] {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.4rem;
+    accent-color: #714B67;
+    cursor: pointer;
+}
+
+.o-advanced-chatter-filter-panel {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    min-width: 0 !important; 
+    padding-top: 0 !important;
+}
+
+.o-advanced-chatter-filter-panel hr {
+    border-top: 1px solid #e2e2ea;
+    margin: 0.25rem 0 0.5rem; 
+    opacity: 1;
+}
+
+.o-advanced-chatter-filter-panel .row {
+    row-gap: 0.4rem;
+    margin-bottom: 0.4rem !important; 
+    margin-left: -0.25rem !important;
+    margin-right: -0.25rem !important;
+}
+
+.o-advanced-chatter-filter-panel [class*="col-"] {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+}
+
+.o-advanced-chatter-filter-panel .form-label {
+    font-weight: 600;
+    color: #23264a;
+    font-size: 0.8rem; 
+    margin-bottom: 0.15rem; 
+}
+
+.o-advanced-chatter-filter-panel .form-control,
+.o-advanced-chatter-filter-panel .form-select {
+    border-radius: 0.4rem;
+    border: 1px solid #d9d9e3;
+    padding: 0.2rem 0.5rem; 
+    font-size: 0.8rem; 
+    color: #23264a;
+    background-color: #fff;
+    height: auto; 
+}
+
+.o-advanced-chatter-filter-panel .form-control::placeholder {
+    color: #9a9aa8;
+}
+
+.o-advanced-chatter-filter-panel .form-control:focus,
+.o-advanced-chatter-filter-panel .form-select:focus {
+    border-color: #714B67;
+    box-shadow: 0 0 0 0.15rem rgba(113, 75, 103, 0.15);
+    outline: none;
+}
+
+.o-advanced-chatter-filter-panel .d-flex.justify-content-between {
+    margin-top: 0.25rem !important;
+}
+
+.o-advanced-chatter-filter-panel .btn-outline-secondary {
+    border-radius: 0.4rem;
+    border: 1px solid #d9d9e3;
+    font-weight: 600;
+    color: #23264a;
+    padding: 0.2rem 0.6rem; 
+    font-size: 0.8rem; 
+    background-color: #fff;
+    display: inline-flex;
+    align-items: center;
+}
+
+.o-advanced-chatter-filter-panel .btn-outline-secondary:hover {
+    background-color: #f4f4f8;
+    border-color: #c7c7d4;
+}
+
+.o-advanced-chatter-filter-panel .btn-outline-secondary i {
+    color: inherit;
 }

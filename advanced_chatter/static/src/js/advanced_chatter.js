@@ -4,8 +4,15 @@ import { Chatter } from "@mail/chatter/web_portal/chatter";
 import { Thread } from "@mail/core/common/thread";
 import { SearchMessageInput } from "@mail/core/common/search_message_input";
 import { useService } from "@web/core/utils/hooks";
-import { onWillStart, useState } from "@odoo/owl";
+import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
+import { onWillDestroy, onWillStart, useState } from "@odoo/owl";
+import { FormCompiler } from "@web/views/form/form_compiler";
+import { setAttributes } from "@web/core/utils/xml";
 
+Chatter.props.push(
+    "advanceSearch?",
+    "advanceFilter?",
+);
 
 patch(Chatter.prototype,{
     get childSubEnv(){
@@ -14,6 +21,12 @@ patch(Chatter.prototype,{
     setup(){
         super.setup(...arguments);
         this.orm=useService("orm");
+        this.hasAdvancedChatterAccess=false;
+        this.showAdvancedSearch=this.props.advanceSearch !== false;
+this.showAdvancedFilters=this.props.advanceFilter !== false;
+
+        this._filterChangeListeners=new Set();
+
         this.messageTypeOptions=[
             {value:"comment",label:"Comment"},
             {value:"email",label:"Incoming Email"},
@@ -21,53 +34,216 @@ patch(Chatter.prototype,{
             {value:"notification",label:"System Notification"},
             {value:"auto_comment",label:"Automated Targeted Notification"},
         ];
+       // searchSuggestionDefinitions ma Tracking Field add
         this.searchSuggestionDefinitions=[
             {key:"message",label:"Message",icon:"fa fa-search",expandable:false},
             {key:"product",label:"Product",icon:"fa fa-cube",expandable:true},
             {key:"author",label:"Author",icon:"fa fa-user",expandable:true},
             {key:"messageType",label:"Message Type",icon:"fa fa-envelope-o",expandable:true},
             {key:"subtype",label:"Message Subtype",icon:"fa fa-tag",expandable:true},
+            {key:"trackingField",label:"Tracking Field",icon:"fa fa-history",expandable:true},
         ];
+    
         this.advancedFilterState=useState({
-            showAdvancedFilters:false,
             showSuggestions:false,
             expandedSuggestionGroup:null,
             applied:false,
             searching:false,
             filters:{
-                keyword:"",
-                activeKeyword:"",
-                activeKeywordMode:"",
-                dateFrom:"",
-                dateTo:"",
-                userId:"",
-                authorKeyword:"",
-                messageType:"",
-                subtypeId:"",
-                productId:"",
-                productKeyword:"",
-                activityTypeId:"",
-                activityUserId:"",
-                activityState:"",
-            },
-            subtypes:[],
-            activityTypes:[],
+            keyword:"",
+            activeKeyword:"",
+            activeKeywordMode:"",
+            dateFrom:"",
+            dateTo:"",
+            userId:"",
+            authorKeyword:"",
+            messageType:"",
+            subtypeId:"",
+            productId:"",
+            productKeyword:"",
+            productCode:"",
+            activityTypeId:"",
+            activityUserId:"",
+            activityState:"",
+            stateChange:"",
+            trackingMessageIds:[],
+            trackingFieldId:"",
+            trackingFieldName:"",
+        },
+        trackingFields:[],
+        subtypes:[],
+        activityTypes:[],
+        stateChangeMessageIds:[],
         });
-        onWillStart(async()=>{
-            this.advancedFilterState.subtypes=await this.orm.searchRead(
-                "mail.message.subtype",
-                [],
-                ["id","name"],
-                {limit:200,order:"name asc"}
-            );
-            this.advancedFilterState.activityTypes=await this.orm.searchRead(
-                "mail.activity.type",
-                [],
-                ["id","name"],
-                {limit:200,order:"name asc"}
-            );
-        });
+  onWillStart(async()=>{
+    this.hasAdvancedChatterAccess=await this.orm.call(
+        "res.users",
+        "check_advanced_chatter_access",
+        []
+    );
+
+    if(!this.hasAdvancedChatterAccess){
+        return;
+    }
+
+    this.advancedFilterState.subtypes=await this.orm.searchRead(
+        "mail.message.subtype",
+        [],
+        ["id","name"],
+        {limit:200,order:"name asc"}
+    );
+
+    this.advancedFilterState.activityTypes=await this.orm.searchRead(
+        "mail.activity.type",
+        [],
+        ["id","name"],
+        {limit:200,order:"name asc"}
+    );
+});
+        },
+        
+
+    onFiltersChanged(callback){
+        this._filterChangeListeners.add(callback);
+        return ()=>this._filterChangeListeners.delete(callback);
     },
+
+    notifyFiltersChanged(shouldAttemptClose=true){
+        for(const listener of this._filterChangeListeners){
+            listener(shouldAttemptClose);
+        }
+    },
+
+    notifyDateFilterChanged(){
+        const filters=this.advancedFilterState.filters;
+        const bothDatesSet=!!(filters.dateFrom && filters.dateTo);
+        this.notifyFiltersChanged(bothDatesSet);
+    },
+
+    async onStateChangeFilter(){
+        const filters=this.advancedFilterState.filters;
+
+        if(!filters.stateChange){
+            this.advancedFilterState.stateChangeMessageIds=[];
+            this.notifyFiltersChanged();
+            return;
+        }
+
+        const messageIds=this.threadMessages
+            .map(message=>Number(message.id))
+            .filter(id=>Number.isFinite(id)&&id>0);
+
+        if(!messageIds.length){
+            this.advancedFilterState.stateChangeMessageIds=[];
+            this.notifyFiltersChanged();
+            return;
+        }
+
+        try{
+            const trackingValues=await this.orm.searchRead(
+                "mail.tracking.value",
+                [
+                    ["mail_message_id","in",messageIds],
+                    ["field_id.name","=","state"],
+                ],
+                ["mail_message_id"],
+                {limit:2000}
+            );
+
+            this.advancedFilterState.stateChangeMessageIds=[
+                ...new Set(
+                    trackingValues
+                        .map(value=>this.getMany2OneValue(value.mail_message_id).id)
+                        .filter(Boolean)
+                        .map(Number)
+                ),
+            ];
+        }catch(error){
+            console.error("Failed to load state tracking messages:",error);
+            this.advancedFilterState.stateChangeMessageIds=[];
+        }
+
+        this.notifyFiltersChanged();
+    },
+
+    async loadTrackingFields(){
+    const messageIds=this.threadMessages
+        .map(message=>Number(message.id))
+        .filter(id=>Number.isFinite(id)&&id>0);
+
+    if(!messageIds.length){
+        this.advancedFilterState.trackingFields=[];
+        return;
+    }
+
+    try{
+        const trackingValues=await this.orm.searchRead(
+            "mail.tracking.value",
+            [
+                ["mail_message_id","in",messageIds],
+            ],
+            ["field_id"],
+            {limit:5000}
+        );
+
+        const fieldMap=new Map();
+
+        for(const value of trackingValues){
+            const field=this.getMany2OneValue(value.field_id);
+
+            if(field.id&&!fieldMap.has(Number(field.id))){
+                fieldMap.set(Number(field.id),{
+                    id:Number(field.id),
+                    name:field.name||"",
+                    label:field.name||"",
+                });
+            }
+        }
+
+        this.advancedFilterState.trackingFields=[
+            ...fieldMap.values(),
+        ];
+    }catch(error){
+        console.error("Failed to load tracking fields:",error);
+        this.advancedFilterState.trackingFields=[];
+    }
+},
+
+async loadTrackingMessageIds(fieldId){
+    const messageIds=this.threadMessages
+        .map(message=>Number(message.id))
+        .filter(id=>Number.isFinite(id)&&id>0);
+
+    if(!fieldId||!messageIds.length){
+        this.advancedFilterState.filters.trackingMessageIds=[];
+        return;
+    }
+
+    try{
+        const trackingValues=await this.orm.searchRead(
+            "mail.tracking.value",
+            [
+                ["mail_message_id","in",messageIds],
+                ["field_id","=",fieldId],
+            ],
+            ["mail_message_id"],
+            {limit:5000}
+        );
+
+        this.advancedFilterState.filters.trackingMessageIds=[
+            ...new Set(
+                trackingValues
+                    .map(value=>this.getMany2OneValue(value.mail_message_id).id)
+                    .filter(Boolean)
+                    .map(Number)
+            ),
+        ];
+    }catch(error){
+        console.error("Failed to load tracking messages:",error);
+        this.advancedFilterState.filters.trackingMessageIds=[];
+    }
+},
+
     get threadMessages(){
         return this.state.thread?.messages||this.state.thread?.orderedMessages||[];
     },
@@ -104,6 +280,7 @@ patch(Chatter.prototype,{
         }
         return this.advancedFilterState.subtypes.filter(subtype=>seen.has(Number(subtype.id)));
     },
+   
     get conversationActivities(){
         return this.state.thread?.activities||[];
     },
@@ -254,6 +431,8 @@ patch(Chatter.prototype,{
                 return this.matchingMessageTypeSuggestions;
             case"subtype":
                 return this.matchingSubtypeSuggestions;
+            case"trackingField":
+                return this.matchingTrackingFieldSuggestions;
             default:
                 return [];
         }
@@ -295,42 +474,69 @@ patch(Chatter.prototype,{
             subtype.name.toLowerCase().includes(term)
         ).slice(0,5);
     },
-    toggleAdvancedFilters(){
-        this.advancedFilterState.showAdvancedFilters=!this.advancedFilterState.showAdvancedFilters;
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
-    },
-    onKeywordInput(ev){
-        this.advancedFilterState.filters.keyword=ev.target.value;
-        this.advancedFilterState.showSuggestions=!!ev.target.value.trim();
-        this.advancedFilterState.expandedSuggestionGroup=null;
-    },
+    get matchingTrackingFieldSuggestions(){
+    const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
+
+    if(!term){
+        return [];
+    }
+
+    return (this.advancedFilterState.trackingFields||[])
+        .filter(field=>
+            (field.label||"").toLowerCase().includes(term)||
+            (field.name||"").toLowerCase().includes(term)
+        )
+        .slice(0,10);
+},
+   onKeywordInput(ev){
+    const filters=this.advancedFilterState.filters;
+
+    filters.keyword=ev.target.value;
+    filters.activeKeyword="";
+    filters.activeKeywordMode="";
+    filters.trackingFieldId="";
+    filters.trackingFieldName="";
+    filters.trackingMessageIds=[];
+
+    this.advancedFilterState.showSuggestions=!!ev.target.value.trim();
+    this.advancedFilterState.expandedSuggestionGroup=null;
+
+    if(ev.target.value.trim()){
+        this.loadTrackingFields();
+    }
+},
     onKeywordFocus(){
         if(this.advancedFilterState.filters.keyword.trim()){
             this.advancedFilterState.showSuggestions=true;
         }
     },
     clearKeywordSearch(){
-        this.advancedFilterState.filters={
-            keyword:"",
-            activeKeyword:"",
-            activeKeywordMode:"",
-            dateFrom:"",
-            dateTo:"",
-            userId:"",
-            authorKeyword:"",
-            messageType:"",
-            subtypeId:"",
-            productId:"",
-            productKeyword:"",
-            activityTypeId:"",
-            activityUserId:"",
-            activityState:"",
-        };
+        const filters=this.advancedFilterState.filters;
+        filters.keyword="";
+        filters.activeKeyword="";
+        filters.activeKeywordMode="";
+        filters.dateFrom="";
+        filters.dateTo="";
+        filters.userId="";
+        filters.authorKeyword="";
+        filters.messageType="";
+        filters.subtypeId="";
+        filters.productId="";
+        filters.productKeyword="";
+        filters.productCode="";
+        filters.activityTypeId="";
+        filters.activityUserId="";
+        filters.activityState="";
+       filters.stateChange="";
+filters.trackingFieldId="";
+filters.trackingFieldName="";
+filters.trackingMessageIds=[];
+        this.advancedFilterState.stateChangeMessageIds=[];
         this.advancedFilterState.applied=false;
         this.advancedFilterState.searching=false;
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     onKeywordBlur(){
         this.advancedFilterState.showSuggestions=false;
@@ -347,8 +553,10 @@ patch(Chatter.prototype,{
             this.advancedFilterState.filters.authorKeyword="";
             this.advancedFilterState.filters.productId="";
             this.advancedFilterState.filters.productKeyword="";
+            this.advancedFilterState.filters.productCode="";
             this.advancedFilterState.showSuggestions=false;
             this.advancedFilterState.expandedSuggestionGroup=null;
+            this.notifyFiltersChanged();
         }
         if(ev.key==="Escape"){
             this.advancedFilterState.showSuggestions=false;
@@ -381,6 +589,11 @@ patch(Chatter.prototype,{
                     this.selectMessageTypeSuggestion(item);
                 }
                 break;
+            case"trackingField":
+                if(item){
+                    this.selectTrackingFieldSuggestion(item);
+                }
+                break;
             case"subtype":
                 if(item){
                     this.selectSubtypeSuggestion(item);
@@ -398,8 +611,10 @@ patch(Chatter.prototype,{
         this.advancedFilterState.filters.authorKeyword="";
         this.advancedFilterState.filters.productId="";
         this.advancedFilterState.filters.productKeyword="";
+        this.advancedFilterState.filters.productCode="";
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     selectAuthorSuggestion(user){
         this.advancedFilterState.filters.keyword=user.name;
@@ -411,6 +626,7 @@ patch(Chatter.prototype,{
         this.advancedFilterState.filters.productKeyword="";
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     selectAuthorGroupSuggestion(){
         const keyword=this.advancedFilterState.filters.keyword.trim();
@@ -423,6 +639,7 @@ patch(Chatter.prototype,{
         this.advancedFilterState.filters.authorKeyword=keyword;
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     selectMessageTypeSuggestion(type){
         this.advancedFilterState.filters.keyword=type.label;
@@ -431,6 +648,7 @@ patch(Chatter.prototype,{
         this.advancedFilterState.filters.messageType=type.value;
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     selectSubtypeSuggestion(subtype){
         this.advancedFilterState.filters.keyword=subtype.name;
@@ -439,33 +657,54 @@ patch(Chatter.prototype,{
         this.advancedFilterState.filters.subtypeId=String(subtype.id);
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
     selectProductSuggestion(product){
         this.advancedFilterState.filters.keyword=product.name;
         this.advancedFilterState.filters.activeKeyword=product.name;
         this.advancedFilterState.filters.activeKeywordMode="product";
         this.advancedFilterState.filters.productId=product.id;
-        this.advancedFilterState.filters.productKeyword=product.default_code;
+        this.advancedFilterState.filters.productKeyword=product.name;
+        this.advancedFilterState.filters.productCode=product.default_code;
         this.advancedFilterState.showSuggestions=false;
         this.advancedFilterState.expandedSuggestionGroup=null;
+        this.notifyFiltersChanged();
     },
+    selectTrackingFieldSuggestion(field){
+    if(!field?.id){
+        return;
+    }
+
+    const filters=this.advancedFilterState.filters;
+
+    filters.keyword=field.label||field.name;
+    filters.activeKeyword=field.label||field.name;
+    filters.activeKeywordMode="trackingField";
+    filters.trackingFieldId=String(field.id);
+    filters.trackingFieldName=field.name||"";
+    filters.trackingMessageIds=[];
+
+    this.advancedFilterState.showSuggestions=false;
+    this.advancedFilterState.expandedSuggestionGroup=null;
+
+    this.loadTrackingMessageIds(Number(field.id)).then(()=>{
+        this.notifyFiltersChanged();
+    });
+},
     clearAdvancedFilters(){
         this.clearKeywordSearch();
     },
     applyAdvancedFilters(){
-        /* No-op: filteredMessages now reads filter values directly,
-           so every change triggers a re-render automatically. */
+       
     },
     get filteredMessages(){
         const messages=this.threadMessages;
         const filters=this.advancedFilterState.filters;
 
-        /* Activity filters active → hide all messages. */
         if(this.isActivityFilterActive){
             return [];
         }
 
-        /* Any filter actually set? If not, show everything. */
         const hasAnyFilter=!!(
             filters.activeKeyword||
             filters.dateFrom||
@@ -474,8 +713,14 @@ patch(Chatter.prototype,{
             filters.authorKeyword||
             filters.messageType||
             filters.subtypeId||
-            filters.productKeyword
-        );
+            filters.productKeyword||
+            filters.productCode||
+            filters.stateChange ||
+            filters.trackingFieldId
+
+);
+
+        
         if(!hasAnyFilter){
             return messages;
         }
@@ -501,19 +746,19 @@ patch(Chatter.prototype,{
                 );
             }
         }
-        if(activeMode==="product"&&filters.productKeyword){
-                const productCode=filters.productKeyword.trim().toLowerCase();
-                const productName=(filters.activeKeyword||"").trim().toLowerCase();
-                result=result.filter(message=>{
-                    const body=this.getMessageText(message.body);
-                    const subject=this.getMessageText(message.subject);
-                    const text=`${subject} ${body}`.toLowerCase();
-                    return (
-                        (productCode&&text.includes(`[${productCode}]`))||
-                        (productName&&text.includes(productName))
-                    );
-                });
-            }
+        if(activeMode==="product"&&(filters.productKeyword||filters.productCode)){
+            const productName=(filters.productKeyword||"").trim().toLowerCase();
+            const productCode=(filters.productCode||"").trim().toLowerCase();
+            result=result.filter(message=>{
+                const body=this.getMessageText(message.body);
+                const subject=this.getMessageText(message.subject);
+                const text=`${subject} ${body}`.toLowerCase();
+                return (
+                    (productName&&text.includes(productName))||
+                    (productCode&&text.includes(productCode))
+                );
+            });
+        }
         if(activeKeyword&&activeMode==="messageType"){
             result=result.filter(message=>{
                 const type=this.messageTypeOptions.find(item=>item.value===message.message_type);
@@ -558,6 +803,14 @@ patch(Chatter.prototype,{
                     return false;
                 }
             }
+            if(filters.trackingFieldId){
+    const trackingMessageIds=
+        filters.trackingMessageIds||[];
+
+    if(!trackingMessageIds.includes(Number(message.id))){
+        return false;
+    }
+}
             return true;
         });
     },
@@ -689,12 +942,23 @@ patch(Chatter.prototype,{
 });
 
 patch(Thread.prototype,{
+    setup(){
+        super.setup(...arguments);
+
+        const chatter=this.env.advancedChatterSearch;
+        if(chatter && typeof chatter.onFiltersChanged==="function"){
+            const unsubscribe=chatter.onFiltersChanged(()=>this.render());
+            onWillDestroy(unsubscribe);
+        }
+    },
     get filteredMessages(){
         const chatter=this.env.advancedChatterSearch;
+
         if(!chatter){
-            return this.orderedMessages;
+            return this.orderedMessages||[];
         }
-        return chatter.filteredMessages;
+
+        return chatter.filteredMessages||this.orderedMessages||[];
     },
 });
 
@@ -704,6 +968,28 @@ patch(SearchMessageInput.prototype,{
         this.advancedDropdownState = useState({
             expandedGroup: null,
         });
+
+        
+        this.filterDropdownState = useDropdownState();
+
+        const chatter=this.env.advancedChatterSearch;
+        if(chatter && typeof chatter.onFiltersChanged==="function"){
+            const unsubscribe=chatter.onFiltersChanged((shouldAttemptClose=true)=>{
+                this.render();
+                if(shouldAttemptClose){
+                    this.filterDropdownState.close();
+                }
+            });
+            onWillDestroy(unsubscribe);
+        }
+    },
+
+    clear(){
+        super.clear();
+        const chatter=this.env.advancedChatterSearch;
+        if(chatter && typeof chatter.clearAdvancedFilters==="function"){
+            chatter.clearAdvancedFilters();
+        }
     },
 
     toggleAdvancedGroup(groupKey){
@@ -718,9 +1004,21 @@ patch(SearchMessageInput.prototype,{
         if(!chatter){
             return;
         }
-        chatter.advancedFilterState.filters.keyword=ev.target.value;
-        chatter.advancedFilterState.showSuggestions=!!ev.target.value.trim();
-        this.advancedDropdownState.expandedGroup = null;
+       const filters=chatter.advancedFilterState.filters;
+
+filters.keyword=ev.target.value;
+filters.activeKeyword="";
+filters.activeKeywordMode="";
+filters.trackingFieldId="";
+filters.trackingFieldName="";
+filters.trackingMessageIds=[];
+
+chatter.advancedFilterState.showSuggestions=!!ev.target.value.trim();
+this.advancedDropdownState.expandedGroup=null;
+
+if(ev.target.value.trim()){
+    chatter.loadTrackingFields();
+}
     },
 
     onKeywordFocusSync(){
@@ -748,7 +1046,62 @@ patch(SearchMessageInput.prototype,{
             return;
         }
         chatter.selectSearchSuggestion(group,item);
-        
+
         this.state.searchTerm="";
+    },
+});
+patch(FormCompiler.prototype, {
+    setup() {
+        super.setup(...arguments);
+
+        const chatterCompiler = this.compilers.find(
+            (compiler) => compiler.selector === "chatter"
+        );
+
+        if (!chatterCompiler || chatterCompiler._advancedChatterPatched) {
+            return;
+        }
+
+        const originalFn = chatterCompiler.fn;
+
+        chatterCompiler.fn = function (node, params) {
+            const result = originalFn.call(this, node, params);
+
+            if (!result || typeof node?.getAttribute !== "function") {
+                return result;
+            }
+
+            const chatterContainerXml = Array.from(
+                result.querySelectorAll("t[t-component]")
+            ).find((el) => {
+                const component = el.getAttribute("t-component") || "";
+                return component.includes("Chatter");
+            });
+
+            if (!chatterContainerXml) {
+                return result;
+            }
+
+            const advanceSearch = node.getAttribute("advance_search");
+            const advanceFilter = node.getAttribute("advance_filter");
+
+            if (advanceSearch !== null) {
+                setAttributes(chatterContainerXml, {
+                    advanceSearch:
+                        advanceSearch.trim().toLowerCase() === "true",
+                });
+            }
+
+            if (advanceFilter !== null) {
+                setAttributes(chatterContainerXml, {
+                    advanceFilter:
+                        advanceFilter.trim().toLowerCase() === "true",
+                });
+            }
+
+            return result;
+        };
+
+        chatterCompiler._advancedChatterPatched = true;
     },
 });

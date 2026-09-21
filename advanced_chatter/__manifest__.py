@@ -26,11 +26,14 @@ Features:
         "base",
         "mail",
         "web",
+        "purchase",
+
     ],
 
-    # "data": [
-    #     "security/ir.model.access.csv",
-    # ],
+    "data": [
+        "security/security.xml",
+        "views/advanced_chatter_views.xml",
+    ],
 
     "assets": {
         "web.assets_backend": [
