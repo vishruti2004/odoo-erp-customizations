@@ -4,8 +4,7 @@
     <t t-inherit="mail.Thread" t-inherit-mode="extension">
         <xpath expr="//t[@t-set='messages' and @t-value='orderedMessages']"
                position="replace">
-            <t t-set="messages"
-               t-value="filteredMessages"/>
+            <t t-set="messages" t-value="filteredMessages"/>
         </xpath>
     </t>
 
@@ -21,13 +20,24 @@
             <attribute name="state">filterDropdownState</attribute>
         </xpath>
 
-        <!-- Search suggestion dropdown -->
-        <xpath expr="//div[hasclass('o-mail-SearchMessageInput')]" position="after">
+        <xpath expr="//Dropdown[@t-if='env.inChatter']//button" position="attributes">
+            <attribute name="t-att-class">
+                env.advancedChatterSearch and env.advancedChatterSearch.activeAdvancedFilterCount > 0 ? 'o-advanced-chatter-filter-active' : ''
+            </attribute>
+        </xpath>
 
-           <div t-if="env.advancedChatterSearch
-            and env.advancedChatterSearch.hasAdvancedChatterAccess
-            and env.advancedChatterSearch.advancedFilterState.showSuggestions
-            and env.advancedChatterSearch.advancedFilterState.filters.keyword.trim()"
+        <xpath expr="//Dropdown[@t-if='env.inChatter']//button" position="inside">
+            <span t-if="env.advancedChatterSearch and env.advancedChatterSearch.activeAdvancedFilterCount > 0"
+                  class="o-advanced-chatter-filter-count"
+                  t-esc="env.advancedChatterSearch.activeAdvancedFilterCount"/>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o-mail-SearchMessageInput')]" position="after">
+            <div t-if="env.advancedChatterSearch
+                and env.advancedChatterSearch.hasAdvancedChatterAccess
+                and env.advancedChatterSearch.showAdvancedSearch
+                and env.advancedChatterSearch.advancedFilterState.showSuggestions
+                and state.searchTerm.trim()"
                  class="o-advanced-chatter-search-dropdown">
 
                 <t t-foreach="env.advancedChatterSearch.searchSuggestionGroups"
@@ -37,306 +47,172 @@
                     <div t-if="group.key === 'message'"
                          class="o-advanced-chatter-search-suggestion"
                          t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group)">
-
                         Search <b t-esc="group.label"/> for:
-
-                        <span class="text-primary fst-italic"
-                              t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                        <span class="text-primary fst-italic" t-esc="state.searchTerm"/>
                     </div>
 
                     <t t-else="">
-
                         <t t-if="group.items.length === 1">
-
                             <div class="o-advanced-chatter-search-suggestion"
                                  t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group, group.items[0])">
-
                                 Search <b t-esc="group.label"/> for:
-
                                 <span class="text-primary fst-italic"
-                                      t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                                      t-esc="group.items[0].displayName"/>
                             </div>
-
                         </t>
 
                         <t t-else="">
-
                             <div class="o-advanced-chatter-search-suggestion o-advanced-chatter-search-group"
                                  t-on-mousedown.prevent="() => this.toggleAdvancedGroup(group.key)">
-
                                 <i t-att-class="advancedDropdownState.expandedGroup === group.key
                                     ? 'fa fa-caret-down me-2'
                                     : 'fa fa-caret-right me-2'"/>
-
                                 Search <b t-esc="group.label"/> for:
-
-                                <span class="text-primary fst-italic"
-                                      t-esc="env.advancedChatterSearch.advancedFilterState.filters.keyword"/>
+                                <span class="text-primary fst-italic" t-esc="state.searchTerm"/>
                             </div>
 
                             <t t-if="advancedDropdownState.expandedGroup === group.key">
-
                                 <div t-foreach="group.items"
                                      t-as="item"
-                                     t-key="item.id || item.value || item.name"
+                                     t-key="item.displayName"
                                      class="o-advanced-chatter-search-suggestion ps-4"
                                      t-on-mousedown.prevent="() => this.selectSuggestionAndSync(group, item)">
-
-                                    <t t-esc="item.label || item.name"/>
-
-                                    <t t-if="item.default_code">
-                                        <span class="text-muted ms-1">
-                                            [<t t-esc="item.default_code"/>]
-                                        </span>
-                                    </t>
-
+                                    <t t-esc="item.displayName"/>
                                 </div>
-
                             </t>
-
                         </t>
-
                     </t>
 
                 </t>
 
             </div>
-
         </xpath>
 
-        <!-- Advanced filters -->
         <xpath expr="//t[@t-foreach='searchFilters']" position="after">
-<div t-if="env.advancedChatterSearch
-           and env.advancedChatterSearch.hasAdvancedChatterAccess"
-     class="o-advanced-chatter-filter-panel p-2"
-     style="min-width: 620px;">
+            <div t-if="env.advancedChatterSearch
+                       and env.advancedChatterSearch.hasAdvancedChatterAccess
+                       and env.advancedChatterSearch.showAdvancedFilters"
+                 class="o-advanced-chatter-filter-panel p-2"
+                 style="min-width: 620px;">
 
                 <hr class="my-2"/>
 
-                <!-- Date filters -->
                 <div class="row g-2 mb-2">
-
                     <div class="col-6">
-                        <label class="form-label small mb-1">
-                            From Date
-                        </label>
-
-                        <input type="date"
-                               class="form-control form-control-sm"
+                        <label class="form-label small mb-1">From Date</label>
+                        <input type="date" class="form-control form-control-sm"
                                t-model="env.advancedChatterSearch.advancedFilterState.filters.dateFrom"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
+                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"
+                               t-on-click="onDateInputClick"/>
                     </div>
-
                     <div class="col-6">
-                        <label class="form-label small mb-1">
-                            To Date
-                        </label>
-
-                        <input type="date"
-                               class="form-control form-control-sm"
+                        <label class="form-label small mb-1">To Date</label>
+                        <input type="date" class="form-control form-control-sm"
                                t-model="env.advancedChatterSearch.advancedFilterState.filters.dateTo"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
+                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"
+                               t-on-click="onDateInputClick"/>
                     </div>
-
                 </div>
 
-                <!-- User / Type / Subtype -->
                 <div class="row g-2 mb-2">
-
                     <div class="col-4">
-                        <label class="form-label small mb-1">
-                            User / Author
-                        </label>
-
+                        <label class="form-label small mb-1">User / Author</label>
                         <select class="form-select form-select-sm"
                                 t-model="env.advancedChatterSearch.advancedFilterState.filters.userId"
-                                t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                            <option value="">
-                                All Users
-                            </option>
-
+                                t-on-change="() => env.advancedChatterSearch.onMessageFilterChanged()">
+                            <option value="">All Users</option>
                             <option t-foreach="env.advancedChatterSearch.conversationAuthors"
-                                    t-as="user"
-                                    t-key="user.id"
-                                    t-att-value="user.id"
+                                    t-as="user" t-key="user.id" t-att-value="user.id"
                                     t-att-selected="user.id == env.advancedChatterSearch.advancedFilterState.filters.userId">
-
                                 <t t-esc="user.name"/>
-
                             </option>
-
                         </select>
                     </div>
-
                     <div class="col-4">
-                        <label class="form-label small mb-1">
-                            Message Type
-                        </label>
-
+                        <label class="form-label small mb-1">Message Type</label>
                         <select class="form-select form-select-sm"
                                 t-model="env.advancedChatterSearch.advancedFilterState.filters.messageType"
-                                t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                            <option value="">
-                                All Types
-                            </option>
-
+                                t-on-change="() => env.advancedChatterSearch.onMessageFilterChanged()">
+                            <option value="">All Types</option>
                             <option t-foreach="env.advancedChatterSearch.conversationMessageTypes"
-                                    t-as="type"
-                                    t-key="type.value"
-                                    t-att-value="type.value"
+                                    t-as="type" t-key="type.value" t-att-value="type.value"
                                     t-att-selected="type.value === env.advancedChatterSearch.advancedFilterState.filters.messageType">
-
                                 <t t-esc="type.label"/>
-
                             </option>
-
                         </select>
                     </div>
-
                     <div class="col-4">
-                        <label class="form-label small mb-1">
-                            Message Subtype
-                        </label>
-
+                        <label class="form-label small mb-1">Message Subtype</label>
                         <select class="form-select form-select-sm"
                                 t-model="env.advancedChatterSearch.advancedFilterState.filters.subtypeId"
-                                t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                            <option value="">
-                                All Subtypes
-                            </option>
-
+                                t-on-change="() => env.advancedChatterSearch.onMessageFilterChanged()">
+                            <option value="">All Subtypes</option>
                             <option t-foreach="env.advancedChatterSearch.conversationSubtypes"
-                                    t-as="subtype"
-                                    t-key="subtype.id"
-                                    t-att-value="subtype.id"
+                                    t-as="subtype" t-key="subtype.id" t-att-value="subtype.id"
                                     t-att-selected="subtype.id == env.advancedChatterSearch.advancedFilterState.filters.subtypeId">
-
                                 <t t-esc="subtype.name"/>
-
                             </option>
-
                         </select>
                     </div>
-
                 </div>
 
-             
-
-                <!-- Activities -->
                 <t t-if="env.advancedChatterSearch.conversationActivities.length">
-
                     <div class="row g-2 mb-2">
-
                         <div class="col-4">
-                            <label class="form-label small mb-1">
-                                Activity Type
-                            </label>
-
+                            <label class="form-label small mb-1">Activity Type</label>
                             <select class="form-select form-select-sm"
                                     t-model="env.advancedChatterSearch.advancedFilterState.filters.activityTypeId"
-                                    t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                                <option value="">
-                                    All Activity Types
-                                </option>
-
+                                    t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
+                                <option value="">All Activity Types</option>
                                 <option t-foreach="env.advancedChatterSearch.conversationActivityTypes"
-                                        t-as="activityType"
-                                        t-key="activityType.id"
-                                        t-att-value="activityType.id"
+                                        t-as="activityType" t-key="activityType.id" t-att-value="activityType.id"
                                         t-att-selected="activityType.id == env.advancedChatterSearch.advancedFilterState.filters.activityTypeId">
-
                                     <t t-esc="activityType.name"/>
-
                                 </option>
-
                             </select>
                         </div>
-
                         <div class="col-4">
-                            <label class="form-label small mb-1">
-                                Activity User
-                            </label>
-
+                            <label class="form-label small mb-1">Activity User</label>
                             <select class="form-select form-select-sm"
                                     t-model="env.advancedChatterSearch.advancedFilterState.filters.activityUserId"
-                                    t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                                <option value="">
-                                    All Activity Users
-                                </option>
-
+                                    t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
+                                <option value="">All Activity Users</option>
                                 <option t-foreach="env.advancedChatterSearch.conversationActivityUsers"
-                                        t-as="activityUser"
-                                        t-key="activityUser.id"
-                                        t-att-value="activityUser.id"
+                                        t-as="activityUser" t-key="activityUser.id" t-att-value="activityUser.id"
                                         t-att-selected="activityUser.id == env.advancedChatterSearch.advancedFilterState.filters.activityUserId">
-
                                     <t t-esc="activityUser.name"/>
-
                                 </option>
-
                             </select>
                         </div>
-
                         <div class="col-4">
-                            <label class="form-label small mb-1">
-                                Activity Status
-                            </label>
-
+                            <label class="form-label small mb-1">Activity Status</label>
                             <select class="form-select form-select-sm"
                                     t-model="env.advancedChatterSearch.advancedFilterState.filters.activityState"
-                                    t-on-change="() => env.advancedChatterSearch.notifyFiltersChanged()">
-
-                                <option value="">
-                                    All Activity Statuses
-                                </option>
-
+                                    t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
+                                <option value="">All Activity Statuses</option>
                                 <option t-foreach="env.advancedChatterSearch.conversationActivityStates"
-                                        t-as="activityState"
-                                        t-key="activityState.value"
-                                        t-att-value="activityState.value"
+                                        t-as="activityState" t-key="activityState.value" t-att-value="activityState.value"
                                         t-att-selected="activityState.value === env.advancedChatterSearch.advancedFilterState.filters.activityState">
-
                                     <t t-esc="activityState.label"/>
-
                                 </option>
-
                             </select>
                         </div>
-
                     </div>
-
                 </t>
 
-                <!-- Buttons -->
                 <div class="d-flex justify-content-between align-items-center mt-2">
-
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
                             t-on-click="() => env.advancedChatterSearch.clearAdvancedFilters()">
-
                         <i class="fa fa-times me-1"/>
                         Clear Filters
-
                     </button>
-
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
                             t-on-click="() => env.advancedChatterSearch.exportAdvancedResults()">
-
                         <i class="fa fa-download me-1"/>
                         Export Results
-
                     </button>
-
                 </div>
-
             </div>
-
         </xpath>
 
     </t>

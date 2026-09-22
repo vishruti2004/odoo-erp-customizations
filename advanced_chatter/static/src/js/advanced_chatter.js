@@ -5,1103 +5,947 @@ import { Thread } from "@mail/core/common/thread";
 import { SearchMessageInput } from "@mail/core/common/search_message_input";
 import { useService } from "@web/core/utils/hooks";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
-import { onWillDestroy, onWillStart, useState } from "@odoo/owl";
+import { onWillDestroy, onWillStart, useEffect, useState } from "@odoo/owl";
 import { FormCompiler } from "@web/views/form/form_compiler";
 import { setAttributes } from "@web/core/utils/xml";
+import { evaluateExpr } from "@web/core/py_js/py";
 
-Chatter.props.push(
-    "advanceSearch?",
-    "advanceFilter?",
-);
+const LOG = "[AdvancedChatter]";
+const log = (...a) => console.log(LOG, ...a);
 
-patch(Chatter.prototype,{
-    get childSubEnv(){
-        return {...super.childSubEnv,advancedChatterSearch:this};
+Chatter.props.push("advancesearch?", "advancefilter?");
+
+patch(Chatter.prototype, {
+    get childSubEnv() {
+        return { ...super.childSubEnv, advancedChatterSearch: this };
     },
-    setup(){
+
+    setup() {
         super.setup(...arguments);
-        this.orm=useService("orm");
-        this.hasAdvancedChatterAccess=false;
-        this.showAdvancedSearch=this.props.advanceSearch !== false;
-this.showAdvancedFilters=this.props.advanceFilter !== false;
+        this.orm = useService("orm");
+        this.hasAdvancedChatterAccess = false;
+        this.showAdvancedSearch = this.props.advancesearch !== false;
+        this.showAdvancedFilters = this.props.advancefilter !== false;
 
-        this._filterChangeListeners=new Set();
+        this._filterChangeListeners = new Set();
 
-        this.messageTypeOptions=[
-            {value:"comment",label:"Comment"},
-            {value:"email",label:"Incoming Email"},
-            {value:"email_outgoing",label:"Outgoing Email"},
-            {value:"notification",label:"System Notification"},
-            {value:"auto_comment",label:"Automated Targeted Notification"},
-        ];
-       // searchSuggestionDefinitions ma Tracking Field add
-        this.searchSuggestionDefinitions=[
-            {key:"message",label:"Message",icon:"fa fa-search",expandable:false},
-            {key:"product",label:"Product",icon:"fa fa-cube",expandable:true},
-            {key:"author",label:"Author",icon:"fa fa-user",expandable:true},
-            {key:"messageType",label:"Message Type",icon:"fa fa-envelope-o",expandable:true},
-            {key:"subtype",label:"Message Subtype",icon:"fa fa-tag",expandable:true},
-            {key:"trackingField",label:"Tracking Field",icon:"fa fa-history",expandable:true},
-        ];
-    
-        this.advancedFilterState=useState({
-            showSuggestions:false,
-            expandedSuggestionGroup:null,
-            applied:false,
-            searching:false,
-            filters:{
-            keyword:"",
-            activeKeyword:"",
-            activeKeywordMode:"",
-            dateFrom:"",
-            dateTo:"",
-            userId:"",
-            authorKeyword:"",
-            messageType:"",
-            subtypeId:"",
-            productId:"",
-            productKeyword:"",
-            productCode:"",
-            activityTypeId:"",
-            activityUserId:"",
-            activityState:"",
-            stateChange:"",
-            trackingMessageIds:[],
-            trackingFieldId:"",
-            trackingFieldName:"",
-        },
-        trackingFields:[],
-        subtypes:[],
-        activityTypes:[],
-        stateChangeMessageIds:[],
+        this.searchableFields = {};
+        this.suggestions = [];
+        this.fieldValueMessageIds = new Map();
+        this.messageTypeOptions = [];
+        this.activityStateOptions = [];
+        this.resModel = null;
+        this.resId = null;
+        this._extractedSignature = null;
+
+        this.advancedFilterState = useState({
+            showSuggestions: false,
+            expandedSuggestionGroup: null,
+            filters: {
+                keyword: "", activeKeyword: "", activeKeywordMode: "",
+                dateFrom: "", dateTo: "", userId: "", messageType: "", subtypeId: "",
+                activityTypeId: "", activityUserId: "", activityState: "",
+                fieldName: "", fieldLabel: "", fieldValue: "", fieldValueLabel: "",
+            },
+            subtypes: [],
+            activityTypes: [],
         });
-  onWillStart(async()=>{
-    this.hasAdvancedChatterAccess=await this.orm.call(
-        "res.users",
-        "check_advanced_chatter_access",
-        []
-    );
 
-    if(!this.hasAdvancedChatterAccess){
-        return;
-    }
+        onWillStart(async () => {
+            this.resModel = this.props.resModel || this.props.record?.resModel || this.state.thread?.model;
+            this.resId = this.props.resId || this.props.record?.resId || this.state.thread?.id;
+            log("init", this.resModel, this.resId);
 
-    this.advancedFilterState.subtypes=await this.orm.searchRead(
-        "mail.message.subtype",
-        [],
-        ["id","name"],
-        {limit:200,order:"name asc"}
-    );
-
-    this.advancedFilterState.activityTypes=await this.orm.searchRead(
-        "mail.activity.type",
-        [],
-        ["id","name"],
-        {limit:200,order:"name asc"}
-    );
-});
-        },
-        
-
-    onFiltersChanged(callback){
-        this._filterChangeListeners.add(callback);
-        return ()=>this._filterChangeListeners.delete(callback);
-    },
-
-    notifyFiltersChanged(shouldAttemptClose=true){
-        for(const listener of this._filterChangeListeners){
-            listener(shouldAttemptClose);
-        }
-    },
-
-    notifyDateFilterChanged(){
-        const filters=this.advancedFilterState.filters;
-        const bothDatesSet=!!(filters.dateFrom && filters.dateTo);
-        this.notifyFiltersChanged(bothDatesSet);
-    },
-
-    async onStateChangeFilter(){
-        const filters=this.advancedFilterState.filters;
-
-        if(!filters.stateChange){
-            this.advancedFilterState.stateChangeMessageIds=[];
-            this.notifyFiltersChanged();
-            return;
-        }
-
-        const messageIds=this.threadMessages
-            .map(message=>Number(message.id))
-            .filter(id=>Number.isFinite(id)&&id>0);
-
-        if(!messageIds.length){
-            this.advancedFilterState.stateChangeMessageIds=[];
-            this.notifyFiltersChanged();
-            return;
-        }
-
-        try{
-            const trackingValues=await this.orm.searchRead(
-                "mail.tracking.value",
-                [
-                    ["mail_message_id","in",messageIds],
-                    ["field_id.name","=","state"],
-                ],
-                ["mail_message_id"],
-                {limit:2000}
+            this.hasAdvancedChatterAccess = await this.orm.call(
+                "res.users", "check_advanced_chatter_access", []
             );
+            if (!this.hasAdvancedChatterAccess) return;
 
-            this.advancedFilterState.stateChangeMessageIds=[
-                ...new Set(
-                    trackingValues
-                        .map(value=>this.getMany2OneValue(value.mail_message_id).id)
-                        .filter(Boolean)
-                        .map(Number)
-                ),
-            ];
-        }catch(error){
-            console.error("Failed to load state tracking messages:",error);
-            this.advancedFilterState.stateChangeMessageIds=[];
+            try {
+                const m = await this.orm.call("mail.message", "fields_get", [["message_type"]]);
+                this.messageTypeOptions = (m.message_type?.selection || [])
+                    .map(([value, label]) => ({ value, label }));
+            } catch (e) { console.error(LOG, e); }
+
+            try {
+                const a = await this.orm.call("mail.activity", "fields_get", [["state"]]);
+                this.activityStateOptions = (a.state?.selection || [])
+                    .map(([value, label]) => ({ value, label }));
+            } catch (e) { console.error(LOG, e); }
+
+            try {
+                this.advancedFilterState.subtypes = await this.orm.searchRead(
+                    "mail.message.subtype", [], ["id", "name"],
+                    { limit: 200, order: "name asc" });
+            } catch (e) { console.error(LOG, e); }
+
+            try {
+                this.advancedFilterState.activityTypes = await this.orm.searchRead(
+                    "mail.activity.type", [], ["id", "name"],
+                    { limit: 200, order: "name asc" });
+            } catch (e) { console.error(LOG, e); }
+
+            await this.loadAllFields();
+        });
+
+        useEffect(
+            () => {
+                const count = this.threadMessages.length;
+                const sig = `${this.resId}|${count}`;
+                if (count > 0 && this._extractedSignature !== sig) {
+                    log(`thread messages ready (${count}) — extracting...`);
+                    this.extractAllSuggestions().then(() => {
+                        this._extractedSignature = sig;
+                        this.notifyFiltersChanged(false);
+                    });
+                }
+            },
+            () => [this.threadMessages.length, this.resId]
+        );
+    },
+
+    async loadAllFields() {
+        const result = {};
+        const USEFUL = new Set([
+            "char", "text", "many2one", "selection", "integer", "float",
+            "monetary", "date", "datetime", "html",
+            "one2many", "many2many",
+        ]);
+        const EXCLUDE = new Set([
+            "id", "create_uid", "create_date", "write_uid", "write_date",
+            "__last_update", "display_name", "access_token", "message_ids",
+        ]);
+
+        try {
+            const f = await this.orm.call("mail.message", "fields_get",
+                [[], ["string", "type", "relation", "selection"]]);
+            const KEEP = ["author_id", "subtype_id", "message_type", "subject", "email_from"];
+            for (const [n, d] of Object.entries(f || {})) {
+                if (!KEEP.includes(n)) continue;
+                result[n] = {
+                    name: n, string: d.string, type: d.type,
+                    relation: d.relation, selection: d.selection,
+                    source: "message",
+                };
+            }
+        } catch (e) { console.error(LOG, e); }
+
+        if (this.resModel) {
+            try {
+                const f = await this.orm.call(this.resModel, "fields_get",
+                    [[], ["string", "type", "relation", "selection", "searchable"]]);
+                for (const [n, d] of Object.entries(f || {})) {
+                    if (EXCLUDE.has(n)) continue;
+                    if (!USEFUL.has(d.type)) continue;
+                    if (d.searchable === false) continue;
+                    if (result[n]) continue;
+                    result[n] = {
+                        name: n, string: d.string, type: d.type,
+                        relation: d.relation, selection: d.selection,
+                        source: "record",
+                    };
+                }
+            } catch (e) { console.error(LOG, e); }
         }
 
+        this.searchableFields = result;
+        log("loaded fields:", Object.keys(result).length);
+    },
+
+    async extractAllSuggestions() {
+        const suggestions = [];
+        const seen = new Set();
+        const fieldValueMessageIds = new Map();
+
+        const add = (fieldName, displayName, rawValue, messageId = null) => {
+            if (!displayName) return;
+            const dn = String(displayName).trim();
+            if (!dn || dn === "false" || dn === "undefined") return;
+            const key = `${fieldName}|${dn.toLowerCase()}`;
+
+            if (!seen.has(key)) {
+                seen.add(key);
+                const field = this.searchableFields[fieldName];
+                suggestions.push({
+                    fieldName,
+                    fieldLabel: field?.string || fieldName,
+                    fieldType: field?.type || "",
+                    displayName: dn,
+                    rawValue,
+                });
+            }
+            if (messageId !== null && messageId !== undefined) {
+                const id = Number(messageId);
+                if (Number.isFinite(id)) {
+                    if (!fieldValueMessageIds.has(key)) {
+                        fieldValueMessageIds.set(key, new Set());
+                    }
+                    fieldValueMessageIds.get(key).add(id);
+                }
+            }
+        };
+
+        const messages = this.threadMessages;
+        const typeLabelMap = new Map(this.messageTypeOptions.map((t) => [t.value, t.label]));
+        for (const msg of messages) {
+            const msgId = msg.id;
+            if (msg.author?.id && msg.author?.name) add("author_id", msg.author.name, msg.author.id, msgId);
+            if (msg.email_from && typeof msg.email_from === "string") add("email_from", msg.email_from, msg.email_from, msgId);
+            if (msg.subtype_id?.id && msg.subtype_id?.name) add("subtype_id", msg.subtype_id.name, msg.subtype_id.id, msgId);
+            if (msg.message_type) {
+                const lbl = typeLabelMap.get(msg.message_type) || msg.message_type;
+                add("message_type", lbl, msg.message_type, msgId);
+            }
+            if (msg.subject) {
+                const t = this.getMessageText(msg.subject);
+                if (t) add("subject", t, t, msgId);
+            }
+        }
+
+        if (this.resModel && this.resId) {
+            const recordFieldNames = Object.entries(this.searchableFields)
+                .filter(([, f]) => f.source === "record")
+                .map(([n]) => n);
+
+            let record = null;
+            try {
+                [record] = await this.orm.read(this.resModel, [this.resId], recordFieldNames);
+            } catch (e) { console.error(LOG, "record read:", e); }
+
+            if (record) {
+                for (const [fn, field] of Object.entries(this.searchableFields)) {
+                    if (field.source !== "record") continue;
+                    if (["one2many", "many2many"].includes(field.type)) continue;
+                    const v = record[fn];
+                    if (v === false || v === null || v === undefined || v === "") continue;
+
+                    let displayName = "", rawValue = v;
+                    if (field.type === "many2one") {
+                        if (Array.isArray(v) && v[0]) { displayName = v[1] || ""; rawValue = v[0]; }
+                        else continue;
+                    } else if (field.type === "selection") {
+                        const f = (field.selection || []).find(([x]) => String(x) === String(v));
+                        displayName = f ? f[1] : String(v);
+                    } else if (field.type === "text" || field.type === "html") {
+                        const t = this.getMessageText(v);
+                        if (!t || t.length > 200) continue;
+                        displayName = t;
+                    } else {
+                        displayName = String(v);
+                    }
+                    add(fn, displayName, rawValue);
+                }
+
+                for (const [fn, field] of Object.entries(this.searchableFields)) {
+                    if (field.source !== "record") continue;
+                    if (!["one2many", "many2many"].includes(field.type)) continue;
+                    if (!field.relation) continue;
+                    const ids = record[fn];
+                    if (!Array.isArray(ids) || !ids.length) continue;
+
+                    try {
+                        const relFieldsRaw = await this.orm.call(field.relation, "fields_get",
+                            [[], ["string", "type", "relation", "selection"]]);
+                        const m2oNames = [], charNames = [];
+                        for (const [n, d] of Object.entries(relFieldsRaw || {})) {
+                            if (["id", "create_uid", "write_uid", "create_date", "write_date",
+                                 "display_name", "__last_update"].includes(n)) continue;
+                            if (d.type === "many2one") m2oNames.push(n);
+                            else if (["char", "selection"].includes(d.type)) charNames.push(n);
+                        }
+                        const readNames = [...m2oNames, ...charNames];
+                        if (!readNames.length) continue;
+
+                        const relRecords = await this.orm.read(field.relation, ids.slice(0, 200), readNames);
+                        for (const rr of relRecords) {
+                            for (const m of m2oNames) {
+                                const mv = rr[m];
+                                if (Array.isArray(mv) && mv[0]) add(m, mv[1], mv[0]);
+                            }
+                            for (const c of charNames) {
+                                const cv = rr[c];
+                                if (!cv) continue;
+                                const d = relFieldsRaw[c];
+                                let lbl = String(cv);
+                                if (d.type === "selection") {
+                                    const f = (d.selection || []).find(([x]) => String(x) === String(cv));
+                                    lbl = f ? f[1] : String(cv);
+                                }
+                                add(c, lbl, cv);
+                            }
+                        }
+                    } catch (e) { console.error(LOG, `read ${fn}:`, e); }
+                }
+            }
+        }
+
+        const messageIds = messages
+            .map((m) => Number(m.id))
+            .filter((id) => Number.isFinite(id) && id > 0);
+
+        if (messageIds.length) {
+            try {
+                const tvs = await this.orm.searchRead(
+                    "mail.tracking.value",
+                    [["mail_message_id", "in", messageIds]],
+                    [
+                        "mail_message_id", "field_id",
+                        "old_value_char", "new_value_char",
+                        "old_value_text", "new_value_text",
+                        "old_value_integer", "new_value_integer",
+                        "old_value_float", "new_value_float",
+                        "old_value_datetime", "new_value_datetime",
+                    ],
+                    { limit: 3000 }
+                );
+
+                const fieldIds = [
+                    ...new Set(
+                        tvs.map((tv) => this.getMany2OneValue(tv.field_id).id)
+                            .filter(Boolean).map(Number)
+                    ),
+                ];
+
+                let irFields = [];
+                if (fieldIds.length) {
+                    irFields = await this.orm.searchRead(
+                        "ir.model.fields",
+                        [["id", "in", fieldIds]],
+                        ["id", "name", "field_description", "model", "ttype"],
+                        { limit: fieldIds.length }
+                    );
+                }
+
+                const fieldMap = new Map(
+                    irFields.map((field) => [Number(field.id), field])
+                );
+
+                for (const tv of tvs) {
+                    const tvMessageId = Number(
+                        this.getMany2OneValue(tv.mail_message_id).id || tv.mail_message_id
+                    );
+                    const fieldId = Number(this.getMany2OneValue(tv.field_id).id);
+                    const fieldInfo = fieldMap.get(fieldId);
+
+                    if (!Number.isFinite(tvMessageId) || !tvMessageId || !fieldInfo?.name) continue;
+
+                    const fieldName = fieldInfo.name;
+                    const field = this.searchableFields[fieldName];
+                    if (!field) continue;
+
+                    for (const prefix of ["old", "new"]) {
+                        const raw = [
+                            tv[`${prefix}_value_char`], tv[`${prefix}_value_text`],
+                            tv[`${prefix}_value_integer`], tv[`${prefix}_value_float`],
+                            tv[`${prefix}_value_monetary`], tv[`${prefix}_value_datetime`],
+                        ].find((v) => v !== false && v !== null && v !== undefined && v !== "");
+
+                        if (raw === undefined || raw === null) continue;
+
+                        let displayName = String(raw);
+                        if (field.type === "selection") {
+                            const option = (field.selection || []).find(
+                                ([value]) => String(value) === String(raw)
+                            );
+                            displayName = option ? option[1] : String(raw);
+                        }
+
+                        add(fieldName, displayName, raw, tvMessageId);
+                    }
+                }
+            } catch (e) { console.error(LOG, "[Tracking] ERROR:", e); }
+        }
+
+        for (const [fieldName, field] of Object.entries(this.searchableFields)) {
+            if (field.type !== "selection") continue;
+            if (!field.selection || !Array.isArray(field.selection)) continue;
+            for (const [value, label] of field.selection) {
+                if (!label || typeof label !== "string") continue;
+                if (label.toLowerCase() === value.toLowerCase()) continue;
+                add(fieldName, label, value);
+            }
+        }
+
+        this.suggestions = suggestions;
+        this.fieldValueMessageIds = fieldValueMessageIds;
+        log(`extracted ${suggestions.length} suggestions`);
+    },
+
+    _currentSignature() {
+        return `${this.resId}|${this.threadMessages.length}`;
+    },
+
+    async _ensureExtracted() {
+        const sig = this._currentSignature();
+        if (this._extractedSignature === sig && this.suggestions.length) return;
+        await this.extractAllSuggestions();
+        this._extractedSignature = sig;
+    },
+
+    onFiltersChanged(cb) {
+        this._filterChangeListeners.add(cb);
+        return () => this._filterChangeListeners.delete(cb);
+    },
+
+    notifyFiltersChanged(shouldAttemptClose = true) {
+        for (const l of this._filterChangeListeners) l(shouldAttemptClose);
+    },
+
+    notifyDateFilterChanged() {
+        const f = this.advancedFilterState.filters;
+        this.notifyFiltersChanged(!!(f.dateFrom && f.dateTo));
+    },
+
+    onMessageFilterChanged() {
+        const f = this.advancedFilterState.filters;
+        f.activityTypeId = "";
+        f.activityUserId = "";
+        f.activityState = "";
         this.notifyFiltersChanged();
     },
 
-    async loadTrackingFields(){
-    const messageIds=this.threadMessages
-        .map(message=>Number(message.id))
-        .filter(id=>Number.isFinite(id)&&id>0);
+    onActivityFilterChanged() {
+        const f = this.advancedFilterState.filters;
+        f.keyword = "";
+        f.activeKeyword = "";
+        f.activeKeywordMode = "";
+        f.userId = "";
+        f.messageType = "";
+        f.subtypeId = "";
+        f.fieldName = "";
+        f.fieldLabel = "";
+        f.fieldValue = "";
+        f.fieldValueLabel = "";
+        this.notifyFiltersChanged();
+    },
 
-    if(!messageIds.length){
-        this.advancedFilterState.trackingFields=[];
-        return;
-    }
+    onDateInputClick(ev) {
+        const input = ev.target;
+        if (input && typeof input.showPicker === "function") {
+            try {
+                input.showPicker();
+            } catch (e) {
+            }
+        }
+    },
 
-    try{
-        const trackingValues=await this.orm.searchRead(
-            "mail.tracking.value",
-            [
-                ["mail_message_id","in",messageIds],
-            ],
-            ["field_id"],
-            {limit:5000}
+    get threadMessages() {
+        return this.state.thread?.messages || this.state.thread?.orderedMessages || [];
+    },
+
+    get conversationAuthors() {
+        const seen = new Set(); const r = [];
+        for (const m of this.threadMessages) {
+            if (!m.author?.id || seen.has(m.author.id)) continue;
+            seen.add(m.author.id); r.push({ id: m.author.id, name: m.author.name || "" });
+        }
+        return r.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    get conversationMessageTypes() {
+        const seen = new Set();
+        for (const m of this.threadMessages) if (m.message_type) seen.add(m.message_type);
+        return this.messageTypeOptions.filter((t) => seen.has(t.value));
+    },
+    get conversationSubtypes() {
+        const seen = new Set();
+        for (const m of this.threadMessages) {
+            const id = m.subtype_id?.id ?? m.subtype_id;
+            if (id) seen.add(Number(id));
+        }
+        return this.advancedFilterState.subtypes.filter((s) => seen.has(Number(s.id)));
+    },
+    get conversationActivities() { return this.state.thread?.activities || []; },
+    get activities() {
+        const list = this.state.thread?.activities || [];
+        const f = this.advancedFilterState.filters;
+        if (!f.activityTypeId && !f.activityUserId && !f.activityState && !f.dateFrom && !f.dateTo) return list;
+        return list.filter((a) => {
+            const tid = this.getMany2OneValue(a.activity_type_id).id;
+            const uid = this.getMany2OneValue(a.user_id).id;
+            const d = a.date_deadline || "";
+            if (f.dateFrom && (!d || d < f.dateFrom)) return false;
+            if (f.dateTo && (!d || d > f.dateTo)) return false;
+            if (f.activityTypeId && Number(tid) !== Number(f.activityTypeId)) return false;
+            if (f.activityUserId && Number(uid) !== Number(f.activityUserId)) return false;
+            if (f.activityState && a.state !== f.activityState) return false;
+            return true;
+        });
+    },
+    get isActivityFilterActive() {
+        const f = this.advancedFilterState.filters;
+        return !!(f.activityTypeId || f.activityUserId || f.activityState);
+    },
+
+    get isMessageFilterActive() {
+        const f = this.advancedFilterState.filters;
+        return !!(
+            f.activeKeyword ||
+            f.userId ||
+            f.messageType ||
+            f.subtypeId ||
+            f.fieldValueLabel
+        );
+    },
+
+    get activeAdvancedFilterCount() {
+        const f = this.advancedFilterState.filters;
+        return [
+            f.dateFrom,
+            f.dateTo,
+            f.userId,
+            f.messageType,
+            f.subtypeId,
+            f.activityTypeId,
+            f.activityUserId,
+            f.activityState,
+            f.fieldValueLabel,
+            f.activeKeywordMode === "message" && f.activeKeyword,
+        ].filter(Boolean).length;
+    },
+
+    getMany2OneValue(v) {
+        if (Array.isArray(v)) return { id: v[0] || null, name: v[1] || "" };
+        if (v && typeof v === "object") return { id: v.id || v.res_id || null, name: v.display_name || v.name || "" };
+        return { id: v || null, name: "" };
+    },
+    get conversationActivityTypes() {
+        const seen = new Set(); const r = [];
+        for (const a of this.conversationActivities) {
+            const v = this.getMany2OneValue(a.activity_type_id);
+            if (!v.id || seen.has(Number(v.id))) continue;
+            seen.add(Number(v.id)); r.push({ id: Number(v.id), name: v.name || "" });
+        }
+        return r.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    get conversationActivityUsers() {
+        const seen = new Set(); const r = [];
+        for (const a of this.conversationActivities) {
+            const v = this.getMany2OneValue(a.user_id);
+            if (!v.id || seen.has(Number(v.id))) continue;
+            seen.add(Number(v.id)); r.push({ id: Number(v.id), name: v.name || "" });
+        }
+        return r.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    get conversationActivityStates() {
+        const seen = new Set(this.conversationActivities.map((a) => a.state).filter(Boolean));
+        return (this.activityStateOptions || []).filter((s) => seen.has(s.value));
+    },
+    get currentSearchKeyword() { return this.searchMessageInput?.state?.searchTerm || ""; },
+
+    get searchSuggestionGroups() {
+        const keyword = this.currentSearchKeyword.trim();
+        if (!keyword) return [];
+
+        const term = keyword.toLowerCase();
+        const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const wordRegex = new RegExp(
+            `(^|[\\s\\W_])${escapeRegex(term)}([\\s\\W_]|$)`, "i"
         );
 
-        const fieldMap=new Map();
+        const groups = [];
+        groups.push({ key: "message", label: "Message", items: [], expandable: false });
 
-        for(const value of trackingValues){
-            const field=this.getMany2OneValue(value.field_id);
+        const byField = new Map();
+        for (const v of this.suggestions) {
+            if (!byField.has(v.fieldName)) byField.set(v.fieldName, []);
+            byField.get(v.fieldName).push(v);
+        }
 
-            if(field.id&&!fieldMap.has(Number(field.id))){
-                fieldMap.set(Number(field.id),{
-                    id:Number(field.id),
-                    name:field.name||"",
-                    label:field.name||"",
+        const fieldGroups = [];
+
+        for (const [fieldName, items] of byField) {
+            const field = this.searchableFields[fieldName];
+            const fieldLabel = (field?.string || fieldName).toLowerCase();
+            const fieldNameLower = fieldName.toLowerCase();
+
+            const fieldMatches =
+                fieldLabel === term ||
+                fieldNameLower === term ||
+                wordRegex.test(fieldLabel) ||
+                wordRegex.test(fieldNameLower);
+
+            const valueMatches = items.filter((v) =>
+                wordRegex.test(v.displayName.toLowerCase()) ||
+                v.displayName.toLowerCase() === term
+            );
+
+            if (fieldMatches) {
+                const sorted = [...items].sort((a, b) =>
+                    a.displayName.localeCompare(b.displayName)
+                );
+                fieldGroups.push({
+                    key: `field:${fieldName}`,
+                    label: field?.string || fieldName,
+                    fieldName,
+                    fieldType: field?.type || "",
+                    items: sorted.slice(0, 25),
+                    expandable: sorted.length > 1,
+                    _fieldMatched: true,
+                });
+            } else if (valueMatches.length) {
+                valueMatches.sort((a, b) => {
+                    const aL = a.displayName.toLowerCase();
+                    const bL = b.displayName.toLowerCase();
+                    const rank = (s) => s === term ? 0 : (s.startsWith(term) ? 1 : 2);
+                    return rank(aL) - rank(bL);
+                });
+                fieldGroups.push({
+                    key: `field:${fieldName}`,
+                    label: field?.string || fieldName,
+                    fieldName,
+                    fieldType: field?.type || "",
+                    items: valueMatches.slice(0, 15),
+                    expandable: valueMatches.length > 1,
+                    _fieldMatched: false,
                 });
             }
         }
 
-        this.advancedFilterState.trackingFields=[
-            ...fieldMap.values(),
-        ];
-    }catch(error){
-        console.error("Failed to load tracking fields:",error);
-        this.advancedFilterState.trackingFields=[];
-    }
-},
-
-async loadTrackingMessageIds(fieldId){
-    const messageIds=this.threadMessages
-        .map(message=>Number(message.id))
-        .filter(id=>Number.isFinite(id)&&id>0);
-
-    if(!fieldId||!messageIds.length){
-        this.advancedFilterState.filters.trackingMessageIds=[];
-        return;
-    }
-
-    try{
-        const trackingValues=await this.orm.searchRead(
-            "mail.tracking.value",
-            [
-                ["mail_message_id","in",messageIds],
-                ["field_id","=",fieldId],
-            ],
-            ["mail_message_id"],
-            {limit:5000}
+        fieldGroups.sort((a, b) =>
+            (a._fieldMatched ? 1 : 0) - (b._fieldMatched ? 1 : 0)
         );
 
-        this.advancedFilterState.filters.trackingMessageIds=[
-            ...new Set(
-                trackingValues
-                    .map(value=>this.getMany2OneValue(value.mail_message_id).id)
-                    .filter(Boolean)
-                    .map(Number)
-            ),
-        ];
-    }catch(error){
-        console.error("Failed to load tracking messages:",error);
-        this.advancedFilterState.filters.trackingMessageIds=[];
-    }
-},
-
-    get threadMessages(){
-        return this.state.thread?.messages||this.state.thread?.orderedMessages||[];
-    },
-    get conversationAuthors(){
-        const seen=new Set();
-        const authors=[];
-        for(const message of this.threadMessages){
-            const author=message.author;
-            if(!author?.id||seen.has(author.id)){
-                continue;
-            }
-            seen.add(author.id);
-            authors.push({id:author.id,name:author.name||""});
-        }
-        authors.sort((a,b)=>a.name.localeCompare(b.name));
-        return authors;
-    },
-    get conversationMessageTypes(){
-        const seen=new Set();
-        for(const message of this.threadMessages){
-            if(message.message_type){
-                seen.add(message.message_type);
-            }
-        }
-        return this.messageTypeOptions.filter(type=>seen.has(type.value));
-    },
-    get conversationSubtypes(){
-        const seen=new Set();
-        for(const message of this.threadMessages){
-            const subtypeId=message.subtype_id?.id??message.subtype_id;
-            if(subtypeId){
-                seen.add(Number(subtypeId));
-            }
-        }
-        return this.advancedFilterState.subtypes.filter(subtype=>seen.has(Number(subtype.id)));
-    },
-   
-    get conversationActivities(){
-        return this.state.thread?.activities||[];
-    },
-    get activities(){
-        const activities=this.state.thread?.activities||[];
-        const filters=this.advancedFilterState.filters;
-        if(!filters.activityTypeId&&!filters.activityUserId&&!filters.activityState&&!filters.dateFrom&&!filters.dateTo){
-            return activities;
-        }
-        return activities.filter(activity=>{
-            const typeId=this.getMany2OneValue(activity.activity_type_id).id;
-            const userId=this.getMany2OneValue(activity.user_id).id;
-            const activityDate=activity.date_deadline||"";
-            if(filters.dateFrom&&(!activityDate||activityDate<filters.dateFrom)){
-                return false;
-            }
-            if(filters.dateTo&&(!activityDate||activityDate>filters.dateTo)){
-                return false;
-            }
-            if(filters.activityTypeId&&Number(typeId)!==Number(filters.activityTypeId)){
-                return false;
-            }
-            if(filters.activityUserId&&Number(userId)!==Number(filters.activityUserId)){
-                return false;
-            }
-            if(filters.activityState&&activity.state!==filters.activityState){
-                return false;
-            }
-            return true;
-        });
-    },
-    get isActivityFilterActive(){
-        const f=this.advancedFilterState.filters;
-        return !!(f.activityTypeId||f.activityUserId||f.activityState);
-    },
-    getMany2OneValue(value){
-        if(Array.isArray(value)){
-            return {id:value[0]||null,name:value[1]||""};
-        }
-        if(value&&typeof value==="object"){
-            return {
-                id:value.id||value.res_id||null,
-                name:value.display_name||value.name||"",
-            };
-        }
-        return {id:value||null,name:""};
-    },
-    get conversationActivityTypes(){
-        const seen=new Set();
-        const result=[];
-        for(const activity of this.conversationActivities){
-            const value=this.getMany2OneValue(activity.activity_type_id);
-            if(!value.id||seen.has(Number(value.id))){
-                continue;
-            }
-            seen.add(Number(value.id));
-            result.push({id:Number(value.id),name:value.name||""});
-        }
-        result.sort((a,b)=>a.name.localeCompare(b.name));
-        return result;
-    },
-    get conversationActivityUsers(){
-        const seen=new Set();
-        const result=[];
-        for(const activity of this.conversationActivities){
-            const value=this.getMany2OneValue(activity.user_id);
-            if(!value.id||seen.has(Number(value.id))){
-                continue;
-            }
-            seen.add(Number(value.id));
-            result.push({id:Number(value.id),name:value.name||""});
-        }
-        result.sort((a,b)=>a.name.localeCompare(b.name));
-        return result;
-    },
-    get conversationActivityStates(){
-        const states=[
-            {value:"overdue",label:"Overdue"},
-            {value:"today",label:"Today"},
-            {value:"planned",label:"Planned"},
-        ];
-        const seen=new Set(
-            this.conversationActivities
-                .map(activity=>activity.state)
-                .filter(Boolean)
-        );
-        return states.filter(state=>seen.has(state.value));
-    },
-    get conversationProducts(){
-        const seen=new Set();
-        const products=[];
-        const addProduct=(defaultCode,rawName)=>{
-            const name=rawName.trim().replace(/\s+/g," ");
-            if(!name){
-                return;
-            }
-            const key=`${defaultCode}|${name}`.toLowerCase();
-            if(seen.has(key)){
-                return;
-            }
-            seen.add(key);
-            products.push({
-                id:`chatter-product-${products.length+1}`,
-                name,
-                default_code:defaultCode,
-                searchText:`${defaultCode} ${name}`.toLowerCase(),
-            });
-        };
-        for(const message of this.threadMessages){
-            const text=`${this.getMessageText(message.subject)} ${this.getMessageText(message.body)}`;
-            const matches=[...text.matchAll(/\[([^\]]+)\]\s*([^\[\]\n<]+)/g)];
-            for(const match of matches){
-                addProduct(match[1].trim(),match[2]);
-            }
-            const extraMatches=[...text.matchAll(/Extra line with\s+([^\[\]\n<]+)/gi)];
-            for(const match of extraMatches){
-                addProduct("",match[1]);
-            }
-        }
-        return products;
-    },
-    get searchSuggestionGroups(){
-        const keyword=this.advancedFilterState.filters.keyword.trim();
-        if(!keyword){
-            return [];
-        }
-        const groups=[];
-        for(const definition of this.searchSuggestionDefinitions){
-            if(definition.key==="message"){
-                groups.push({...definition,items:[],expandable:false});
-                continue;
-            }
-            const items=this.getSuggestionItems(definition.key);
-            if(!items.length){
-                continue;
-            }
-            groups.push({...definition,items,expandable:items.length>1});
-        }
+        groups.push(...fieldGroups);
+        log(`"${keyword}" →`, groups.map((x) => `${x.label}(${x.items.length})`));
         return groups;
     },
-    getSuggestionItems(key){
-        switch(key){
-            case"product":
-                return this.matchingProductSuggestions;
-            case"author":
-                return this.matchingAuthorSuggestions;
-            case"messageType":
-                return this.matchingMessageTypeSuggestions;
-            case"subtype":
-                return this.matchingSubtypeSuggestions;
-            case"trackingField":
-                return this.matchingTrackingFieldSuggestions;
-            default:
-                return [];
-        }
-    },
-    get matchingProductSuggestions(){
-        const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
-        if(!term){
-            return [];
-        }
-        return this.conversationProducts.filter(product=>
-            product.name.toLowerCase().includes(term)||
-            product.default_code.toLowerCase().includes(term)
-        ).slice(0,2);
-    },
-    get matchingAuthorSuggestions(){
-        const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
-        if(!term){
-            return [];
-        }
-        return this.conversationAuthors.filter(user=>
-            user.name.toLowerCase().includes(term)
-        ).slice(0,5);
-    },
-    get matchingMessageTypeSuggestions(){
-        const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
-        if(!term){
-            return [];
-        }
-        return this.conversationMessageTypes.filter(type=>
-            type.label.toLowerCase().includes(term)
-        ).slice(0,5);
-    },
-    get matchingSubtypeSuggestions(){
-        const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
-        if(!term){
-            return [];
-        }
-        return this.conversationSubtypes.filter(subtype=>
-            subtype.name.toLowerCase().includes(term)
-        ).slice(0,5);
-    },
-    get matchingTrackingFieldSuggestions(){
-    const term=this.advancedFilterState.filters.keyword.trim().toLowerCase();
 
-    if(!term){
-        return [];
-    }
-
-    return (this.advancedFilterState.trackingFields||[])
-        .filter(field=>
-            (field.label||"").toLowerCase().includes(term)||
-            (field.name||"").toLowerCase().includes(term)
-        )
-        .slice(0,10);
-},
-   onKeywordInput(ev){
-    const filters=this.advancedFilterState.filters;
-
-    filters.keyword=ev.target.value;
-    filters.activeKeyword="";
-    filters.activeKeywordMode="";
-    filters.trackingFieldId="";
-    filters.trackingFieldName="";
-    filters.trackingMessageIds=[];
-
-    this.advancedFilterState.showSuggestions=!!ev.target.value.trim();
-    this.advancedFilterState.expandedSuggestionGroup=null;
-
-    if(ev.target.value.trim()){
-        this.loadTrackingFields();
-    }
-},
-    onKeywordFocus(){
-        if(this.advancedFilterState.filters.keyword.trim()){
-            this.advancedFilterState.showSuggestions=true;
+    onKeywordInput(ev) {
+        const f = this.advancedFilterState.filters;
+        f.keyword = ev.target.value;
+        f.activeKeyword = ""; f.activeKeywordMode = "";
+        f.fieldName = ""; f.fieldLabel = ""; f.fieldValue = ""; f.fieldValueLabel = "";
+        this.advancedFilterState.showSuggestions = !!ev.target.value.trim();
+        this.advancedFilterState.expandedSuggestionGroup = null;
+        if (ev.target.value.trim()) {
+            this._ensureExtracted().then(() => this.notifyFiltersChanged(false));
         }
     },
-    clearKeywordSearch(){
-        const filters=this.advancedFilterState.filters;
-        filters.keyword="";
-        filters.activeKeyword="";
-        filters.activeKeywordMode="";
-        filters.dateFrom="";
-        filters.dateTo="";
-        filters.userId="";
-        filters.authorKeyword="";
-        filters.messageType="";
-        filters.subtypeId="";
-        filters.productId="";
-        filters.productKeyword="";
-        filters.productCode="";
-        filters.activityTypeId="";
-        filters.activityUserId="";
-        filters.activityState="";
-       filters.stateChange="";
-filters.trackingFieldId="";
-filters.trackingFieldName="";
-filters.trackingMessageIds=[];
-        this.advancedFilterState.stateChangeMessageIds=[];
-        this.advancedFilterState.applied=false;
-        this.advancedFilterState.searching=false;
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
+
+    onKeywordFocus() {
+        if (this.advancedFilterState.filters.keyword.trim()) {
+            this.advancedFilterState.showSuggestions = true;
+        }
+    },
+
+    clearKeywordSearch() {
+        const f = this.advancedFilterState.filters;
+        Object.assign(f, {
+            keyword: "", activeKeyword: "", activeKeywordMode: "",
+            dateFrom: "", dateTo: "", userId: "", messageType: "", subtypeId: "",
+            activityTypeId: "", activityUserId: "", activityState: "",
+            fieldName: "", fieldLabel: "", fieldValue: "", fieldValueLabel: "",
+        });
+        this.advancedFilterState.showSuggestions = false;
+        this.advancedFilterState.expandedSuggestionGroup = null;
         this.notifyFiltersChanged();
     },
-    onKeywordBlur(){
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
+
+    onKeywordBlur() {
+        this.advancedFilterState.showSuggestions = false;
+        this.advancedFilterState.expandedSuggestionGroup = null;
     },
-    onKeywordKeydown(ev){
-        if(ev.key==="Enter"){
-            const keyword=this.advancedFilterState.filters.keyword.trim();
-            if(!keyword){
-                return;
-            }
-            this.advancedFilterState.filters.activeKeyword=keyword;
-            this.advancedFilterState.filters.activeKeywordMode="message";
-            this.advancedFilterState.filters.authorKeyword="";
-            this.advancedFilterState.filters.productId="";
-            this.advancedFilterState.filters.productKeyword="";
-            this.advancedFilterState.filters.productCode="";
-            this.advancedFilterState.showSuggestions=false;
-            this.advancedFilterState.expandedSuggestionGroup=null;
+
+    onKeywordKeydown(ev) {
+        if (ev.key === "Enter") {
+            const k = this.advancedFilterState.filters.keyword.trim();
+            if (!k) return;
+            const f = this.advancedFilterState.filters;
+            f.activeKeyword = k; f.activeKeywordMode = "message";
+            f.fieldName = ""; f.fieldLabel = ""; f.fieldValue = ""; f.fieldValueLabel = "";
+            f.activityTypeId = ""; f.activityUserId = ""; f.activityState = "";
+            this.advancedFilterState.showSuggestions = false;
+            this.advancedFilterState.expandedSuggestionGroup = null;
             this.notifyFiltersChanged();
         }
-        if(ev.key==="Escape"){
-            this.advancedFilterState.showSuggestions=false;
-            this.advancedFilterState.expandedSuggestionGroup=null;
+        if (ev.key === "Escape") {
+            this.advancedFilterState.showSuggestions = false;
+            this.advancedFilterState.expandedSuggestionGroup = null;
         }
     },
-    toggleSuggestionGroup(groupKey){
-        this.advancedFilterState.expandedSuggestionGroup=
-            this.advancedFilterState.expandedSuggestionGroup===groupKey?null:groupKey;
+
+    toggleSuggestionGroup(k) {
+        this.advancedFilterState.expandedSuggestionGroup =
+            this.advancedFilterState.expandedSuggestionGroup === k ? null : k;
     },
-    selectSearchSuggestion(group,item=null){
-        switch(group.key){
-            case"message":
-                this.selectMessageSuggestion();
-                break;
-            case"product":
-                if(item){
-                    this.selectProductSuggestion(item);
-                }
-                break;
-            case"author":
-                if(item){
-                    this.selectAuthorSuggestion(item);
-                }else{
-                    this.selectAuthorGroupSuggestion();
-                }
-                break;
-            case"messageType":
-                if(item){
-                    this.selectMessageTypeSuggestion(item);
-                }
-                break;
-            case"trackingField":
-                if(item){
-                    this.selectTrackingFieldSuggestion(item);
-                }
-                break;
-            case"subtype":
-                if(item){
-                    this.selectSubtypeSuggestion(item);
-                }
-                break;
-        }
-    },
-    selectMessageSuggestion(){
-        const keyword=this.advancedFilterState.filters.keyword.trim();
-        if(!keyword){
+
+    selectSearchSuggestion(group, item = null) {
+        if (group.key.startsWith("field:")) {
+            if (item) this.selectFieldSuggestion(group.fieldName, item, group.label);
             return;
         }
-        this.advancedFilterState.filters.activeKeyword=keyword;
-        this.advancedFilterState.filters.activeKeywordMode="message";
-        this.advancedFilterState.filters.authorKeyword="";
-        this.advancedFilterState.filters.productId="";
-        this.advancedFilterState.filters.productKeyword="";
-        this.advancedFilterState.filters.productCode="";
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
+        if (group.key === "message") this.selectMessageSuggestion();
+    },
+
+    selectFieldSuggestion(fieldName, item, fieldLabel) {
+        const f = this.advancedFilterState.filters;
+        f.keyword = item.displayName;
+        f.activeKeyword = item.displayName;
+        f.activeKeywordMode = "field";
+        f.fieldName = fieldName;
+        f.fieldLabel = fieldLabel;
+        f.fieldValue = item.rawValue;
+        f.fieldValueLabel = item.displayName;
+        f.userId = ""; f.messageType = ""; f.subtypeId = "";
+        f.activityTypeId = ""; f.activityUserId = ""; f.activityState = "";
+        this.advancedFilterState.showSuggestions = false;
+        this.advancedFilterState.expandedSuggestionGroup = null;
         this.notifyFiltersChanged();
     },
-    selectAuthorSuggestion(user){
-        this.advancedFilterState.filters.keyword=user.name;
-        this.advancedFilterState.filters.activeKeyword=user.name;
-        this.advancedFilterState.filters.activeKeywordMode="author";
-        this.advancedFilterState.filters.userId=String(user.id);
-        this.advancedFilterState.filters.authorKeyword=user.name;
-        this.advancedFilterState.filters.productId="";
-        this.advancedFilterState.filters.productKeyword="";
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
+
+    selectMessageSuggestion() {
+        const k = this.advancedFilterState.filters.keyword.trim();
+        if (!k) return;
+        const f = this.advancedFilterState.filters;
+        f.activeKeyword = k; f.activeKeywordMode = "message";
+        f.fieldName = ""; f.fieldLabel = ""; f.fieldValue = ""; f.fieldValueLabel = "";
+        this.advancedFilterState.showSuggestions = false;
+        this.advancedFilterState.expandedSuggestionGroup = null;
         this.notifyFiltersChanged();
     },
-    selectAuthorGroupSuggestion(){
-        const keyword=this.advancedFilterState.filters.keyword.trim();
-        if(!keyword){
-            return;
-        }
-        this.advancedFilterState.filters.activeKeyword=keyword;
-        this.advancedFilterState.filters.activeKeywordMode="author";
-        this.advancedFilterState.filters.userId="";
-        this.advancedFilterState.filters.authorKeyword=keyword;
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
-        this.notifyFiltersChanged();
-    },
-    selectMessageTypeSuggestion(type){
-        this.advancedFilterState.filters.keyword=type.label;
-        this.advancedFilterState.filters.activeKeyword=type.label;
-        this.advancedFilterState.filters.activeKeywordMode="messageType";
-        this.advancedFilterState.filters.messageType=type.value;
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
-        this.notifyFiltersChanged();
-    },
-    selectSubtypeSuggestion(subtype){
-        this.advancedFilterState.filters.keyword=subtype.name;
-        this.advancedFilterState.filters.activeKeyword=subtype.name;
-        this.advancedFilterState.filters.activeKeywordMode="subtype";
-        this.advancedFilterState.filters.subtypeId=String(subtype.id);
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
-        this.notifyFiltersChanged();
-    },
-    selectProductSuggestion(product){
-        this.advancedFilterState.filters.keyword=product.name;
-        this.advancedFilterState.filters.activeKeyword=product.name;
-        this.advancedFilterState.filters.activeKeywordMode="product";
-        this.advancedFilterState.filters.productId=product.id;
-        this.advancedFilterState.filters.productKeyword=product.name;
-        this.advancedFilterState.filters.productCode=product.default_code;
-        this.advancedFilterState.showSuggestions=false;
-        this.advancedFilterState.expandedSuggestionGroup=null;
-        this.notifyFiltersChanged();
-    },
-    selectTrackingFieldSuggestion(field){
-    if(!field?.id){
-        return;
-    }
 
-    const filters=this.advancedFilterState.filters;
+    clearAdvancedFilters() { this.clearKeywordSearch(); },
 
-    filters.keyword=field.label||field.name;
-    filters.activeKeyword=field.label||field.name;
-    filters.activeKeywordMode="trackingField";
-    filters.trackingFieldId=String(field.id);
-    filters.trackingFieldName=field.name||"";
-    filters.trackingMessageIds=[];
+    get filteredMessages() {
+        const messages = this.threadMessages;
+        const f = this.advancedFilterState.filters;
+        if (this.isActivityFilterActive) return [];
 
-    this.advancedFilterState.showSuggestions=false;
-    this.advancedFilterState.expandedSuggestionGroup=null;
+        const hasAny = !!(f.activeKeyword || f.dateFrom || f.dateTo ||
+            f.userId || f.messageType || f.subtypeId || f.fieldValueLabel);
+        if (!hasAny) return messages;
 
-    this.loadTrackingMessageIds(Number(field.id)).then(()=>{
-        this.notifyFiltersChanged();
-    });
-},
-    clearAdvancedFilters(){
-        this.clearKeywordSearch();
-    },
-    applyAdvancedFilters(){
-       
-    },
-    get filteredMessages(){
-        const messages=this.threadMessages;
-        const filters=this.advancedFilterState.filters;
+        let result = messages;
+        const ak = (f.activeKeyword || "").trim().toLowerCase();
+        const mode = f.activeKeywordMode || "";
 
-        if(this.isActivityFilterActive){
-            return [];
-        }
-
-        const hasAnyFilter=!!(
-            filters.activeKeyword||
-            filters.dateFrom||
-            filters.dateTo||
-            filters.userId||
-            filters.authorKeyword||
-            filters.messageType||
-            filters.subtypeId||
-            filters.productKeyword||
-            filters.productCode||
-            filters.stateChange ||
-            filters.trackingFieldId
-
-);
-
-        
-        if(!hasAnyFilter){
-            return messages;
-        }
-
-        let result=messages;
-        const activeKeyword=(filters.activeKeyword||"").trim().toLowerCase();
-        const activeMode=filters.activeKeywordMode||"";
-        if(activeKeyword&&activeMode==="message"){
-            result=result.filter(message=>{
-                const body=this.getMessageText(message.body);
-                const subject=this.getMessageText(message.subject);
-                return `${subject} ${body}`.toLowerCase().includes(activeKeyword);
+        if (ak && mode === "message") {
+            result = result.filter((m) => {
+                const b = this.getMessageText(m.body);
+                const s = this.getMessageText(m.subject);
+                return `${s} ${b}`.toLowerCase().includes(ak);
             });
         }
-        if(activeMode==="author"){
-            if(filters.userId){
-                result=result.filter(message=>
-                    message.author?.id&&Number(message.author.id)===Number(filters.userId)
-                );
-            }else if(activeKeyword){
-                result=result.filter(message=>
-                    (message.author?.name||"").toLowerCase().includes(activeKeyword)
-                );
-            }
-        }
-        if(activeMode==="product"&&(filters.productKeyword||filters.productCode)){
-            const productName=(filters.productKeyword||"").trim().toLowerCase();
-            const productCode=(filters.productCode||"").trim().toLowerCase();
-            result=result.filter(message=>{
-                const body=this.getMessageText(message.body);
-                const subject=this.getMessageText(message.subject);
-                const text=`${subject} ${body}`.toLowerCase();
-                return (
-                    (productName&&text.includes(productName))||
-                    (productCode&&text.includes(productCode))
-                );
-            });
-        }
-        if(activeKeyword&&activeMode==="messageType"){
-            result=result.filter(message=>{
-                const type=this.messageTypeOptions.find(item=>item.value===message.message_type);
-                return type?.label.toLowerCase().includes(activeKeyword);
-            });
-        }
-        if(activeKeyword&&activeMode==="subtype"){
-            result=result.filter(message=>{
-                const subtypeId=message.subtype_id?.id||message.subtype_id;
-                const subtype=this.advancedFilterState.subtypes.find(
-                    item=>Number(item.id)===Number(subtypeId)
-                );
-                return subtype?.name.toLowerCase().includes(activeKeyword);
-            });
-        }
-        return result.filter(message=>{
-            const messageDate=this.getMessageDate(message);
-            if(filters.dateFrom&&(!messageDate||messageDate<filters.dateFrom)){
-                return false;
-            }
-            if(filters.dateTo&&(!messageDate||messageDate>filters.dateTo)){
-                return false;
-            }
-            if(filters.userId){
-                const authorId=message.author?.id;
-                if(!authorId||Number(authorId)!==Number(filters.userId)){
-                    return false;
-                }
-            }
-            if(filters.authorKeyword&&activeMode!=="author"){
-                const authorName=(message.author?.name||"").toLowerCase();
-                if(!authorName.includes(filters.authorKeyword.trim().toLowerCase())){
-                    return false;
-                }
-            }
-            if(filters.messageType&&message.message_type!==filters.messageType){
-                return false;
-            }
-            if(filters.subtypeId){
-                const subtypeId=message.subtype_id?.id||message.subtype_id;
-                if(Number(subtypeId)!==Number(filters.subtypeId)){
-                    return false;
-                }
-            }
-            if(filters.trackingFieldId){
-    const trackingMessageIds=
-        filters.trackingMessageIds||[];
+        if (mode === "field" && f.fieldName && f.fieldValueLabel) {
+            const key = `${f.fieldName}|${f.fieldValueLabel.trim().toLowerCase()}`;
+            const exactIds = this.fieldValueMessageIds.get(key);
 
-    if(!trackingMessageIds.includes(Number(message.id))){
-        return false;
-    }
-}
+            if (exactIds && exactIds.size) {
+                result = result.filter((m) => exactIds.has(Number(m.id)));
+            } else {
+                const needle = f.fieldValueLabel.trim().toLowerCase();
+                result = result.filter((m) => {
+                    const b = this.getMessageText(m.body);
+                    const s = this.getMessageText(m.subject);
+                    return `${s} ${b}`.toLowerCase().includes(needle);
+                });
+            }
+        }
+        return result.filter((m) => {
+            const d = this.getMessageDate(m);
+            if (f.dateFrom && (!d || d < f.dateFrom)) return false;
+            if (f.dateTo && (!d || d > f.dateTo)) return false;
+            if (f.userId) {
+                const aid = m.author?.id;
+                if (!aid || Number(aid) !== Number(f.userId)) return false;
+            }
+            if (f.messageType && m.message_type !== f.messageType) return false;
+            if (f.subtypeId) {
+                const sid = m.subtype_id?.id || m.subtype_id;
+                if (Number(sid) !== Number(f.subtypeId)) return false;
+            }
             return true;
         });
     },
-    get filteredActivities(){
+
+    get filteredActivities() {
+        if (this.isMessageFilterActive) return [];
         return this.activities;
     },
-    getMessageDate(message){
-        if(!message?.date){
-            return null;
-        }
-        try{
-            if(typeof message.date.toISODate==="function"){
-                return message.date.toISODate();
-            }
-            if(typeof message.date==="string"){
-                return message.date.substring(0,10);
-            }
-        }catch{
-            return null;
-        }
+
+    getMessageDate(m) {
+        if (!m?.date) return null;
+        try {
+            if (typeof m.date.toISODate === "function") return m.date.toISODate();
+            if (typeof m.date === "string") return m.date.substring(0, 10);
+        } catch { return null; }
         return null;
     },
-    getMessageText(value){
-        if(!value){
-            return "";
+
+    getMessageText(v) {
+        if (!v) return "";
+        if (typeof v === "string") {
+            const c = document.createElement("div");
+            c.innerHTML = v;
+            return (c.textContent || c.innerText || "").replace(/<[^>]*>/g, " ").trim();
         }
-        if(typeof value==="string"){
-            const container=document.createElement("div");
-            container.innerHTML=value;
-            return (container.textContent||container.innerText||"").replace(/<[^>]*>/g," ");
-        }
-        return String(value).replace(/<[^>]*>/g," ");
+        return String(v).replace(/<[^>]*>/g, " ").trim();
     },
-    async exportAdvancedResults(){
-        const messages=this.filteredMessages||[];
-        const activities=this.filteredActivities||[];
-        if(!messages.length&&!activities.length){
-            return;
-        }
-        const messageIds=messages
-            .map(message=>Number(message.id))
-            .filter(id=>Number.isFinite(id)&&id>0);
-        const activityIds=activities
-            .map(activity=>Number(activity.id))
-            .filter(id=>Number.isFinite(id)&&id>0);
-        let messageAudit=[];
-        let activityAudit=[];
-        try{
-            [messageAudit,activityAudit]=await Promise.all([
-                messageIds.length?this.orm.searchRead(
-                    "mail.message",
-                    [["id","in",messageIds]],
-                    ["id","create_date","create_uid","write_date","write_uid"],
-                    {limit:messageIds.length}
-                ):[],
-                activityIds.length?this.orm.searchRead(
-                    "mail.activity",
-                    [["id","in",activityIds]],
-                    ["id","create_date","create_uid","write_date","write_uid"],
-                    {limit:activityIds.length}
-                ):[],
+
+    async exportAdvancedResults() {
+        const messages = this.filteredMessages || [];
+        const activities = this.filteredActivities || [];
+        if (!messages.length && !activities.length) return;
+
+        const mIds = messages.map((m) => Number(m.id)).filter((id) => Number.isFinite(id) && id > 0);
+        const aIds = activities.map((a) => Number(a.id)).filter((id) => Number.isFinite(id) && id > 0);
+        let mAudit = [], aAudit = [];
+        try {
+            [mAudit, aAudit] = await Promise.all([
+                mIds.length ? this.orm.searchRead("mail.message", [["id", "in", mIds]],
+                    ["id", "create_date", "create_uid", "write_date", "write_uid"],
+                    { limit: mIds.length }) : [],
+                aIds.length ? this.orm.searchRead("mail.activity", [["id", "in", aIds]],
+                    ["id", "create_date", "create_uid", "write_date", "write_uid"],
+                    { limit: aIds.length }) : [],
             ]);
-        }catch{}
-        const messageAuditMap=new Map((messageAudit||[]).map(record=>[Number(record.id),record]));
-        const activityAuditMap=new Map((activityAudit||[]).map(record=>[Number(record.id),record]));
-        const getAuditValue=value=>this.getMany2OneValue(value).name||"";
-        const rows=[[
-            "ID",
-            "Create Date",
-            "Created By",
-            "Last Updated Date",
-            "Last Updated By",
-            "Date",
-            "User / Author",
-            "Message Type",
-            "Subject / Summary",
-            "Message / Note",
-            "Result Type",
-        ]];
-        for(const message of messages){
-            const audit=messageAuditMap.get(Number(message.id))||{};
-            rows.push([
-                message.id||"",
-                audit.create_date||"",
-                getAuditValue(audit.create_uid),
-                audit.write_date||"",
-                getAuditValue(audit.write_uid),
-                this.getMessageDate(message)||"",
-                message.author?.name||"",
-                this.messageTypeOptions.find(type=>type.value===message.message_type)?.label||message.message_type||"",
-                this.getMessageText(message.subject),
-                this.getMessageText(message.body),
-                "Message",
-            ]);
+        } catch { }
+        const mMap = new Map((mAudit || []).map((r) => [Number(r.id), r]));
+        const aMap = new Map((aAudit || []).map((r) => [Number(r.id), r]));
+        const getV = (v) => this.getMany2OneValue(v).name || "";
+
+        const rows = [["ID", "Create Date", "Created By", "Last Updated Date",
+            "Last Updated By", "Date", "User / Author", "Message Type",
+            "Subject / Summary", "Message / Note", "Result Type"]];
+
+        for (const m of messages) {
+            const a = mMap.get(Number(m.id)) || {};
+            rows.push([m.id || "", a.create_date || "", getV(a.create_uid),
+                a.write_date || "", getV(a.write_uid), this.getMessageDate(m) || "",
+                m.author?.name || "",
+                this.messageTypeOptions.find((t) => t.value === m.message_type)?.label || m.message_type || "",
+                this.getMessageText(m.subject), this.getMessageText(m.body), "Message"]);
         }
-        for(const activity of activities){
-            const audit=activityAuditMap.get(Number(activity.id))||{};
-            rows.push([
-                activity.id||"",
-                audit.create_date||"",
-                getAuditValue(audit.create_uid),
-                audit.write_date||"",
-                getAuditValue(audit.write_uid),
-                activity.date_deadline||"",
-                getAuditValue(activity.user_id),
-                getAuditValue(activity.activity_type_id),
-                activity.summary||"",
-                this.getMessageText(activity.note),
-                "Activity",
-            ]);
+        for (const a of activities) {
+            const r = aMap.get(Number(a.id)) || {};
+            rows.push([a.id || "", r.create_date || "", getV(r.create_uid),
+                r.write_date || "", getV(r.write_uid), a.date_deadline || "",
+                getV(a.user_id), getV(a.activity_type_id), a.summary || "",
+                this.getMessageText(a.note), "Activity"]);
         }
-        const csv=rows.map(row=>row.map(value=>{
-            const normalized=String(value??"")
-                .replace(/\r\n/g,"\n")
-                .replace(/\r/g,"\n")
-                .replace(/\n/g," ");
-            return `"${normalized.replace(/"/g,'""')}"`;
+        const csv = rows.map((r) => r.map((v) => {
+            const n = String(v ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n/g, " ");
+            return `"${n.replace(/"/g, '""')}"`;
         }).join(",")).join("\r\n");
-        const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"});
-        const url=URL.createObjectURL(blob);
-        const link=document.createElement("a");
-        link.href=url;
-        link.download="advanced_chatter_results.csv";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = "advanced_chatter_results.csv";
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
         URL.revokeObjectURL(url);
     },
 });
 
-patch(Thread.prototype,{
-    setup(){
+patch(Thread.prototype, {
+    setup() {
         super.setup(...arguments);
-
-        const chatter=this.env.advancedChatterSearch;
-        if(chatter && typeof chatter.onFiltersChanged==="function"){
-            const unsubscribe=chatter.onFiltersChanged(()=>this.render());
-            onWillDestroy(unsubscribe);
+        const c = this.env.advancedChatterSearch;
+        if (c && typeof c.onFiltersChanged === "function") {
+            const u = c.onFiltersChanged(() => this.render());
+            onWillDestroy(u);
         }
     },
-    get filteredMessages(){
-        const chatter=this.env.advancedChatterSearch;
-
-        if(!chatter){
-            return this.orderedMessages||[];
-        }
-
-        return chatter.filteredMessages||this.orderedMessages||[];
+    get filteredMessages() {
+        const c = this.env.advancedChatterSearch;
+        if (!c) return this.orderedMessages || [];
+        return c.filteredMessages || this.orderedMessages || [];
+    },
+    get activities() {
+        const c = this.env.advancedChatterSearch;
+        if (!c) return super.activities;
+        if (c.isMessageFilterActive) return [];
+        if (c.isActivityFilterActive) return c.filteredActivities;
+        return super.activities;
     },
 });
 
-patch(SearchMessageInput.prototype,{
-    setup(){
+patch(SearchMessageInput.prototype, {
+    setup() {
         super.setup(...arguments);
-        this.advancedDropdownState = useState({
-            expandedGroup: null,
-        });
-
-        
+        this.advancedDropdownState = useState({ expandedGroup: null });
         this.filterDropdownState = useDropdownState();
-
-        const chatter=this.env.advancedChatterSearch;
-        if(chatter && typeof chatter.onFiltersChanged==="function"){
-            const unsubscribe=chatter.onFiltersChanged((shouldAttemptClose=true)=>{
+        const c = this.env.advancedChatterSearch;
+        if (c) c.searchMessageInput = this;
+        if (c && typeof c.onFiltersChanged === "function") {
+            const u = c.onFiltersChanged((close = true) => {
                 this.render();
-                if(shouldAttemptClose){
-                    this.filterDropdownState.close();
-                }
+                if (close) this.filterDropdownState.close();
             });
-            onWillDestroy(unsubscribe);
+            onWillDestroy(u);
         }
+        if (c) onWillDestroy(() => {
+            if (c.searchMessageInput === this) c.searchMessageInput = null;
+        });
     },
-
-    clear(){
+    clear() {
         super.clear();
-        const chatter=this.env.advancedChatterSearch;
-        if(chatter && typeof chatter.clearAdvancedFilters==="function"){
-            chatter.clearAdvancedFilters();
-        }
+        const c = this.env.advancedChatterSearch;
+        if (c?.clearAdvancedFilters) c.clearAdvancedFilters();
     },
-
-    toggleAdvancedGroup(groupKey){
+    toggleAdvancedGroup(k) {
         this.advancedDropdownState.expandedGroup =
-            this.advancedDropdownState.expandedGroup === groupKey
-                ? null
-                : groupKey;
+            this.advancedDropdownState.expandedGroup === k ? null : k;
     },
-
-    onKeywordSync(ev){
-        const chatter=this.env.advancedChatterSearch;
-        if(!chatter){
-            return;
-        }
-       const filters=chatter.advancedFilterState.filters;
-
-filters.keyword=ev.target.value;
-filters.activeKeyword="";
-filters.activeKeywordMode="";
-filters.trackingFieldId="";
-filters.trackingFieldName="";
-filters.trackingMessageIds=[];
-
-chatter.advancedFilterState.showSuggestions=!!ev.target.value.trim();
-this.advancedDropdownState.expandedGroup=null;
-
-if(ev.target.value.trim()){
-    chatter.loadTrackingFields();
-}
-    },
-
-    onKeywordFocusSync(){
-        const chatter=this.env.advancedChatterSearch;
-        if(chatter&&chatter.advancedFilterState.filters.keyword.trim()){
-            chatter.advancedFilterState.showSuggestions=true;
-        }
-    },
-
-    onKeywordBlurSync(){
-        const chatter=this.env.advancedChatterSearch;
-        if(!chatter){
-            return;
-        }
-
-        setTimeout(()=>{
-            chatter.advancedFilterState.showSuggestions=false;
+    onKeywordSync() {
+        const c = this.env.advancedChatterSearch;
+        if (!c) return;
+        setTimeout(() => {
+            const v = this.state.searchTerm || "";
+            const f = c.advancedFilterState.filters;
+            f.keyword = v; f.activeKeyword = ""; f.activeKeywordMode = "";
+            f.fieldName = ""; f.fieldLabel = ""; f.fieldValue = ""; f.fieldValueLabel = "";
+            c.advancedFilterState.showSuggestions = !!v.trim();
             this.advancedDropdownState.expandedGroup = null;
-        },200);
+            if (v.trim()) {
+                c._ensureExtracted().then(() => c.notifyFiltersChanged(false));
+            }
+        }, 0);
     },
-
-    selectSuggestionAndSync(group,item=null){
-        const chatter=this.env.advancedChatterSearch;
-        if(!chatter){
-            return;
+    onKeywordFocusSync() {
+        const c = this.env.advancedChatterSearch;
+        if (c && this.state.searchTerm.trim()) c.advancedFilterState.showSuggestions = true;
+    },
+    onKeywordBlurSync() {
+        const c = this.env.advancedChatterSearch;
+        if (!c) return;
+        setTimeout(() => {
+            c.advancedFilterState.showSuggestions = false;
+            this.advancedDropdownState.expandedGroup = null;
+        }, 200);
+    },
+    selectSuggestionAndSync(group, item = null) {
+        const c = this.env.advancedChatterSearch;
+        if (!c) return;
+        c.selectSearchSuggestion(group, item);
+    },
+    onDateInputClick(ev) {
+        const c = this.env.advancedChatterSearch;
+        if (c && typeof c.onDateInputClick === "function") {
+            c.onDateInputClick(ev);
         }
-        chatter.selectSearchSuggestion(group,item);
-
-        this.state.searchTerm="";
     },
 });
+
 patch(FormCompiler.prototype, {
     setup() {
         super.setup(...arguments);
-
-        const chatterCompiler = this.compilers.find(
-            (compiler) => compiler.selector === "chatter"
-        );
-
-        if (!chatterCompiler || chatterCompiler._advancedChatterPatched) {
-            return;
-        }
-
-        const originalFn = chatterCompiler.fn;
-
-        chatterCompiler.fn = function (node, params) {
-            const result = originalFn.call(this, node, params);
-
-            if (!result || typeof node?.getAttribute !== "function") {
-                return result;
-            }
-
-            const chatterContainerXml = Array.from(
-                result.querySelectorAll("t[t-component]")
-            ).find((el) => {
-                const component = el.getAttribute("t-component") || "";
-                return component.includes("Chatter");
-            });
-
-            if (!chatterContainerXml) {
-                return result;
-            }
-
-            const advanceSearch = node.getAttribute("advance_search");
-            const advanceFilter = node.getAttribute("advance_filter");
-
-            if (advanceSearch !== null) {
-                setAttributes(chatterContainerXml, {
-                    advanceSearch:
-                        advanceSearch.trim().toLowerCase() === "true",
-                });
-            }
-
-            if (advanceFilter !== null) {
-                setAttributes(chatterContainerXml, {
-                    advanceFilter:
-                        advanceFilter.trim().toLowerCase() === "true",
-                });
-            }
-
-            return result;
+        const cc = this.compilers.find((c) => c.selector === "chatter");
+        if (!cc || cc._advancedChatterPatched) return;
+        const orig = cc.fn;
+        cc.fn = function (node, params) {
+            const r = orig.call(this, node, params);
+            if (!r || typeof node?.getAttribute !== "function") return r;
+            const xml = Array.from(r.querySelectorAll("t[t-component]"))
+                .find((el) => (el.getAttribute("t-component") || "").includes("Chatter"));
+            if (!xml) { console.warn(LOG, "Chatter node not found"); return r; }
+            let opts = {};
+            const oa = node.getAttribute("options");
+            if (oa) { try { opts = evaluateExpr(oa) || {}; } catch (e) { console.error(LOG, e); } }
+            if ("advance_search" in opts) setAttributes(xml, { advancesearch: !!opts.advance_search });
+            if ("advance_filter" in opts) setAttributes(xml, { advancefilter: !!opts.advance_filter });
+            return r;
         };
-
-        chatterCompiler._advancedChatterPatched = true;
+        cc._advancedChatterPatched = true;
     },
 });
