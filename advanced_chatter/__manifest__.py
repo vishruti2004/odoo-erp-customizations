@@ -37,15 +37,17 @@
    "assets": {
     "web.assets_backend": [
         "advanced_chatter/static/src/chatter/web_portal/chatter.js",
+        "advanced_chatter/static/src/chatter/web_portal/chatter.scss",
+
         "advanced_chatter/static/src/core/common/thread.js",
         "advanced_chatter/static/src/core/common/search_message_input.js",
+        "advanced_chatter/static/src/core/common/search_message_input.scss",
+
         "advanced_chatter/static/src/views/form/form_compiler.js",
 
         "advanced_chatter/static/src/core/common/thread.xml",
         "advanced_chatter/static/src/core/common/search_message_input.xml",
 
-        "advanced_chatter/static/src/scss/chatter.scss",
-        "advanced_chatter/static/src/scss/search_message_input.scss",
     ],
 
 },
