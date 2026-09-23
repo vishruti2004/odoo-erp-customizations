@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <odoo>
-
     <record id="group_advanced_chatter_user" model="res.groups">
         <field name="name">Advanced Chatter User</field>
     </record>
-
 </odoo>

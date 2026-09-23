@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="mail.Thread" t-inherit-mode="extension">
+        <xpath expr="//t[@t-set='messages' and @t-value='orderedMessages']"
+               position="replace">
+            <t t-set="messages" t-value="filteredMessages"/>
+        </xpath>
+    </t>
+
+</templates>

@@ -5,17 +5,17 @@
     "version": "19.0.1.0.0",
     "summary": "Advanced Chatter Search, Filter and Export",
     "description": """
-Advanced Chatter - Search, Filter and Export
+    Advanced Chatter - Search, Filter and Export
 
-Features:
+        Features:
 
-- Advanced Chatter Search
-- Search Chatter messages using keywords
-- Filter messages by Date, User, Model, Record and Message Type
-- Search and filter Chatter Activities
-- Apply multiple filters simultaneously
-- Display filtered Chatter results
-- Export filtered search results
+        - Advanced Chatter Search
+        - Search Chatter messages using keywords
+        - Filter messages by Date, User, Model, Record and Message Type
+        - Search and filter Chatter Activities
+        - Apply multiple filters simultaneously
+        - Display filtered Chatter results
+        - Export filtered search results
     """,
     "category": "Discuss/Chatter",
     "author": "iPredict IT Solutions Pvt. Ltd.",
@@ -34,13 +34,21 @@ Features:
         "security/security.xml",
     ],
 
-    "assets": {
-        "web.assets_backend": [
-            "advanced_chatter/static/src/js/advanced_chatter.js",
-            "advanced_chatter/static/src/xml/advanced_chatter.xml",
-            "advanced_chatter/static/src/css/advanced_chatter.css",
-        ],
-    },
+   "assets": {
+    "web.assets_backend": [
+        "advanced_chatter/static/src/chatter/web_portal/chatter.js",
+        "advanced_chatter/static/src/core/common/thread.js",
+        "advanced_chatter/static/src/core/common/search_message_input.js",
+        "advanced_chatter/static/src/views/form/form_compiler.js",
+
+        "advanced_chatter/static/src/core/common/thread.xml",
+        "advanced_chatter/static/src/core/common/search_message_input.xml",
+
+        "advanced_chatter/static/src/scss/chatter.scss",
+        "advanced_chatter/static/src/scss/search_message_input.scss",
+    ],
+
+},
 
     "images": [
         "static/description/icon.png",
