@@ -32,7 +32,6 @@ Features:
 
     "data": [
         "security/security.xml",
-        "views/advanced_chatter_views.xml",
     ],
 
     "assets": {

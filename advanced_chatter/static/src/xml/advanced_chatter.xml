@@ -102,15 +102,13 @@
                         <label class="form-label small mb-1">From Date</label>
                         <input type="date" class="form-control form-control-sm"
                                t-model="env.advancedChatterSearch.advancedFilterState.filters.dateFrom"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"
-                               t-on-click="onDateInputClick"/>
+                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
                     </div>
                     <div class="col-6">
                         <label class="form-label small mb-1">To Date</label>
                         <input type="date" class="form-control form-control-sm"
                                t-model="env.advancedChatterSearch.advancedFilterState.filters.dateTo"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"
-                               t-on-click="onDateInputClick"/>
+                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
                     </div>
                 </div>
 
@@ -214,7 +212,6 @@
                 </div>
             </div>
         </xpath>
-
     </t>
-
+    
 </templates>
