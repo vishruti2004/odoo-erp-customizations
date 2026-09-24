@@ -1,19 +1,108 @@
 /** @odoo-module **/
-import { patch } from "@web/core/utils/patch";
-import { Chatter } from "@mail/chatter/web_portal/chatter";
-import { useService } from "@web/core/utils/hooks";
-import { onWillStart, useEffect, useState } from "@odoo/owl";
 
-const USEFUL_FIELD_TYPES = new Set([
-    "char", "text", "many2one", "selection", "integer", "float",
-    "monetary", "date", "datetime", "html", "one2many", "many2many",
+import { Chatter } from "@mail/chatter/web_portal/chatter";
+import { htmlToTextContentInline } from "@mail/utils/common/format";
+import { onWillStart, useEffect, useState } from "@odoo/owl";
+import { groupBy } from "@web/core/utils/arrays";
+import { useService } from "@web/core/utils/hooks";
+import { patch } from "@web/core/utils/patch";
+import { escapeRegExp } from "@web/core/utils/strings";
+
+const ACCESS_CHECK = { model: "res.users", method: "check_advanced_chatter_access" };
+
+const LIMITS = {
+    nameList: 200,
+    relatedRecords: 200,
+    trackingValues: 3000,
+    recordTextLength: 200,
+    fieldMatchItems: 25,
+    valueMatchItems: 15,
+};
+
+const FIELD_ATTRIBUTES = ["string", "type", "relation", "selection", "searchable"];
+const AUDIT_FIELDS = ["id", "create_date", "create_uid", "write_date", "write_uid"];
+const SYSTEM_FIELDS = [...AUDIT_FIELDS, "__last_update", "display_name"];
+const EXCLUDED_RECORD_FIELDS = new Set([...SYSTEM_FIELDS, "access_token", "message_ids"]);
+const EXCLUDED_RELATED_FIELDS = new Set(SYSTEM_FIELDS);
+
+const SEARCHABLE_FIELD_TYPES = new Set([
+    "char",
+    "text",
+    "many2one",
+    "selection",
+    "integer",
+    "float",
+    "monetary",
+    "date",
+    "datetime",
+    "html",
+    "one2many",
+    "many2many",
 ]);
-const EXCLUDED_RECORD_FIELDS = new Set([
-    "id", "create_uid", "create_date", "write_uid", "write_date",
-    "__last_update", "display_name", "access_token", "message_ids",
-]);
-const AUDIT_META_FIELDS = ["id", "create_date", "create_uid", "write_date", "write_uid"];
-const KEPT_MESSAGE_FIELDS = ["author_id", "subtype_id", "message_type", "subject", "email_from"];
+const X2MANY_TYPES = new Set(["one2many", "many2many"]);
+
+const SELECTION_SOURCES = {
+    messageTypeOptions: { model: "mail.message", field: "message_type" },
+    activityStateOptions: { model: "mail.activity", field: "state" },
+};
+
+const NAME_LIST_SOURCES = {
+    subtypes: "mail.message.subtype",
+    activityTypes: "mail.activity.type",
+};
+
+const TRACKING_MODEL = "mail.tracking.value";
+const TRACKING_PREFIXES = ["old", "new"];
+const TRACKING_COLUMNS = ["char", "text", "integer", "float", "datetime"];
+const TRACKING_COLUMNS_BY_TYPE = {
+    float: ["float"],
+    monetary: ["float"],
+    integer: ["integer"],
+    date: ["datetime"],
+    datetime: ["datetime"],
+};
+
+const MESSAGE_SUGGESTION_FIELDS = {
+    author_id: "author",
+    email_from: "email_from",
+    subtype_id: "subtype_id",
+    message_type: "message_type",
+    subject: "subject",
+};
+
+const RECORD_FILTERS = {
+    message: { userId: "author", messageType: "message_type", subtypeId: "subtype_id" },
+    activity: {
+        activityTypeId: "activity_type_id",
+        activityUserId: "user_id",
+        activityState: "state",
+    },
+};
+
+const FILTER_GROUPS = {
+    keyword: ["keyword", "activeKeyword", "activeKeywordMode"],
+    date: ["dateFrom", "dateTo"],
+    field: ["fieldName", "fieldLabel", "fieldValue", "fieldValueLabel"],
+};
+
+const KEYWORD_MODE = { MESSAGE: "message", FIELD: "field" };
+const MESSAGE_GROUP_KEY = "message";
+const FIELD_GROUP_PREFIX = "field:";
+
+const EXPORT_FILENAME = "advanced_chatter_results.csv";
+const EXPORT_COLUMNS = [
+    ["ID", "id"],
+    ["Create Date", "createDate"],
+    ["Created By", "createdBy"],
+    ["Last Updated Date", "updatedDate"],
+    ["Last Updated By", "updatedBy"],
+    ["Date", "date"],
+    ["User / Author", "user"],
+    ["Message Type", "type"],
+    ["Subject / Summary", "subject"],
+    ["Message / Note", "note"],
+    ["Result Type", "resultType"],
+];
 
 Chatter.props.push("advancesearch?", "advancefilter?");
 
@@ -21,664 +110,913 @@ patch(Chatter.prototype, {
     get childSubEnv() {
         return { ...super.childSubEnv, advancedChatterSearch: this };
     },
-    createEmptyFilters() {
-        return {
-            keyword: "", activeKeyword: "", activeKeywordMode: "",
-            dateFrom: "", dateTo: "", userId: "", messageType: "", subtypeId: "",
-            activityTypeId: "", activityUserId: "", activityState: "",
-            fieldName: "", fieldLabel: "", fieldValue: "", fieldValueLabel: "",
-        };
-    },
-    clearFieldSelection(filters) {
-        filters.fieldName = "";
-        filters.fieldLabel = "";
-        filters.fieldValue = "";
-        filters.fieldValueLabel = "";
-    },
+
     setup() {
         super.setup(...arguments);
+
         this.orm = useService("orm");
+
         this.hasAdvancedChatterAccess = false;
         this.showAdvancedSearch = this.props.advancesearch !== false;
         this.showAdvancedFilters = this.props.advancefilter !== false;
-        this._filterChangeListeners = new Set();
+
         this.searchableFields = {};
         this.suggestions = [];
         this.fieldValueMessageIds = new Map();
-        this.messageTypeOptions = [];
-        this.activityStateOptions = [];
-        this.resModel = null;
-        this.resId = null;
+        for (const property of Object.keys(SELECTION_SOURCES)) {
+            this[property] = [];
+        }
+
+        this._filterChangeListeners = new Set();
+        this._fieldDefCache = new Map();
         this._extractedSignature = null;
+
         this.advancedFilterState = useState({
             showSuggestions: false,
             expandedSuggestionGroup: null,
             filters: this.createEmptyFilters(),
-            subtypes: [],
-            activityTypes: [],
+            ...Object.fromEntries(Object.keys(NAME_LIST_SOURCES).map((key) => [key, []])),
         });
+
         onWillStart(() => this._loadInitialData());
-        useEffect(() => {
-            const count = this.threadMessages.length;
-            const signature = `${this.resId}|${count}`;
-            if (count > 0 && this._extractedSignature !== signature) {
-                this.extractAllSuggestions().then(() => {
-                    this._extractedSignature = signature;
-                    this.notifyFiltersChanged(false);
-                });
-            }
-        }, () => [this.threadMessages.length, this.resId]);
+        useEffect(
+            () => {
+                this._refreshSuggestions();
+            },
+            () => [this.threadMessages.length, this.resId]
+        );
     },
+
+    get resModel() {
+        return this.props.resModel || this.props.record?.resModel || this.props.threadModel;
+    },
+
+    get resId() {
+        return this.props.resId || this.props.record?.resId || this.props.threadId;
+    },
+
+    async _safely(callback, fallback = null) {
+        try {
+            return await callback();
+        } catch {
+            return fallback;
+        }
+    },
+
+    _isEmpty(value) {
+        return [false, null, undefined, ""].includes(value);
+    },
+
+    _numericIds(records) {
+        return records
+            .map((record) => Number(record.id))
+            .filter((id) => Number.isFinite(id) && id > 0);
+    },
+
+    _selectionLabel(selection, value) {
+        const option = (selection || []).find(([key]) => String(key) === String(value));
+        return option ? option[1] : String(value);
+    },
+
+    _suggestionKey(fieldName, label) {
+        return `${fieldName}|${String(label).trim().toLowerCase()}`;
+    },
+
+    getMany2OneValue(value) {
+        if (Array.isArray(value)) {
+            return { id: value[0] || null, name: value[1] || "" };
+        }
+        if (value && typeof value === "object") {
+            return {
+                id: value.id || value.res_id || null,
+                name: value.display_name || value.name || "",
+            };
+        }
+        return { id: value || null, name: "" };
+    },
+
+    _relationName(value) {
+        return this.getMany2OneValue(value).name || "";
+    },
+
+    _loadFieldDefs(model, fieldNames = [], attributes = FIELD_ATTRIBUTES) {
+        const key = JSON.stringify([model, fieldNames, attributes]);
+        if (!this._fieldDefCache.has(key)) {
+            this._fieldDefCache.set(
+                key,
+                this._safely(
+                    () => this.orm.call(model, "fields_get", [fieldNames, attributes]),
+                    {}
+                )
+            );
+        }
+        return this._fieldDefCache.get(key);
+    },
+
+    _filterKeys(...groups) {
+        return groups.flatMap((group) => FILTER_GROUPS[group] || Object.keys(RECORD_FILTERS[group]));
+    },
+
+    createEmptyFilters() {
+        return Object.fromEntries(
+            this._filterKeys(...Object.keys(FILTER_GROUPS), ...Object.keys(RECORD_FILTERS)).map(
+                (key) => [key, ""]
+            )
+        );
+    },
+
+    _resetFilters(filters, ...groups) {
+        for (const key of this._filterKeys(...groups)) {
+            filters[key] = "";
+        }
+    },
+
+    clearFieldSelection(filters) {
+        this._resetFilters(filters, "field");
+    },
+
+    _hasActiveFilter(keys) {
+        const filters = this.advancedFilterState.filters;
+        return keys.some((key) => filters[key]);
+    },
+
+    get _messageResultKeys() {
+        return ["activeKeyword", ...this._filterKeys("message"), "fieldValueLabel"];
+    },
+
+    _matchesRecordFilters(record, group) {
+        const filters = this.advancedFilterState.filters;
+        return Object.entries(RECORD_FILTERS[group]).every(
+            ([key, property]) =>
+                !filters[key] ||
+                String(this.getMany2OneValue(record[property]).id) === String(filters[key])
+        );
+    },
+
+    _isInDateRange(date) {
+        const { dateFrom, dateTo } = this.advancedFilterState.filters;
+        return !(dateFrom && (!date || date < dateFrom)) && !(dateTo && (!date || date > dateTo));
+    },
+
     async _loadInitialData() {
-        this.resModel = this.props.resModel || this.props.record?.resModel || this.state.thread?.model;
-        this.resId = this.props.resId || this.props.record?.resId || this.state.thread?.id;
-        this.hasAdvancedChatterAccess = await this.orm.call("res.users", "check_advanced_chatter_access", []);
-        if (!this.hasAdvancedChatterAccess) return;
+        this.hasAdvancedChatterAccess = await this.orm.call(
+            ACCESS_CHECK.model,
+            ACCESS_CHECK.method,
+            []
+        );
+        if (!this.hasAdvancedChatterAccess) {
+            return;
+        }
         await Promise.all([
-            this._loadSelectionOptions("mail.message", "message_type", "messageTypeOptions"),
-            this._loadSelectionOptions("mail.activity", "state", "activityStateOptions"),
-            this._loadSubtypes(),
-            this._loadActivityTypes(),
+            ...Object.entries(SELECTION_SOURCES).map(([property, { model, field }]) =>
+                this._loadSelectionOptions(model, field, property)
+            ),
+            ...Object.entries(NAME_LIST_SOURCES).map(([key, model]) =>
+                this._loadNameList(model, key)
+            ),
         ]);
         await this.loadAllFields();
     },
+
     async _loadSelectionOptions(model, fieldName, targetProperty) {
-        try {
-            const fieldsInfo = await this.orm.call(model, "fields_get", [[fieldName]]);
-            const selection = fieldsInfo[fieldName]?.selection || [];
-            this[targetProperty] = selection.map(([value, label]) => ({ value, label }));
-        } catch { /* empty */ }
+        const defs = await this._loadFieldDefs(model, [fieldName], ["selection"]);
+        this[targetProperty] = (defs[fieldName]?.selection || []).map(([value, label]) => ({
+            value,
+            label,
+        }));
     },
-    async _loadSubtypes() {
-        try {
-            this.advancedFilterState.subtypes = await this.orm.searchRead(
-                "mail.message.subtype", [], ["id", "name"], { limit: 200, order: "name asc" }
-            );
-        } catch { /* empty */ }
+
+    async _loadNameList(model, stateKey) {
+        const records = await this._safely(() =>
+            this.orm.searchRead(model, [], ["id", "name"], {
+                limit: LIMITS.nameList,
+                order: "name asc",
+            })
+        );
+        if (records) {
+            this.advancedFilterState[stateKey] = records;
+        }
     },
-    async _loadActivityTypes() {
-        try {
-            this.advancedFilterState.activityTypes = await this.orm.searchRead(
-                "mail.activity.type", [], ["id", "name"], { limit: 200, order: "name asc" }
-            );
-        } catch { /* empty */ }
-    },
+
     async loadAllFields() {
-        const result = {};
-        await this._collectMessageFields(result);
-        if (this.resModel) await this._collectRecordFields(result);
-        this.searchableFields = result;
+        const fields = {};
+        await this._collectMessageFields(fields);
+        if (this.resModel) {
+            await this._collectRecordFields(fields);
+        }
+        this.searchableFields = fields;
     },
-    async _collectMessageFields(result) {
-        try {
-            const messageFields = await this.orm.call("mail.message", "fields_get", [[], ["string", "type", "relation", "selection"]]);
-            for (const [name, def] of Object.entries(messageFields || {})) {
-                if (KEPT_MESSAGE_FIELDS.includes(name)) result[name] = this._buildFieldEntry(name, def, "message");
+
+    async _collectMessageFields(fields) {
+        const defs = await this._loadFieldDefs(
+            "mail.message",
+            Object.keys(MESSAGE_SUGGESTION_FIELDS)
+        );
+        for (const [name, definition] of Object.entries(defs)) {
+            fields[name] = this._buildFieldEntry(name, definition, "message");
+        }
+    },
+
+    async _collectRecordFields(fields) {
+        const defs = await this._loadFieldDefs(this.resModel);
+        for (const [name, definition] of Object.entries(defs)) {
+            const isUsable =
+                !EXCLUDED_RECORD_FIELDS.has(name) &&
+                SEARCHABLE_FIELD_TYPES.has(definition.type) &&
+                definition.searchable !== false &&
+                !fields[name];
+            if (isUsable) {
+                fields[name] = this._buildFieldEntry(name, definition, "record");
             }
-        } catch { /* empty */ }
+        }
     },
-    async _collectRecordFields(result) {
-        try {
-            const recordFields = await this.orm.call(this.resModel, "fields_get", [[], ["string", "type", "relation", "selection", "searchable"]]);
-            for (const [name, def] of Object.entries(recordFields || {})) {
-                if (EXCLUDED_RECORD_FIELDS.has(name)) continue;
-                if (!USEFUL_FIELD_TYPES.has(def.type)) continue;
-                if (def.searchable === false) continue;
-                if (result[name]) continue;
-                result[name] = this._buildFieldEntry(name, def, "record");
-            }
-        } catch { /* empty */ }
+
+    _buildFieldEntry(name, definition, source) {
+        const { string, type, relation, selection } = definition;
+        return { name, string, type, relation, selection, source };
     },
-    _buildFieldEntry(name, def, source) {
-        return { name, string: def.string, type: def.type, relation: def.relation, selection: def.selection, source };
+
+    _currentSignature() {
+        return `${this.resId}|${this.threadMessages.length}`;
     },
-    async extractAllSuggestions() {
+
+    async _refreshSuggestions() {
+        const signature = this._currentSignature();
+        if (!this.threadMessages.length || this._extractedSignature === signature) {
+            return;
+        }
+        await this.extractAllSuggestions();
+        this._extractedSignature = signature;
+        this.notifyFiltersChanged(false);
+    },
+
+    async _ensureExtracted() {
+        const signature = this._currentSignature();
+        if (this._extractedSignature === signature && this.suggestions.length) {
+            return;
+        }
+        await this.extractAllSuggestions();
+        this._extractedSignature = signature;
+    },
+
+    _createSuggestionCollector() {
         const suggestions = [];
         const seen = new Set();
-        const fieldValueMessageIds = new Map();
+        const messageIds = new Map();
+
         const add = (fieldName, displayName, rawValue, messageId = null) => {
-            if (!displayName) return;
+            if (!displayName) {
+                return;
+            }
             const label = String(displayName).trim();
-            if (!label || label === "false" || label === "undefined") return;
-            const key = `${fieldName}|${label.toLowerCase()}`;
+            if (!label || label === "false" || label === "undefined") {
+                return;
+            }
+
+            const key = this._suggestionKey(fieldName, label);
             if (!seen.has(key)) {
                 seen.add(key);
                 const field = this.searchableFields[fieldName];
                 suggestions.push({
-                    fieldName, fieldLabel: field?.string || fieldName, fieldType: field?.type || "",
-                    displayName: label, rawValue,
+                    fieldName,
+                    fieldLabel: field?.string || fieldName,
+                    fieldType: field?.type || "",
+                    displayName: label,
+                    rawValue,
                 });
             }
-            if (messageId !== null && messageId !== undefined) {
-                const id = Number(messageId);
-                if (Number.isFinite(id)) {
-                    if (!fieldValueMessageIds.has(key)) fieldValueMessageIds.set(key, new Set());
-                    fieldValueMessageIds.get(key).add(id);
+
+            const id = Number(messageId);
+            if (messageId !== null && Number.isFinite(id)) {
+                if (!messageIds.has(key)) {
+                    messageIds.set(key, new Set());
                 }
+                messageIds.get(key).add(id);
             }
         };
+
+        return { add, suggestions, messageIds };
+    },
+
+    async extractAllSuggestions() {
+        const { add, suggestions, messageIds } = this._createSuggestionCollector();
         const messages = this.threadMessages;
+
         this._addMessageFieldSuggestions(messages, add);
         await this._addRecordFieldSuggestions(add);
         await this._addTrackingValueSuggestions(messages, add);
         this._addMatchedSelectionLabels(messages, add);
+
         this.suggestions = suggestions;
-        this.fieldValueMessageIds = fieldValueMessageIds;
+        this.fieldValueMessageIds = messageIds;
     },
+
     _addMessageFieldSuggestions(messages, add) {
-        const messageTypeLabels = new Map(this.messageTypeOptions.map((t) => [t.value, t.label]));
-        for (const msg of messages) {
-            const msgId = msg.id;
-            if (msg.author?.id && msg.author?.name) add("author_id", msg.author.name, msg.author.id, msgId);
-            if (msg.email_from && typeof msg.email_from === "string") add("email_from", msg.email_from, msg.email_from, msgId);
-            if (msg.subtype_id?.id && msg.subtype_id?.name) add("subtype_id", msg.subtype_id.name, msg.subtype_id.id, msgId);
-            if (msg.message_type) add("message_type", messageTypeLabels.get(msg.message_type) || msg.message_type, msg.message_type, msgId);
-            if (msg.subject) {
-                const text = this.getMessageText(msg.subject);
-                if (text) add("subject", text, text, msgId);
+        for (const message of messages) {
+            for (const [fieldName, property] of Object.entries(MESSAGE_SUGGESTION_FIELDS)) {
+                this._addFieldSuggestion(
+                    this.searchableFields[fieldName],
+                    message[property],
+                    add,
+                    message.id
+                );
             }
         }
     },
+
     async _addRecordFieldSuggestions(add) {
-        if (!this.resModel || !this.resId) return;
-        const recordFieldNames = Object.entries(this.searchableFields)
-            .filter(([, field]) => field.source === "record")
-            .map(([name]) => name);
-        let record = null;
-        try {
-            [record] = await this.orm.read(this.resModel, [this.resId], recordFieldNames);
-        } catch { /* empty */ }
-        if (!record) return;
-        this._addScalarRecordFields(record, add);
-        await this._addRelationalRecordFields(record, add);
-    },
-    _addScalarRecordFields(record, add) {
-        for (const [fieldName, field] of Object.entries(this.searchableFields)) {
-            if (field.source !== "record") continue;
-            if (["one2many", "many2many"].includes(field.type)) continue;
-            const value = record[fieldName];
-            if (value === false || value === null || value === undefined || value === "") continue;
-            let displayName = "";
-            let rawValue = value;
-            if (field.type === "many2one") {
-                if (Array.isArray(value) && value[0]) {
-                    displayName = value[1] || "";
-                    rawValue = value[0];
-                } else continue;
-            } else if (field.type === "selection") {
-                const option = (field.selection || []).find(([x]) => String(x) === String(value));
-                displayName = option ? option[1] : String(value);
-            } else if (field.type === "text" || field.type === "html") {
-                const text = this.getMessageText(value);
-                if (!text || text.length > 200) continue;
-                displayName = text;
-            } else {
-                displayName = String(value);
-            }
-            add(fieldName, displayName, rawValue);
+        if (!this.resModel || !this.resId) {
+            return;
         }
-    },
-    async _addRelationalRecordFields(record, add) {
-        for (const [fieldName, field] of Object.entries(this.searchableFields)) {
-            if (field.source !== "record") continue;
-            if (!["one2many", "many2many"].includes(field.type)) continue;
-            if (!field.relation) continue;
-            const relatedIds = record[fieldName];
-            if (!Array.isArray(relatedIds) || !relatedIds.length) continue;
-            try {
-                const relatedFieldDefs = await this.orm.call(field.relation, "fields_get", [[], ["string", "type", "relation", "selection"]]);
-                const many2oneNames = [];
-                const charOrSelectionNames = [];
-                for (const [name, def] of Object.entries(relatedFieldDefs || {})) {
-                    if (["id", "create_uid", "write_uid", "create_date", "write_date", "display_name", "__last_update"].includes(name)) continue;
-                    if (def.type === "many2one") many2oneNames.push(name);
-                    else if (["char", "selection"].includes(def.type)) charOrSelectionNames.push(name);
-                }
-                const namesToRead = [...many2oneNames, ...charOrSelectionNames];
-                if (!namesToRead.length) continue;
-                const relatedRecords = await this.orm.read(field.relation, relatedIds.slice(0, 200), namesToRead);
-                for (const relatedRecord of relatedRecords) {
-                    for (const many2oneName of many2oneNames) {
-                        const value = relatedRecord[many2oneName];
-                        if (Array.isArray(value) && value[0]) add(many2oneName, value[1], value[0]);
-                    }
-                    for (const relFieldName of charOrSelectionNames) {
-                        const value = relatedRecord[relFieldName];
-                        if (!value) continue;
-                        const def = relatedFieldDefs[relFieldName];
-                        let label = String(value);
-                        if (def.type === "selection") {
-                            const option = (def.selection || []).find(([x]) => String(x) === String(value));
-                            label = option ? option[1] : String(value);
-                        }
-                        add(relFieldName, label, value);
-                    }
-                }
-            } catch { /* empty */ }
-        }
-    },
-    async _addTrackingValueSuggestions(messages, add) {
-        const messageIds = messages.map((m) => Number(m.id)).filter((id) => Number.isFinite(id) && id > 0);
-        if (!messageIds.length) return;
-        try {
-            const trackingValues = await this.orm.searchRead(
-                "mail.tracking.value", [["mail_message_id", "in", messageIds]],
-                ["mail_message_id", "field_id", "old_value_char", "new_value_char", "old_value_text", "new_value_text",
-                 "old_value_integer", "new_value_integer", "old_value_float", "new_value_float",
-                 "old_value_datetime", "new_value_datetime"],
-                { limit: 3000 }
-            );
-            const fieldDefById = await this._loadTrackingFieldDefs(trackingValues);
-            for (const tv of trackingValues) {
-                const messageId = Number(this.getMany2OneValue(tv.mail_message_id).id || tv.mail_message_id);
-                const fieldId = Number(this.getMany2OneValue(tv.field_id).id);
-                const fieldDef = fieldDefById.get(fieldId);
-                if (!Number.isFinite(messageId) || !messageId || !fieldDef?.name) continue;
-                const fieldName = fieldDef.name;
-                const field = this.searchableFields[fieldName];
-                if (!field) continue;
-                for (const prefix of ["old", "new"]) {
-                    const raw = this._readTrackingValue(tv, prefix, field.type);
-                    if (raw === undefined || raw === null || raw === false || raw === "") continue;
-                    let displayName = String(raw);
-                    if (field.type === "selection") {
-                        const option = (field.selection || []).find(([value]) => String(value) === String(raw));
-                        displayName = option ? option[1] : String(raw);
-                    }
-                    add(fieldName, displayName, raw, messageId);
-                }
-            }
-        } catch { /* empty */ }
-    },
-    async _loadTrackingFieldDefs(trackingValues) {
-        const fieldIds = [...new Set(trackingValues.map((tv) => this.getMany2OneValue(tv.field_id).id).filter(Boolean).map(Number))];
-        if (!fieldIds.length) return new Map();
-        const fieldDefsById = await this.orm.searchRead(
-            "ir.model.fields", [["id", "in", fieldIds]], ["id", "name", "field_description", "model", "ttype"], { limit: fieldIds.length }
+        const fields = Object.values(this.searchableFields).filter((f) => f.source === "record");
+        const [record] = await this._safely(
+            () =>
+                this.orm.read(
+                    this.resModel,
+                    [this.resId],
+                    fields.map((f) => f.name)
+                ),
+            []
         );
-        return new Map(fieldDefsById.map((f) => [Number(f.id), f]));
+        if (!record) {
+            return;
+        }
+
+        const isX2many = (field) => X2MANY_TYPES.has(field.type);
+        for (const field of fields.filter((f) => !isX2many(f))) {
+            this._addFieldSuggestion(field, record[field.name], add);
+        }
+        for (const field of fields.filter(isX2many)) {
+            await this._addRelatedFieldSuggestions(field, record[field.name], add);
+        }
     },
-    _readTrackingValue(tv, prefix, fieldType) {
-        if (fieldType === "monetary" || fieldType === "float") return tv[`${prefix}_value_float`];
-        if (fieldType === "integer") return tv[`${prefix}_value_integer`];
-        if (fieldType === "date" || fieldType === "datetime") return tv[`${prefix}_value_datetime`];
+
+    _addFieldSuggestion(field, value, add, messageId = null) {
+        if (!field || this._isEmpty(value)) {
+            return;
+        }
+        const formatted = this._formatFieldValue(field, value);
+        if (formatted) {
+            add(field.name, formatted[0], formatted[1], messageId);
+        }
+    },
+
+    _formatFieldValue(field, value) {
+        switch (field.type) {
+            case "many2one": {
+                const { id, name } = this.getMany2OneValue(value);
+                return id ? [name, id] : null;
+            }
+            case "selection":
+                return [this._selectionLabel(field.selection, value), value];
+            case "char":
+                return [this.getMessageText(value), value];
+            case "text":
+            case "html": {
+                const text = this.getMessageText(value);
+                return text && text.length <= LIMITS.recordTextLength ? [text, value] : null;
+            }
+            default:
+                return [String(value), value];
+        }
+    },
+
+    async _addRelatedFieldSuggestions(field, ids, add) {
+        if (!field.relation || !Array.isArray(ids) || !ids.length) {
+            return;
+        }
+        await this._safely(async () => {
+            const defs = await this._loadFieldDefs(field.relation);
+            const usable = Object.entries(defs).filter(
+                ([name]) => !EXCLUDED_RELATED_FIELDS.has(name)
+            );
+            const namesOfType = (...types) =>
+                usable.filter(([, def]) => types.includes(def.type)).map(([name]) => name);
+            const many2oneNames = namesOfType("many2one");
+            const plainNames = namesOfType("char", "selection");
+            if (!many2oneNames.length && !plainNames.length) {
+                return;
+            }
+
+            const records = await this.orm.read(
+                field.relation,
+                ids.slice(0, LIMITS.relatedRecords),
+                [...many2oneNames, ...plainNames]
+            );
+            for (const record of records) {
+                for (const name of many2oneNames) {
+                    const [id, label] = Array.isArray(record[name]) ? record[name] : [];
+                    if (id) {
+                        add(name, label, id);
+                    }
+                }
+                for (const name of plainNames) {
+                    const value = record[name];
+                    if (value) {
+                        const { type, selection } = defs[name];
+                        add(
+                            name,
+                            type === "selection"
+                                ? this._selectionLabel(selection, value)
+                                : String(value),
+                            value
+                        );
+                    }
+                }
+            }
+        });
+    },
+
+    get _trackingReadFields() {
         return [
-            tv[`${prefix}_value_char`], tv[`${prefix}_value_text`],
-            tv[`${prefix}_value_integer`], tv[`${prefix}_value_float`], tv[`${prefix}_value_datetime`],
-        ].find((v) => v !== false && v !== null && v !== undefined && v !== "");
+            "mail_message_id",
+            "field_id",
+            ...TRACKING_PREFIXES.flatMap((prefix) =>
+                TRACKING_COLUMNS.map((column) => `${prefix}_value_${column}`)
+            ),
+        ];
     },
+
+    async _addTrackingValueSuggestions(messages, add) {
+        const messageIds = this._numericIds(messages);
+        if (!messageIds.length) {
+            return;
+        }
+        await this._safely(async () => {
+            const trackingValues = await this.orm.searchRead(
+                TRACKING_MODEL,
+                [["mail_message_id", "in", messageIds]],
+                this._trackingReadFields,
+                { limit: LIMITS.trackingValues }
+            );
+            const fieldDefs = await this._loadTrackingFieldDefs(trackingValues);
+
+            for (const tracking of trackingValues) {
+                const messageId = Number(this.getMany2OneValue(tracking.mail_message_id).id);
+                const definition = fieldDefs.get(
+                    Number(this.getMany2OneValue(tracking.field_id).id)
+                );
+                const field = this.searchableFields[definition?.name];
+                if (!messageId || !field) {
+                    continue;
+                }
+                for (const prefix of TRACKING_PREFIXES) {
+                    const rawValue = this._readTrackingValue(tracking, prefix, field.type);
+                    if (this._isEmpty(rawValue)) {
+                        continue;
+                    }
+                    add(
+                        field.name,
+                        field.type === "selection"
+                            ? this._selectionLabel(field.selection, rawValue)
+                            : String(rawValue),
+                        rawValue,
+                        messageId
+                    );
+                }
+            }
+        });
+    },
+
+    async _loadTrackingFieldDefs(trackingValues) {
+        const fieldIds = [
+            ...new Set(
+                trackingValues
+                    .map((tracking) => this.getMany2OneValue(tracking.field_id).id)
+                    .filter(Boolean)
+                    .map(Number)
+            ),
+        ];
+        if (!fieldIds.length) {
+            return new Map();
+        }
+        const definitions = await this.orm.searchRead(
+            "ir.model.fields",
+            [["id", "in", fieldIds]],
+            ["id", "name"],
+            { limit: fieldIds.length }
+        );
+        return new Map(definitions.map((definition) => [Number(definition.id), definition]));
+    },
+
+    _readTrackingValue(tracking, prefix, fieldType) {
+        return (TRACKING_COLUMNS_BY_TYPE[fieldType] || TRACKING_COLUMNS)
+            .map((column) => tracking[`${prefix}_value_${column}`])
+            .find((value) => !this._isEmpty(value));
+    },
+
     _addMatchedSelectionLabels(messages, add) {
-        const allMessagesText = messages
-            .map((m) => `${this.getMessageText(m.subject)} ${this.getMessageText(m.body)}`)
-            .join(" ").toLowerCase();
+        const allText = messages.map((message) => this._getMessageSearchText(message)).join(" ");
+
         for (const [fieldName, field] of Object.entries(this.searchableFields)) {
-            if (field.type !== "selection") continue;
-            if (!field.selection || !Array.isArray(field.selection)) continue;
+            if (field.type !== "selection" || !Array.isArray(field.selection)) {
+                continue;
+            }
             for (const [value, label] of field.selection) {
-                if (!label || typeof label !== "string") continue;
-                if (String(label).toLowerCase() === String(value).toLowerCase()) continue;
-                if (!allMessagesText.includes(label.toLowerCase())) continue;
-                add(fieldName, label, value);
+                const isUsefulLabel =
+                    typeof label === "string" &&
+                    label &&
+                    label.toLowerCase() !== String(value).toLowerCase();
+                if (isUsefulLabel && allText.includes(label.toLowerCase())) {
+                    add(fieldName, label, value);
+                }
             }
         }
     },
-    _currentSignature() {
-        return `${this.resId}|${this.threadMessages.length}`;
-    },
-    async _ensureExtracted() {
-        const signature = this._currentSignature();
-        if (this._extractedSignature === signature && this.suggestions.length) return;
-        await this.extractAllSuggestions();
-        this._extractedSignature = signature;
-    },
+
     onFiltersChanged(callback) {
         this._filterChangeListeners.add(callback);
         return () => this._filterChangeListeners.delete(callback);
     },
+
     notifyFiltersChanged(shouldAttemptClose = true) {
-        for (const listener of this._filterChangeListeners) listener(shouldAttemptClose);
+        for (const listener of this._filterChangeListeners) {
+            listener(shouldAttemptClose);
+        }
     },
+
     notifyDateFilterChanged() {
-        const f = this.advancedFilterState.filters;
-        this.notifyFiltersChanged(!!(f.dateFrom && f.dateTo));
+        const { dateFrom, dateTo } = this.advancedFilterState.filters;
+        this.notifyFiltersChanged(Boolean(dateFrom && dateTo));
     },
+
     onMessageFilterChanged() {
-        const f = this.advancedFilterState.filters;
-        f.activityTypeId = "";
-        f.activityUserId = "";
-        f.activityState = "";
+        this._resetFilters(this.advancedFilterState.filters, "activity");
         this.notifyFiltersChanged();
     },
+
     onActivityFilterChanged() {
-        const f = this.advancedFilterState.filters;
-        f.keyword = "";
-        f.activeKeyword = "";
-        f.activeKeywordMode = "";
-        f.userId = "";
-        f.messageType = "";
-        f.subtypeId = "";
-        this.clearFieldSelection(f);
+        this._resetFilters(this.advancedFilterState.filters, "keyword", "message", "field");
         this.notifyFiltersChanged();
     },
+
     get threadMessages() {
         return this.state.thread?.messages || [];
     },
-    get conversationAuthors() {
-        const seen = new Set();
-        const authors = [];
-        for (const m of this.threadMessages) {
-            if (!m.author?.id || seen.has(m.author.id)) continue;
-            seen.add(m.author.id);
-            authors.push({ id: m.author.id, name: m.author.name || "" });
-        }
-        return authors.sort((a, b) => a.name.localeCompare(b.name));
-    },
-    get conversationMessageTypes() {
-        const seen = new Set();
-        for (const m of this.threadMessages) if (m.message_type) seen.add(m.message_type);
-        return this.messageTypeOptions.filter((t) => seen.has(t.value));
-    },
-    get conversationSubtypes() {
-        const seen = new Set();
-        for (const m of this.threadMessages) {
-            const id = m.subtype_id?.id ?? m.subtype_id;
-            if (id) seen.add(Number(id));
-        }
-        return this.advancedFilterState.subtypes.filter((s) => seen.has(Number(s.id)));
-    },
+
     get conversationActivities() {
         return this.state.thread?.activities || [];
     },
-    get activities() {
-        if (this.isMessageFilterActive) return [];
-        const list = this.state.thread?.activities || [];
-        const f = this.advancedFilterState.filters;
-        if (!f.activityTypeId && !f.activityUserId && !f.activityState && !f.dateFrom && !f.dateTo) return list;
-        return list.filter((a) => {
-            const typeId = this.getMany2OneValue(a.activity_type_id).id;
-            const userId = this.getMany2OneValue(a.user_id).id;
-            const date = a.date_deadline || "";
-            if (f.dateFrom && (!date || date < f.dateFrom)) return false;
-            if (f.dateTo && (!date || date > f.dateTo)) return false;
-            if (f.activityTypeId && Number(typeId) !== Number(f.activityTypeId)) return false;
-            if (f.activityUserId && Number(userId) !== Number(f.activityUserId)) return false;
-            if (f.activityState && a.state !== f.activityState) return false;
-            return true;
-        });
+
+    get conversationAuthors() {
+        return this._uniqueMany2OneList(this.threadMessages, "author");
     },
-    get isActivityFilterActive() {
-        const f = this.advancedFilterState.filters;
-        return !!(f.activityTypeId || f.activityUserId || f.activityState);
-    },
-    get isMessageFilterActive() {
-        const f = this.advancedFilterState.filters;
-        return !!(f.activeKeyword || f.userId || f.messageType || f.subtypeId || f.fieldValueLabel);
-    },
-    get activeAdvancedFilterCount() {
-        const f = this.advancedFilterState.filters;
-        return [
-            f.dateFrom, f.dateTo, f.userId, f.messageType, f.subtypeId,
-            f.activityTypeId, f.activityUserId, f.activityState,
-            f.fieldValueLabel, f.activeKeywordMode === "message" && f.activeKeyword,
-        ].filter(Boolean).length;
-    },
-    getMany2OneValue(value) {
-        if (Array.isArray(value)) return { id: value[0] || null, name: value[1] || "" };
-        if (value && typeof value === "object") return { id: value.id || value.res_id || null, name: value.display_name || value.name || "" };
-        return { id: value || null, name: "" };
-    },
+
     get conversationActivityTypes() {
         return this._uniqueMany2OneList(this.conversationActivities, "activity_type_id");
     },
+
     get conversationActivityUsers() {
         return this._uniqueMany2OneList(this.conversationActivities, "user_id");
     },
-    _uniqueMany2OneList(records, fieldName) {
-        const seen = new Set();
-        const items = [];
-        for (const record of records) {
-            const v = this.getMany2OneValue(record[fieldName]);
-            if (!v.id || seen.has(Number(v.id))) continue;
-            seen.add(Number(v.id));
-            items.push({ id: Number(v.id), name: v.name || "" });
-        }
-        return items.sort((a, b) => a.name.localeCompare(b.name));
+
+    get conversationMessageTypes() {
+        return this._filterUsedOptions(
+            this.messageTypeOptions,
+            this.threadMessages.map((message) => message.message_type)
+        );
     },
+
+    get conversationSubtypes() {
+        return this._filterUsedOptions(
+            this.advancedFilterState.subtypes,
+            this.threadMessages.map((message) =>
+                Number(this.getMany2OneValue(message.subtype_id).id)
+            ),
+            "id"
+        );
+    },
+
     get conversationActivityStates() {
-        const seen = new Set(this.conversationActivities.map((a) => a.state).filter(Boolean));
-        return (this.activityStateOptions || []).filter((s) => seen.has(s.value));
+        return this._filterUsedOptions(
+            this.activityStateOptions,
+            this.conversationActivities.map((activity) => activity.state)
+        );
     },
+
+    _filterUsedOptions(options, usedValues, key = "value") {
+        const used = new Set(usedValues);
+        return options.filter((option) => used.has(option[key]));
+    },
+
+    _uniqueMany2OneList(records, property) {
+        const items = new Map();
+        for (const record of records) {
+            const { id, name } = this.getMany2OneValue(record[property]);
+            if (id && !items.has(Number(id))) {
+                items.set(Number(id), { id: Number(id), name });
+            }
+        }
+        return [...items.values()].sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    get isActivityFilterActive() {
+        return this._hasActiveFilter(this._filterKeys("activity"));
+    },
+
+    get isMessageFilterActive() {
+        return this._hasActiveFilter(this._messageResultKeys);
+    },
+
+    get activeAdvancedFilterCount() {
+        const filters = this.advancedFilterState.filters;
+        const keys = [...this._filterKeys("date", "message", "activity"), "fieldValueLabel"];
+        const hasMessageKeyword =
+            filters.activeKeywordMode === KEYWORD_MODE.MESSAGE && filters.activeKeyword;
+        return keys.filter((key) => filters[key]).length + Number(Boolean(hasMessageKeyword));
+    },
+
+    get activities() {
+        if (this.isMessageFilterActive) {
+            return [];
+        }
+        const activities = this.conversationActivities;
+        if (!this._hasActiveFilter(this._filterKeys("date", "activity"))) {
+            return activities;
+        }
+        return activities.filter(
+            (activity) =>
+                this._isInDateRange(activity.date_deadline || "") &&
+                this._matchesRecordFilters(activity, "activity")
+        );
+    },
+
+    get filteredMessages() {
+        const filters = this.advancedFilterState.filters;
+        if (this.isActivityFilterActive) {
+            return [];
+        }
+        if (!this._hasActiveFilter([...this._messageResultKeys, ...this._filterKeys("date")])) {
+            return this.threadMessages;
+        }
+        const predicates = [
+            this._keywordPredicate(filters),
+            this._fieldValuePredicate(filters),
+            (message) =>
+                this._isInDateRange(this.getMessageDate(message)) &&
+                this._matchesRecordFilters(message, "message"),
+        ].filter(Boolean);
+        return this.threadMessages.filter((message) => predicates.every((test) => test(message)));
+    },
+
+    _keywordPredicate(filters) {
+        const keyword = (filters.activeKeyword || "").trim().toLowerCase();
+        if (!keyword || filters.activeKeywordMode !== KEYWORD_MODE.MESSAGE) {
+            return null;
+        }
+        return (message) => this._getMessageSearchText(message).includes(keyword);
+    },
+
+    _fieldValuePredicate(filters) {
+        const { activeKeywordMode, fieldName, fieldValueLabel } = filters;
+        if (activeKeywordMode !== KEYWORD_MODE.FIELD || !fieldName || !fieldValueLabel) {
+            return null;
+        }
+        const value = fieldValueLabel.trim().toLowerCase();
+        const messageIds = this.fieldValueMessageIds.get(this._suggestionKey(fieldName, value));
+        if (messageIds?.size) {
+            return (message) => messageIds.has(Number(message.id));
+        }
+        return (message) => this._getMessageSearchText(message).includes(value);
+    },
+
     get currentSearchKeyword() {
         return this.searchMessageInput?.state?.searchTerm || "";
     },
+
     get searchSuggestionGroups() {
-        const keyword = this.currentSearchKeyword.trim();
-        if (!keyword) return [];
-        const term = keyword.toLowerCase();
-        const wordBoundaryRegex = this._buildWordBoundaryRegex(term);
-        const groups = [{ key: "message", label: "Message", items: [], expandable: false }];
-        const itemsByField = new Map();
-        for (const suggestion of this.suggestions) {
-            if (!itemsByField.has(suggestion.fieldName)) itemsByField.set(suggestion.fieldName, []);
-            itemsByField.get(suggestion.fieldName).push(suggestion);
+        const term = this.currentSearchKeyword.trim().toLowerCase();
+        if (!term) {
+            return [];
         }
-        const fieldGroups = [];
-        for (const [fieldName, items] of itemsByField) {
-            const group = this._buildFieldSuggestionGroup(fieldName, items, term, wordBoundaryRegex);
-            if (group) fieldGroups.push(group);
-        }
-        fieldGroups.sort((a, b) => (a._fieldMatched ? 1 : 0) - (b._fieldMatched ? 1 : 0));
-        groups.push(...fieldGroups);
-        return groups;
+        const regex = new RegExp(`(^|[\\s\\W_])${escapeRegExp(term)}([\\s\\W_]|$)`, "i");
+
+        const fieldGroups = Object.entries(groupBy(this.suggestions, "fieldName"))
+            .map(([fieldName, items]) =>
+                this._buildFieldSuggestionGroup(fieldName, items, term, regex)
+            )
+            .filter(Boolean)
+            .sort((a, b) => Number(a._fieldMatched) - Number(b._fieldMatched));
+
+        return [
+            { key: MESSAGE_GROUP_KEY, label: "Message", items: [], expandable: false },
+            ...fieldGroups,
+        ];
     },
-    _buildWordBoundaryRegex(term) {
-        const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return new RegExp(`(^|[\\s\\W_])${escapeRegex(term)}([\\s\\W_]|$)`, "i");
-    },
-    _buildFieldSuggestionGroup(fieldName, items, term, wordBoundaryRegex) {
+
+    _buildFieldSuggestionGroup(fieldName, items, term, regex) {
         const field = this.searchableFields[fieldName];
-        const fieldLabel = (field?.string || fieldName).toLowerCase();
-        const fieldNameLower = fieldName.toLowerCase();
-        const fieldMatches = fieldLabel === term || fieldNameLower === term;
-        const valueMatches = items.filter((v) => wordBoundaryRegex.test(v.displayName.toLowerCase()) || v.displayName.toLowerCase() === term);
-        if (fieldMatches) {
-            const sorted = [...items].sort((a, b) => a.displayName.localeCompare(b.displayName));
-            return {
-                key: `field:${fieldName}`, label: field?.string || fieldName, fieldName, fieldType: field?.type || "",
-                items: sorted.slice(0, 25), expandable: sorted.length > 1, _fieldMatched: true,
-            };
-        }
-        if (valueMatches.length) {
-            valueMatches.sort((a, b) => {
-                const rank = (label) => (label === term ? 0 : label.startsWith(term) ? 1 : 2);
-                return rank(a.displayName.toLowerCase()) - rank(b.displayName.toLowerCase());
+        const label = field?.string || fieldName;
+        const isFieldMatch = [label, fieldName].some((name) => name.toLowerCase() === term);
+
+        let matches;
+        let limit;
+        if (isFieldMatch) {
+            matches = [...items].sort((a, b) => a.displayName.localeCompare(b.displayName));
+            limit = LIMITS.fieldMatchItems;
+        } else {
+            matches = items.filter((item) => {
+                const text = item.displayName.toLowerCase();
+                return regex.test(text) || text === term;
             });
-            return {
-                key: `field:${fieldName}`, label: field?.string || fieldName, fieldName, fieldType: field?.type || "",
-                items: valueMatches.slice(0, 15), expandable: valueMatches.length > 1, _fieldMatched: false,
+            if (!matches.length) {
+                return null;
+            }
+            const rank = (item) => {
+                const text = item.displayName.toLowerCase();
+                return text === term ? 0 : text.startsWith(term) ? 1 : 2;
             };
+            matches.sort((a, b) => rank(a) - rank(b));
+            limit = LIMITS.valueMatchItems;
         }
-        return null;
+
+        return {
+            key: `${FIELD_GROUP_PREFIX}${fieldName}`,
+            label,
+            fieldName,
+            fieldType: field?.type || "",
+            items: matches.slice(0, limit),
+            expandable: matches.length > 1,
+            _fieldMatched: isFieldMatch,
+        };
     },
+
     clearKeywordSearch() {
         Object.assign(this.advancedFilterState.filters, this.createEmptyFilters());
-        this.advancedFilterState.showSuggestions = false;
-        this.advancedFilterState.expandedSuggestionGroup = null;
-        this.notifyFiltersChanged();
+        this._closeSuggestionsAndNotify();
     },
+
     clearAdvancedFilters() {
         this.clearKeywordSearch();
     },
+
     toggleSuggestionGroup(key) {
-        this.advancedFilterState.expandedSuggestionGroup = this.advancedFilterState.expandedSuggestionGroup === key ? null : key;
+        const state = this.advancedFilterState;
+        state.expandedSuggestionGroup = state.expandedSuggestionGroup === key ? null : key;
     },
+
     selectSearchSuggestion(group, item = null) {
-        if (group.key.startsWith("field:")) {
-            if (item) this.selectFieldSuggestion(group.fieldName, item, group.label);
+        if (group.key.startsWith(FIELD_GROUP_PREFIX)) {
+            if (item) {
+                this.selectFieldSuggestion(group.fieldName, item, group.label);
+            }
+        } else if (group.key === MESSAGE_GROUP_KEY) {
+            this.selectMessageSuggestion();
+        }
+    },
+
+    selectFieldSuggestion(fieldName, item, fieldLabel) {
+        const filters = this.advancedFilterState.filters;
+        Object.assign(filters, {
+            keyword: item.displayName,
+            activeKeyword: item.displayName,
+            activeKeywordMode: KEYWORD_MODE.FIELD,
+            fieldName,
+            fieldLabel,
+            fieldValue: item.rawValue,
+            fieldValueLabel: item.displayName,
+        });
+        this._resetFilters(filters, "message", "activity");
+        this._closeSuggestionsAndNotify();
+    },
+
+    selectMessageSuggestion() {
+        const filters = this.advancedFilterState.filters;
+        const keyword = filters.keyword.trim();
+        if (!keyword) {
             return;
         }
-        if (group.key === "message") this.selectMessageSuggestion();
-    },
-    selectFieldSuggestion(fieldName, item, fieldLabel) {
-        const f = this.advancedFilterState.filters;
-        f.keyword = item.displayName;
-        f.activeKeyword = item.displayName;
-        f.activeKeywordMode = "field";
-        f.fieldName = fieldName;
-        f.fieldLabel = fieldLabel;
-        f.fieldValue = item.rawValue;
-        f.fieldValueLabel = item.displayName;
-        f.userId = "";
-        f.messageType = "";
-        f.subtypeId = "";
-        f.activityTypeId = "";
-        f.activityUserId = "";
-        f.activityState = "";
+        filters.activeKeyword = keyword;
+        filters.activeKeywordMode = KEYWORD_MODE.MESSAGE;
+        this.clearFieldSelection(filters);
         this._closeSuggestionsAndNotify();
     },
-    selectMessageSuggestion() {
-        const f = this.advancedFilterState.filters;
-        const keyword = f.keyword.trim();
-        if (!keyword) return;
-        f.activeKeyword = keyword;
-        f.activeKeywordMode = "message";
-        this.clearFieldSelection(f);
-        this._closeSuggestionsAndNotify();
-    },
+
     _closeSuggestionsAndNotify() {
         this.advancedFilterState.showSuggestions = false;
         this.advancedFilterState.expandedSuggestionGroup = null;
         this.notifyFiltersChanged();
     },
-    get filteredMessages() {
-        const messages = this.threadMessages;
-        const f = this.advancedFilterState.filters;
-        if (this.isActivityFilterActive) return [];
-        const hasAnyFilter = !!(f.activeKeyword || f.dateFrom || f.dateTo || f.userId || f.messageType || f.subtypeId || f.fieldValueLabel);
-        if (!hasAnyFilter) return messages;
-        let result = this._applyKeywordFilter(messages, f);
-        result = this._applyFieldValueFilter(result, f);
-        return this._applyStructuredFilters(result, f);
+
+    _getMessageSearchText(message) {
+        return [message.subject, message.body]
+            .map((value) => this.getMessageText(value))
+            .join(" ")
+            .toLowerCase();
     },
-    _applyKeywordFilter(messages, f) {
-        const activeKeyword = (f.activeKeyword || "").trim().toLowerCase();
-        if (activeKeyword && f.activeKeywordMode === "message") return messages.filter((m) => this._getMessageSearchText(m).includes(activeKeyword));
-        return messages;
-    },
-    _applyFieldValueFilter(messages, f) {
-        if (f.activeKeywordMode !== "field" || !f.fieldName || !f.fieldValueLabel) return messages;
-        const needle = f.fieldValueLabel.trim().toLowerCase();
-        const key = `${f.fieldName}|${needle}`;
-        const messageIds = this.fieldValueMessageIds.get(key);
-        if (messageIds && messageIds.size) return messages.filter((m) => messageIds.has(Number(m.id)));
-        return messages.filter((m) => this._getMessageSearchText(m).includes(needle));
-    },
-    _applyStructuredFilters(messages, f) {
-        return messages.filter((m) => {
-            const date = this.getMessageDate(m);
-            if (f.dateFrom && (!date || date < f.dateFrom)) return false;
-            if (f.dateTo && (!date || date > f.dateTo)) return false;
-            if (f.userId) {
-                const authorId = m.author?.id;
-                if (!authorId || Number(authorId) !== Number(f.userId)) return false;
-            }
-            if (f.messageType && m.message_type !== f.messageType) return false;
-            if (f.subtypeId) {
-                const subtypeId = m.subtype_id?.id || m.subtype_id;
-                if (Number(subtypeId) !== Number(f.subtypeId)) return false;
-            }
-            return true;
-        });
-    },
-    _getMessageSearchText(m) {
-        return `${this.getMessageText(m.subject)} ${this.getMessageText(m.body)}`.toLowerCase();
-    },
-    getMessageDate(m) {
-        if (!m?.date) return null;
+
+    getMessageDate(message) {
+        const date = message?.date;
+        if (!date) {
+            return null;
+        }
         try {
-            if (typeof m.date.toISODate === "function") return m.date.toISODate();
-            if (typeof m.date === "string") return m.date.substring(0, 10);
+            if (typeof date.toISODate === "function") {
+                return date.toISODate();
+            }
+            return typeof date === "string" ? date.substring(0, 10) : null;
         } catch {
             return null;
         }
-        return null;
     },
+
     getMessageText(value) {
-        if (!value) return "";
-        if (typeof value === "string") {
-            const container = document.createElement("div");
-            container.innerHTML = value;
-            return (container.textContent || container.innerText || "").replace(/<[^>]*>/g, " ").trim();
-        }
-        return String(value).replace(/<[^>]*>/g, " ").trim();
+        return value ? htmlToTextContentInline(String(value)).trim() : "";
     },
+
     async exportAdvancedResults() {
         const messages = this.filteredMessages || [];
         const activities = this.activities || [];
-        if (!messages.length && !activities.length) return;
-        const { messageAuditById, activityAuditById } = await this._fetchAuditData(messages, activities);
-        const rows = this._buildExportRows(messages, activities, messageAuditById, activityAuditById);
-        this._downloadCsv(rows, "advanced_chatter_results.csv");
-    },
-    async _fetchAuditData(messages, activities) {
-        const messageIds = messages.map((m) => Number(m.id)).filter((id) => Number.isFinite(id) && id > 0);
-        const activityIds = activities.map((a) => Number(a.id)).filter((id) => Number.isFinite(id) && id > 0);
-        let messageAudit = [];
-        let activityAudit = [];
-        try {
-            [messageAudit, activityAudit] = await Promise.all([
-                messageIds.length ? this.orm.searchRead("mail.message", [["id", "in", messageIds]], AUDIT_META_FIELDS, { limit: messageIds.length }) : [],
-                activityIds.length ? this.orm.searchRead("mail.activity", [["id", "in", activityIds]], AUDIT_META_FIELDS, { limit: activityIds.length }) : [],
-            ]);
-        } catch {
-            messageAudit = [];
-            activityAudit = [];
+        if (!messages.length && !activities.length) {
+            return;
         }
+
+        const [messageAudit, activityAudit] = await this._fetchAuditData(messages, activities);
+        const records = [
+            ...messages.map((m) => this._messageExportRecord(m, messageAudit.get(Number(m.id)))),
+            ...activities.map((a) => this._activityExportRecord(a, activityAudit.get(Number(a.id)))),
+        ];
+        const rows = [
+            EXPORT_COLUMNS.map(([header]) => header),
+            ...records.map((record) => EXPORT_COLUMNS.map(([, key]) => record[key])),
+        ];
+        this._downloadCsv(rows, EXPORT_FILENAME);
+    },
+
+    async _fetchAuditData(messages, activities) {
+        return this._safely(
+            () =>
+                Promise.all([
+                    this._fetchAuditById("mail.message", messages),
+                    this._fetchAuditById("mail.activity", activities),
+                ]),
+            [new Map(), new Map()]
+        );
+    },
+
+    async _fetchAuditById(model, records) {
+        const ids = this._numericIds(records);
+        if (!ids.length) {
+            return new Map();
+        }
+        const audits = await this.orm.searchRead(model, [["id", "in", ids]], AUDIT_FIELDS, {
+            limit: ids.length,
+        });
+        return new Map(audits.map((audit) => [Number(audit.id), audit]));
+    },
+
+    _auditInfo(audit = {}) {
         return {
-            messageAuditById: new Map((messageAudit || []).map((r) => [Number(r.id), r])),
-            activityAuditById: new Map((activityAudit || []).map((r) => [Number(r.id), r])),
+            createDate: audit.create_date || "",
+            createdBy: this._relationName(audit.create_uid),
+            updatedDate: audit.write_date || "",
+            updatedBy: this._relationName(audit.write_uid),
         };
     },
-    _buildExportRows(messages, activities, messageAuditById, activityAuditById) {
-        const auditName = (value) => this.getMany2OneValue(value).name || "";
-        const rows = [[
-            "ID", "Create Date", "Created By", "Last Updated Date", "Last Updated By",
-            "Date", "User / Author", "Message Type", "Subject / Summary", "Message / Note", "Result Type",
-        ]];
-        for (const m of messages) {
-            const audit = messageAuditById.get(Number(m.id)) || {};
-            rows.push([
-                m.id || "", audit.create_date || "", auditName(audit.create_uid),
-                audit.write_date || "", auditName(audit.write_uid), this.getMessageDate(m) || "",
-                m.author?.name || "",
-                this.messageTypeOptions.find((t) => t.value === m.message_type)?.label || m.message_type || "",
-                this.getMessageText(m.subject), this.getMessageText(m.body), "Message",
-            ]);
-        }
-        for (const a of activities) {
-            const audit = activityAuditById.get(Number(a.id)) || {};
-            rows.push([
-                a.id || "", audit.create_date || "", auditName(audit.create_uid),
-                audit.write_date || "", auditName(audit.write_uid), a.date_deadline || "",
-                auditName(a.user_id), auditName(a.activity_type_id), a.summary || "",
-                this.getMessageText(a.note), "Activity",
-            ]);
-        }
-        return rows;
+
+    _messageExportRecord(message, audit) {
+        const typeOption = this.messageTypeOptions.find((t) => t.value === message.message_type);
+        return {
+            id: message.id || "",
+            ...this._auditInfo(audit),
+            date: this.getMessageDate(message) || "",
+            user: message.author?.name || "",
+            type: typeOption?.label || message.message_type || "",
+            subject: this.getMessageText(message.subject),
+            note: this.getMessageText(message.body),
+            resultType: "Message",
+        };
     },
+
+    _activityExportRecord(activity, audit) {
+        return {
+            id: activity.id || "",
+            ...this._auditInfo(audit),
+            date: activity.date_deadline || "",
+            user: this._relationName(activity.user_id),
+            type: this._relationName(activity.activity_type_id),
+            subject: activity.summary || "",
+            note: this.getMessageText(activity.note),
+            resultType: "Activity",
+        };
+    },
+
     _downloadCsv(rows, filename) {
-        const csv = rows.map((row) => row.map((value) => {
-            const normalized = String(value ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n/g, " ");
-            return `"${normalized.replace(/"/g, '""')}"`;
-        }).join(",")).join("\r\n");
-        const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
+        const quote = (value) =>
+            `"${String(value ?? "")
+                .replace(/\r\n|\r|\n/g, " ")
+                .replace(/"/g, '""')}"`;
+        const csv = rows.map((row) => row.map(quote).join(",")).join("\r\n");
+
+        const url = URL.createObjectURL(
+            new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" })
+        );
         const link = document.createElement("a");
         link.href = url;
         link.download = filename;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        link.remove();
         URL.revokeObjectURL(url);
     },
 });

@@ -13,10 +13,7 @@ patch(FormCompiler.prototype, {
             (compiler) => compiler.selector === "chatter"
         );
 
-        if (
-            !chatterCompiler ||
-            chatterCompiler._advancedChatterPatched
-        ) {
+        if (!chatterCompiler || chatterCompiler._advancedChatterPatched) {
             return;
         }
 
@@ -25,50 +22,43 @@ patch(FormCompiler.prototype, {
         chatterCompiler.fn = function (node, params) {
             const result = originalFn.call(this, node, params);
 
-            if (
-                !result ||
-                typeof node?.getAttribute !== "function"
-            ) {
+            if (!result || !node?.getAttribute) {
                 return result;
             }
 
-            const chatterComponentNode = Array.from(
+            const chatter = Array.from(
                 result.querySelectorAll("t[t-component]")
-            ).find(
-                (element) =>
-                    (element.getAttribute("t-component") || "")
-                        .includes("Chatter")
+            ).find((element) =>
+                element.getAttribute("t-component")?.includes("Chatter")
             );
 
-            if (!chatterComponentNode) {
-                console.warn(
-                    "[AdvancedChatter] Chatter node not found"
-                );
+            if (!chatter) {
                 return result;
             }
 
-            let options = {};
             const optionsAttr = node.getAttribute("options");
 
-            if (optionsAttr) {
-                try {
-                    options = evaluateExpr(optionsAttr) || {};
-                } catch (error) {
-                    console.error(
-                        "[AdvancedChatter] Failed to evaluate options:",
-                        error
-                    );
-                }
+            if (!optionsAttr) {
+                return result;
+            }
+
+            let options;
+
+            try {
+                options = evaluateExpr(optionsAttr) || {};
+            } catch (error) {
+                console.error("[AdvancedChatter] Invalid chatter options:", error);
+                return result;
             }
 
             if ("advance_search" in options) {
-                setAttributes(chatterComponentNode, {
+                setAttributes(chatter, {
                     advancesearch: !!options.advance_search,
                 });
             }
 
             if ("advance_filter" in options) {
-                setAttributes(chatterComponentNode, {
+                setAttributes(chatter, {
                     advancefilter: !!options.advance_filter,
                 });
             }
