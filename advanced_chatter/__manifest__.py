@@ -43,6 +43,10 @@
         "advanced_chatter/static/src/core/common/search_message_input.js",
         "advanced_chatter/static/src/core/common/search_message_input.scss",
 
+        "advanced_chatter/static/src/core/common/search_message_result.js",
+        "advanced_chatter/static/src/core/common/search_message_result.xml",
+
+
         "advanced_chatter/static/src/views/form/form_compiler.js",
 
         "advanced_chatter/static/src/core/common/thread.xml",

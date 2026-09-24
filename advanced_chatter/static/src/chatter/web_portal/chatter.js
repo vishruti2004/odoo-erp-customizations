@@ -19,6 +19,38 @@ const LIMITS = {
     valueMatchItems: 15,
 };
 
+const MONTH_NAMES = {
+    jan: "01",
+    feb: "02",
+    mar: "03",
+    apr: "04",
+    may: "05",
+    jun: "06",
+    jul: "07",
+    aug: "08",
+    sep: "09",
+    oct: "10",
+    nov: "11",
+    dec: "12",
+};
+
+const DATE_PATTERNS = [
+    { source: "(\\d{4})-(\\d{2})-(\\d{2})", order: ["year", "month", "day"] },
+    { source: "(\\d{1,2})/(\\d{1,2})/(\\d{4})", order: ["first", "second", "year"] },
+    { source: "(\\d{1,2})-(\\d{1,2})-(\\d{4})", order: ["first", "second", "year"] },
+    { source: "(\\d{4})/(\\d{1,2})/(\\d{1,2})", order: ["year", "month", "day"] },
+    {
+        source: "(\\d{1,2})\\s+({month})[a-z]*\\.?\\s+(\\d{4})",
+        flags: "gi",
+        order: ["day", "monthName", "year"],
+    },
+    {
+        source: "({month})[a-z]*\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})",
+        flags: "gi",
+        order: ["monthName", "day", "year"],
+    },
+];
+
 const FIELD_ATTRIBUTES = ["string", "type", "relation", "selection", "searchable"];
 const AUDIT_FIELDS = ["id", "create_date", "create_uid", "write_date", "write_uid"];
 const SYSTEM_FIELDS = [...AUDIT_FIELDS, "__last_update", "display_name"];
@@ -40,6 +72,8 @@ const SEARCHABLE_FIELD_TYPES = new Set([
     "many2many",
 ]);
 const X2MANY_TYPES = new Set(["one2many", "many2many"]);
+const DATE_TYPES = new Set(["date", "datetime"]);
+const NUMERIC_TYPES = new Set(["monetary", "float", "integer"]);
 
 const SELECTION_SOURCES = {
     messageTypeOptions: { model: "mail.message", field: "message_type" },
@@ -69,6 +103,7 @@ const MESSAGE_SUGGESTION_FIELDS = {
     message_type: "message_type",
     subject: "subject",
 };
+const HTML_MESSAGE_FIELDS = new Set(["subject"]);
 
 const RECORD_FILTERS = {
     message: { userId: "author", messageType: "message_type", subtypeId: "subtype_id" },
@@ -130,11 +165,16 @@ patch(Chatter.prototype, {
         this._filterChangeListeners = new Set();
         this._fieldDefCache = new Map();
         this._extractedSignature = null;
+        this._dateRegexes = DATE_PATTERNS.map(({ source, flags = "g", order }) => ({
+            regex: new RegExp(source.replace("{month}", Object.keys(MONTH_NAMES).join("|")), flags),
+            order,
+        }));
 
         this.advancedFilterState = useState({
             showSuggestions: false,
             expandedSuggestionGroup: null,
-            filters: this.createEmptyFilters(),
+            isNotification: undefined,
+            filters: this._createEmptyFilters(),
             ...Object.fromEntries(Object.keys(NAME_LIST_SOURCES).map((key) => [key, []])),
         });
 
@@ -148,11 +188,11 @@ patch(Chatter.prototype, {
     },
 
     get resModel() {
-        return this.props.resModel || this.props.record?.resModel || this.props.threadModel;
+        return this.props.threadModel || null;
     },
 
     get resId() {
-        return this.props.resId || this.props.record?.resId || this.props.threadId;
+        return this.props.threadId || null;
     },
 
     async _safely(callback, fallback = null) {
@@ -165,6 +205,10 @@ patch(Chatter.prototype, {
 
     _isEmpty(value) {
         return [false, null, undefined, ""].includes(value);
+    },
+
+    _pad(value) {
+        return String(value).padStart(2, "0");
     },
 
     _numericIds(records) {
@@ -217,7 +261,7 @@ patch(Chatter.prototype, {
         return groups.flatMap((group) => FILTER_GROUPS[group] || Object.keys(RECORD_FILTERS[group]));
     },
 
-    createEmptyFilters() {
+    _createEmptyFilters() {
         return Object.fromEntries(
             this._filterKeys(...Object.keys(FILTER_GROUPS), ...Object.keys(RECORD_FILTERS)).map(
                 (key) => [key, ""]
@@ -225,14 +269,15 @@ patch(Chatter.prototype, {
         );
     },
 
-    _resetFilters(filters, ...groups) {
+    _resetFilters(...groups) {
+        const filters = this.advancedFilterState.filters;
         for (const key of this._filterKeys(...groups)) {
             filters[key] = "";
         }
     },
 
-    clearFieldSelection(filters) {
-        this._resetFilters(filters, "field");
+    clearFieldSelection() {
+        this._resetFilters("field");
     },
 
     _hasActiveFilter(keys) {
@@ -256,6 +301,66 @@ patch(Chatter.prototype, {
     _isInDateRange(date) {
         const { dateFrom, dateTo } = this.advancedFilterState.filters;
         return !(dateFrom && (!date || date < dateFrom)) && !(dateTo && (!date || date > dateTo));
+    },
+
+    _addAmbiguousDate(dates, first, second, year) {
+        const [a, b] = [Number(first), Number(second)];
+        if (a > 12 || b <= 12) {
+            dates.add(`${year}-${this._pad(b)}-${this._pad(a)}`);
+        }
+        if (a <= 12) {
+            dates.add(`${year}-${this._pad(a)}-${this._pad(b)}`);
+        }
+    },
+
+    _parseIsoDate(value) {
+        if (this._isEmpty(value)) {
+            return null;
+        }
+        if (typeof value?.toISODate === "function") {
+            return value.toISODate();
+        }
+        const match = String(value).trim().match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : null;
+    },
+
+    _extractAllIsoDates(text) {
+        const dates = new Set();
+        const value = String(text || "");
+        for (const { regex, order } of this._dateRegexes) {
+            for (const match of value.matchAll(regex)) {
+                const parts = Object.fromEntries(order.map((name, index) => [name, match[index + 1]]));
+                if (parts.first) {
+                    this._addAmbiguousDate(dates, parts.first, parts.second, parts.year);
+                    continue;
+                }
+                const month = parts.monthName
+                    ? MONTH_NAMES[parts.monthName.toLowerCase().slice(0, 3)]
+                    : this._pad(parts.month);
+                if (month) {
+                    dates.add(`${parts.year}-${month}-${this._pad(parts.day)}`);
+                }
+            }
+        }
+        return dates;
+    },
+
+    _buildMessageDatesIndex(messages) {
+        return new Map(
+            messages.map((message) => [
+                Number(message.id),
+                this._extractAllIsoDates(this._getMessageSearchText(message)),
+            ])
+        );
+    },
+
+    _matchingMessageIds(field, value, messageDates) {
+        if (!DATE_TYPES.has(field.type)) {
+            return [null];
+        }
+        const isoDate = this._parseIsoDate(value);
+        const ids = [...messageDates].filter(([, dates]) => dates.has(isoDate)).map(([id]) => id);
+        return ids.length ? ids : [null];
     },
 
     async _loadInitialData() {
@@ -401,9 +506,10 @@ patch(Chatter.prototype, {
     async extractAllSuggestions() {
         const { add, suggestions, messageIds } = this._createSuggestionCollector();
         const messages = this.threadMessages;
+        const messageDates = this._buildMessageDatesIndex(messages);
 
         this._addMessageFieldSuggestions(messages, add);
-        await this._addRecordFieldSuggestions(add);
+        await this._addRecordFieldSuggestions(add, messageDates);
         await this._addTrackingValueSuggestions(messages, add);
         this._addMatchedSelectionLabels(messages, add);
 
@@ -414,17 +520,15 @@ patch(Chatter.prototype, {
     _addMessageFieldSuggestions(messages, add) {
         for (const message of messages) {
             for (const [fieldName, property] of Object.entries(MESSAGE_SUGGESTION_FIELDS)) {
-                this._addFieldSuggestion(
-                    this.searchableFields[fieldName],
-                    message[property],
-                    add,
-                    message.id
-                );
+                const value = HTML_MESSAGE_FIELDS.has(fieldName)
+                    ? this.getMessageText(message[property])
+                    : message[property];
+                this._addFieldSuggestion(this.searchableFields[fieldName], value, add, [message.id]);
             }
         }
     },
 
-    async _addRecordFieldSuggestions(add) {
+    async _addRecordFieldSuggestions(add, messageDates) {
         if (!this.resModel || !this.resId) {
             return;
         }
@@ -444,19 +548,28 @@ patch(Chatter.prototype, {
 
         const isX2many = (field) => X2MANY_TYPES.has(field.type);
         for (const field of fields.filter((f) => !isX2many(f))) {
-            this._addFieldSuggestion(field, record[field.name], add);
+            const value = record[field.name];
+            this._addFieldSuggestion(
+                field,
+                value,
+                add,
+                this._matchingMessageIds(field, value, messageDates)
+            );
         }
         for (const field of fields.filter(isX2many)) {
             await this._addRelatedFieldSuggestions(field, record[field.name], add);
         }
     },
 
-    _addFieldSuggestion(field, value, add, messageId = null) {
+    _addFieldSuggestion(field, value, add, messageIds = [null]) {
         if (!field || this._isEmpty(value)) {
             return;
         }
         const formatted = this._formatFieldValue(field, value);
-        if (formatted) {
+        if (!formatted) {
+            return;
+        }
+        for (const messageId of messageIds) {
             add(field.name, formatted[0], formatted[1], messageId);
         }
     },
@@ -469,8 +582,6 @@ patch(Chatter.prototype, {
             }
             case "selection":
                 return [this._selectionLabel(field.selection, value), value];
-            case "char":
-                return [this.getMessageText(value), value];
             case "text":
             case "html": {
                 const text = this.getMessageText(value);
@@ -640,13 +751,29 @@ patch(Chatter.prototype, {
         this.notifyFiltersChanged(Boolean(dateFrom && dateTo));
     },
 
+    get isSearchFilterActive() {
+        return this.advancedFilterState.isNotification !== undefined;
+    },
+
+    get showActivityFilters() {
+        return !this.isSearchFilterActive;
+    },
+
+    onSearchFilterChanged(isNotification) {
+        this.advancedFilterState.isNotification = isNotification;
+        if (!this.showActivityFilters) {
+            this._resetFilters("activity");
+        }
+        this.notifyFiltersChanged(false);
+    },
+
     onMessageFilterChanged() {
-        this._resetFilters(this.advancedFilterState.filters, "activity");
+        this._resetFilters("activity");
         this.notifyFiltersChanged();
     },
 
     onActivityFilterChanged() {
-        this._resetFilters(this.advancedFilterState.filters, "keyword", "message", "field");
+        this._resetFilters("keyword", "message", "field");
         this.notifyFiltersChanged();
     },
 
@@ -654,12 +781,18 @@ patch(Chatter.prototype, {
         return this.state.thread?.messages || [];
     },
 
+    get searchFilterMessages() {
+        return this.threadMessages.filter((message) =>
+            this._matchesSearchFilter(message)
+        );
+    },
+
     get conversationActivities() {
         return this.state.thread?.activities || [];
     },
 
     get conversationAuthors() {
-        return this._uniqueMany2OneList(this.threadMessages, "author");
+        return this._uniqueMany2OneList(this.searchFilterMessages, "author");
     },
 
     get conversationActivityTypes() {
@@ -673,14 +806,14 @@ patch(Chatter.prototype, {
     get conversationMessageTypes() {
         return this._filterUsedOptions(
             this.messageTypeOptions,
-            this.threadMessages.map((message) => message.message_type)
+            this.searchFilterMessages.map((message) => message.message_type)
         );
     },
 
     get conversationSubtypes() {
         return this._filterUsedOptions(
             this.advancedFilterState.subtypes,
-            this.threadMessages.map((message) =>
+            this.searchFilterMessages.map((message) =>
                 Number(this.getMany2OneValue(message.subtype_id).id)
             ),
             "id"
@@ -727,7 +860,7 @@ patch(Chatter.prototype, {
     },
 
     get activities() {
-        if (this.isMessageFilterActive) {
+        if (this.isMessageFilterActive || this.isSearchFilterActive) {
             return [];
         }
         const activities = this.conversationActivities;
@@ -742,42 +875,82 @@ patch(Chatter.prototype, {
     },
 
     get filteredMessages() {
-        const filters = this.advancedFilterState.filters;
         if (this.isActivityFilterActive) {
             return [];
         }
-        if (!this._hasActiveFilter([...this._messageResultKeys, ...this._filterKeys("date")])) {
+        const hasFilter =
+            this.isSearchFilterActive ||
+            this._hasActiveFilter([...this._messageResultKeys, ...this._filterKeys("date")]);
+        if (!hasFilter) {
             return this.threadMessages;
         }
-        const predicates = [
-            this._keywordPredicate(filters),
-            this._fieldValuePredicate(filters),
-            (message) =>
-                this._isInDateRange(this.getMessageDate(message)) &&
-                this._matchesRecordFilters(message, "message"),
-        ].filter(Boolean);
-        return this.threadMessages.filter((message) => predicates.every((test) => test(message)));
+        return this._applyStructuredFilters(
+            this._applyFieldValueFilter(this._applyKeywordFilter(this.threadMessages))
+        );
     },
 
-    _keywordPredicate(filters) {
-        const keyword = (filters.activeKeyword || "").trim().toLowerCase();
-        if (!keyword || filters.activeKeywordMode !== KEYWORD_MODE.MESSAGE) {
-            return null;
+    _applyKeywordFilter(messages) {
+        const { activeKeyword, activeKeywordMode } = this.advancedFilterState.filters;
+        const keyword = (activeKeyword || "").trim().toLowerCase();
+        if (!keyword || activeKeywordMode !== KEYWORD_MODE.MESSAGE) {
+            return messages;
         }
-        return (message) => this._getMessageSearchText(message).includes(keyword);
+        return messages.filter((message) => this._getMessageSearchText(message).includes(keyword));
     },
 
-    _fieldValuePredicate(filters) {
-        const { activeKeywordMode, fieldName, fieldValueLabel } = filters;
+    _applyFieldValueFilter(messages) {
+        const { activeKeywordMode, fieldName, fieldValue, fieldValueLabel } =
+            this.advancedFilterState.filters;
         if (activeKeywordMode !== KEYWORD_MODE.FIELD || !fieldName || !fieldValueLabel) {
-            return null;
+            return messages;
         }
-        const value = fieldValueLabel.trim().toLowerCase();
-        const messageIds = this.fieldValueMessageIds.get(this._suggestionKey(fieldName, value));
-        if (messageIds?.size) {
-            return (message) => messageIds.has(Number(message.id));
+        const fieldType = this.searchableFields[fieldName]?.type;
+        const needle = fieldValueLabel.trim().toLowerCase();
+        const compact = (text) => text.replace(/[,\s]/g, "");
+
+        const textMatched = messages.filter((message) => {
+            const text = this._getMessageSearchText(message);
+            if (!NUMERIC_TYPES.has(fieldType)) {
+                return text.includes(needle);
+            }
+            const compactText = compact(text);
+            const compactNeedle = compact(needle);
+            return (
+                compactText.includes(compactNeedle) ||
+                compactText.includes(compactNeedle.replace(/\.0+$/, ""))
+            );
+        });
+        if (textMatched.length) {
+            return textMatched;
         }
-        return (message) => this._getMessageSearchText(message).includes(value);
+
+        if (DATE_TYPES.has(fieldType)) {
+            const targetIso = this._parseIsoDate(fieldValue) || this._parseIsoDate(fieldValueLabel);
+            return targetIso
+                ? messages.filter((message) =>
+                      this._extractAllIsoDates(this._getMessageSearchText(message)).has(targetIso)
+                  )
+                : messages;
+        }
+
+        const messageIds = this.fieldValueMessageIds.get(this._suggestionKey(fieldName, needle));
+        return messageIds?.size
+            ? messages.filter((message) => messageIds.has(Number(message.id)))
+            : messages;
+    },
+
+    _matchesSearchFilter(message) {
+        const { isNotification } = this.advancedFilterState;
+        return isNotification === undefined || (message.message_type === "notification") === isNotification;
+    },
+
+    _applyStructuredFilters(messages) {
+        return messages.filter(
+            (message) =>
+                this._matchesSearchFilter(message) &&
+                this._isInDateRange(this.getMessageDate(message)) &&
+                this._matchesRecordFilters(message, "message")
+        );
     },
 
     get currentSearchKeyword() {
@@ -804,6 +977,25 @@ patch(Chatter.prototype, {
         ];
     },
 
+    _matchSuggestionValues(items, term, regex, field) {
+        const matches = items.filter((item) => {
+            const text = item.displayName.toLowerCase();
+            return regex.test(text) || text === term;
+        });
+        if (matches.length || !DATE_TYPES.has(field?.type)) {
+            return matches;
+        }
+        const termDates = this._extractAllIsoDates(term);
+        if (!termDates.size) {
+            return matches;
+        }
+        return items.filter((item) =>
+            [...this._extractAllIsoDates(String(item.rawValue || ""))].some((date) =>
+                termDates.has(date)
+            )
+        );
+    },
+
     _buildFieldSuggestionGroup(fieldName, items, term, regex) {
         const field = this.searchableFields[fieldName];
         const label = field?.string || fieldName;
@@ -815,10 +1007,7 @@ patch(Chatter.prototype, {
             matches = [...items].sort((a, b) => a.displayName.localeCompare(b.displayName));
             limit = LIMITS.fieldMatchItems;
         } else {
-            matches = items.filter((item) => {
-                const text = item.displayName.toLowerCase();
-                return regex.test(text) || text === term;
-            });
+            matches = this._matchSuggestionValues(items, term, regex, field);
             if (!matches.length) {
                 return null;
             }
@@ -842,7 +1031,7 @@ patch(Chatter.prototype, {
     },
 
     clearKeywordSearch() {
-        Object.assign(this.advancedFilterState.filters, this.createEmptyFilters());
+        Object.assign(this.advancedFilterState.filters, this._createEmptyFilters());
         this._closeSuggestionsAndNotify();
     },
 
@@ -866,8 +1055,7 @@ patch(Chatter.prototype, {
     },
 
     selectFieldSuggestion(fieldName, item, fieldLabel) {
-        const filters = this.advancedFilterState.filters;
-        Object.assign(filters, {
+        Object.assign(this.advancedFilterState.filters, {
             keyword: item.displayName,
             activeKeyword: item.displayName,
             activeKeywordMode: KEYWORD_MODE.FIELD,
@@ -876,7 +1064,7 @@ patch(Chatter.prototype, {
             fieldValue: item.rawValue,
             fieldValueLabel: item.displayName,
         });
-        this._resetFilters(filters, "message", "activity");
+        this._resetFilters("message", "activity");
         this._closeSuggestionsAndNotify();
     },
 
@@ -888,7 +1076,7 @@ patch(Chatter.prototype, {
         }
         filters.activeKeyword = keyword;
         filters.activeKeywordMode = KEYWORD_MODE.MESSAGE;
-        this.clearFieldSelection(filters);
+        this.clearFieldSelection();
         this._closeSuggestionsAndNotify();
     },
 

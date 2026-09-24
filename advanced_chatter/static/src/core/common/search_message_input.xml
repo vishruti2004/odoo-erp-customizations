@@ -146,21 +146,9 @@
                     </div>
                 </div>
 
-                <t t-if="env.advancedChatterSearch.conversationActivities.length">
+                <t t-if="env.advancedChatterSearch.showActivityFilters and env.advancedChatterSearch.conversationActivities.length">
                     <div class="row g-2 mb-2">
-                        <div class="col-4">
-                            <label class="form-label small mb-1">Activity Type</label>
-                            <select class="form-select form-select-sm"
-                                    t-model="env.advancedChatterSearch.advancedFilterState.filters.activityTypeId"
-                                    t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
-                                <option value="">All Activity Types</option>
-                                <option t-foreach="env.advancedChatterSearch.conversationActivityTypes"
-                                        t-as="activityType" t-key="activityType.id" t-att-value="activityType.id"
-                                        t-att-selected="activityType.id == env.advancedChatterSearch.advancedFilterState.filters.activityTypeId">
-                                    <t t-esc="activityType.name"/>
-                                </option>
-                            </select>
-                        </div>
+                        
                         <div class="col-4">
                             <label class="form-label small mb-1">Activity User</label>
                             <select class="form-select form-select-sm"
@@ -174,12 +162,27 @@
                                 </option>
                             </select>
                         </div>
+
+                        <div class="col-4">
+                            <label class="form-label small mb-1">Activity Type</label>
+                            <select class="form-select form-select-sm"
+                                    t-model="env.advancedChatterSearch.advancedFilterState.filters.activityTypeId"
+                                    t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
+                                <option value="">All Activity Types</option>
+                                <option t-foreach="env.advancedChatterSearch.conversationActivityTypes"
+                                        t-as="activityType" t-key="activityType.id" t-att-value="activityType.id"
+                                        t-att-selected="activityType.id == env.advancedChatterSearch.advancedFilterState.filters.activityTypeId">
+                                    <t t-esc="activityType.name"/>
+                                </option>
+                            </select>
+                        </div>
+                        
                         <div class="col-4">
                             <label class="form-label small mb-1">Activity Status</label>
                             <select class="form-select form-select-sm"
                                     t-model="env.advancedChatterSearch.advancedFilterState.filters.activityState"
                                     t-on-change="() => env.advancedChatterSearch.onActivityFilterChanged()">
-                                <option value="">All Activity Statuses</option>
+                                <option value="">All Activity Status</option>
                                 <option t-foreach="env.advancedChatterSearch.conversationActivityStates"
                                         t-as="activityState" t-key="activityState.value" t-att-value="activityState.value"
                                         t-att-selected="activityState.value === env.advancedChatterSearch.advancedFilterState.filters.activityState">

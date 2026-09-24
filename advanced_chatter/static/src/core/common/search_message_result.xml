@@ -1,0 +1,8 @@
+<templates xml:space="preserve">
+<t t-inherit="mail.SearchMessageResult" t-inherit-mode="extension">
+    <xpath expr="//MessageCardList" position="attributes">
+        <attribute name="messages">filteredMessages</attribute>
+        <attribute name="showEmpty">filteredMessages.length === 0 and props.messageSearch.searched</attribute>
+    </xpath>
+</t>
+</templates>
