@@ -1,11 +1,19 @@
 /** @odoo-module **/
 
 import { SearchMessageInput } from "@mail/core/common/search_message_input";
+import { DateTimeInput } from "@web/core/datetime/datetime_input";
 import { onWillDestroy, useState } from "@odoo/owl";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
 import { patch } from "@web/core/utils/patch";
 
 const BLUR_CLOSE_DELAY = 200;
+
+patch(SearchMessageInput, {
+    components: {
+        ...SearchMessageInput.components,
+        DateTimeInput,
+    },
+});
 
 patch(SearchMessageInput.prototype, {
     get advancedChatter() {
@@ -80,7 +88,13 @@ patch(SearchMessageInput.prototype, {
             chatter.advancedFilterState.showSuggestions = Boolean(typed.trim());
             this.advancedDropdownState.expandedGroup = null;
             if (typed.trim()) {
-                chatter._ensureExtracted().then(() => chatter.notifyFiltersChanged(false));
+                // Extraction પછી listeners ને notify કરો
+                chatter
+                    ._ensureExtracted()
+                    .then(() => chatter.notifyFiltersChanged(false));
+            } else {
+                // FIX: empty keyword પર પણ notify કરો, નહીં તો stale filter રહી જાય
+                chatter.notifyFiltersChanged(false);
             }
         }, 0);
     },

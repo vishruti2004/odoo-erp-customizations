@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-      <t t-inherit="mail.SearchMessageInput" t-inherit-mode="extension">
+    <t t-inherit="mail.SearchMessageInput" t-inherit-mode="extension">
 
         <xpath expr="//input[hasclass('o_searchview_input')]" position="attributes">
             <attribute name="t-on-input">onKeywordSync</attribute>
@@ -92,15 +92,19 @@
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label small mb-1">From Date</label>
-                        <input type="date" class="form-control form-control-sm"
-                               t-model="env.advancedChatterSearch.advancedFilterState.filters.dateFrom"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
+                        <DateTimeInput
+                            type="'date'"
+                            value="env.advancedChatterSearch.dateFromValue"
+                            placeholder="'Select date'"
+                            onChange="(date) => env.advancedChatterSearch.setDateFilter('dateFrom', date)"/>
                     </div>
                     <div class="col-6">
                         <label class="form-label small mb-1">To Date</label>
-                        <input type="date" class="form-control form-control-sm"
-                               t-model="env.advancedChatterSearch.advancedFilterState.filters.dateTo"
-                               t-on-change="() => env.advancedChatterSearch.notifyDateFilterChanged()"/>
+                        <DateTimeInput
+                            type="'date'"
+                            value="env.advancedChatterSearch.dateToValue"
+                            placeholder="'Select date'"
+                            onChange="(date) => env.advancedChatterSearch.setDateFilter('dateTo', date)"/>
                     </div>
                 </div>
 

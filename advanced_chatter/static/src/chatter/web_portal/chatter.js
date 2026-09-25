@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Chatter } from "@mail/chatter/web_portal/chatter";
+import { deserializeDate, deserializeDateTime, formatDate, formatDateTime } from "@web/core/l10n/dates";
 import { htmlToTextContentInline } from "@mail/utils/common/format";
 import { onWillStart, useEffect, useState } from "@odoo/owl";
 import { groupBy } from "@web/core/utils/arrays";
@@ -13,67 +14,17 @@ const ACCESS_CHECK = { model: "res.users", method: "check_advanced_chatter_acces
 const LIMITS = {
     nameList: 200,
     relatedRecords: 200,
-    trackingValues: 3000,
+    trackingValues: 50,
     recordTextLength: 200,
     fieldMatchItems: 25,
-    valueMatchItems: 15,
+    valueMatchItems: 50,
 };
-
-const MONTH_NAMES = {
-    jan: "01",
-    feb: "02",
-    mar: "03",
-    apr: "04",
-    may: "05",
-    jun: "06",
-    jul: "07",
-    aug: "08",
-    sep: "09",
-    oct: "10",
-    nov: "11",
-    dec: "12",
-};
-
-const DATE_PATTERNS = [
-    { source: "(\\d{4})-(\\d{2})-(\\d{2})", order: ["year", "month", "day"] },
-    { source: "(\\d{1,2})/(\\d{1,2})/(\\d{4})", order: ["first", "second", "year"] },
-    { source: "(\\d{1,2})-(\\d{1,2})-(\\d{4})", order: ["first", "second", "year"] },
-    { source: "(\\d{4})/(\\d{1,2})/(\\d{1,2})", order: ["year", "month", "day"] },
-    {
-        source: "(\\d{1,2})\\s+({month})[a-z]*\\.?\\s+(\\d{4})",
-        flags: "gi",
-        order: ["day", "monthName", "year"],
-    },
-    {
-        source: "({month})[a-z]*\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})",
-        flags: "gi",
-        order: ["monthName", "day", "year"],
-    },
-];
 
 const FIELD_ATTRIBUTES = ["string", "type", "relation", "selection", "searchable"];
 const AUDIT_FIELDS = ["id", "create_date", "create_uid", "write_date", "write_uid"];
-const SYSTEM_FIELDS = [...AUDIT_FIELDS, "__last_update", "display_name"];
-const EXCLUDED_RECORD_FIELDS = new Set([...SYSTEM_FIELDS, "access_token", "message_ids"]);
-const EXCLUDED_RELATED_FIELDS = new Set(SYSTEM_FIELDS);
 
-const SEARCHABLE_FIELD_TYPES = new Set([
-    "char",
-    "text",
-    "many2one",
-    "selection",
-    "integer",
-    "float",
-    "monetary",
-    "date",
-    "datetime",
-    "html",
-    "one2many",
-    "many2many",
-]);
-const X2MANY_TYPES = new Set(["one2many", "many2many"]);
+
 const DATE_TYPES = new Set(["date", "datetime"]);
-const NUMERIC_TYPES = new Set(["monetary", "float", "integer"]);
 
 const SELECTION_SOURCES = {
     messageTypeOptions: { model: "mail.message", field: "message_type" },
@@ -89,11 +40,8 @@ const TRACKING_MODEL = "mail.tracking.value";
 const TRACKING_PREFIXES = ["old", "new"];
 const TRACKING_COLUMNS = ["char", "text", "integer", "float", "datetime"];
 const TRACKING_COLUMNS_BY_TYPE = {
-    float: ["float"],
-    monetary: ["float"],
-    integer: ["integer"],
-    date: ["datetime"],
-    datetime: ["datetime"],
+    float: ["float"], monetary: ["float"], integer: ["integer"],
+    date: ["datetime"], datetime: ["datetime"],
 };
 
 const MESSAGE_SUGGESTION_FIELDS = {
@@ -158,6 +106,8 @@ patch(Chatter.prototype, {
         this.searchableFields = {};
         this.suggestions = [];
         this.fieldValueMessageIds = new Map();
+        this.fieldValueActivityIds = new Map();
+
         for (const property of Object.keys(SELECTION_SOURCES)) {
             this[property] = [];
         }
@@ -165,10 +115,6 @@ patch(Chatter.prototype, {
         this._filterChangeListeners = new Set();
         this._fieldDefCache = new Map();
         this._extractedSignature = null;
-        this._dateRegexes = DATE_PATTERNS.map(({ source, flags = "g", order }) => ({
-            regex: new RegExp(source.replace("{month}", Object.keys(MONTH_NAMES).join("|")), flags),
-            order,
-        }));
 
         this.advancedFilterState = useState({
             showSuggestions: false,
@@ -180,10 +126,12 @@ patch(Chatter.prototype, {
 
         onWillStart(() => this._loadInitialData());
         useEffect(
-            () => {
-                this._refreshSuggestions();
-            },
-            () => [this.threadMessages.length, this.resId]
+            () => { this._refreshSuggestions(); },
+            () => [
+                this.threadMessages.length,
+                this.conversationActivities.length,
+                this.resId,
+            ]
         );
     },
 
@@ -195,20 +143,32 @@ patch(Chatter.prototype, {
         return this.props.threadId || null;
     },
 
+    setDateFilter(key, luxonDate) {
+        this.advancedFilterState.filters[key] =
+            luxonDate && typeof luxonDate.toISODate === "function"
+                ? luxonDate.toISODate()
+                : "";
+        this.notifyDateFilterChanged();
+    },
+
+    get dateFromValue() {
+        const value = this.advancedFilterState.filters.dateFrom;
+        if (!value) return undefined;
+        try { return deserializeDate(value); } catch { return undefined; }
+    },
+
+    get dateToValue() {
+        const value = this.advancedFilterState.filters.dateTo;
+        if (!value) return undefined;
+        try { return deserializeDate(value); } catch { return undefined; }
+    },
+
     async _safely(callback, fallback = null) {
-        try {
-            return await callback();
-        } catch {
-            return fallback;
-        }
+        try { return await callback(); } catch { return fallback; }
     },
 
     _isEmpty(value) {
         return [false, null, undefined, ""].includes(value);
-    },
-
-    _pad(value) {
-        return String(value).padStart(2, "0");
     },
 
     _numericIds(records) {
@@ -241,6 +201,14 @@ patch(Chatter.prototype, {
 
     _relationName(value) {
         return this.getMany2OneValue(value).name || "";
+    },
+
+    _formatDateValue(value, fieldType) {
+        const raw = String(value);
+        if (fieldType === "date") {
+            return formatDate(deserializeDate(raw.slice(0, 10)));
+        }
+        return formatDateTime(deserializeDateTime(raw));
     },
 
     _loadFieldDefs(model, fieldNames = [], attributes = FIELD_ATTRIBUTES) {
@@ -300,67 +268,14 @@ patch(Chatter.prototype, {
 
     _isInDateRange(date) {
         const { dateFrom, dateTo } = this.advancedFilterState.filters;
-        return !(dateFrom && (!date || date < dateFrom)) && !(dateTo && (!date || date > dateTo));
-    },
 
-    _addAmbiguousDate(dates, first, second, year) {
-        const [a, b] = [Number(first), Number(second)];
-        if (a > 12 || b <= 12) {
-            dates.add(`${year}-${this._pad(b)}-${this._pad(a)}`);
-        }
-        if (a <= 12) {
-            dates.add(`${year}-${this._pad(a)}-${this._pad(b)}`);
-        }
-    },
+        if (!dateFrom && !dateTo) return true;
+        if (!date) return false;
 
-    _parseIsoDate(value) {
-        if (this._isEmpty(value)) {
-            return null;
-        }
-        if (typeof value?.toISODate === "function") {
-            return value.toISODate();
-        }
-        const match = String(value).trim().match(/^(\d{4}-\d{2}-\d{2})/);
-        return match ? match[1] : null;
-    },
-
-    _extractAllIsoDates(text) {
-        const dates = new Set();
-        const value = String(text || "");
-        for (const { regex, order } of this._dateRegexes) {
-            for (const match of value.matchAll(regex)) {
-                const parts = Object.fromEntries(order.map((name, index) => [name, match[index + 1]]));
-                if (parts.first) {
-                    this._addAmbiguousDate(dates, parts.first, parts.second, parts.year);
-                    continue;
-                }
-                const month = parts.monthName
-                    ? MONTH_NAMES[parts.monthName.toLowerCase().slice(0, 3)]
-                    : this._pad(parts.month);
-                if (month) {
-                    dates.add(`${parts.year}-${month}-${this._pad(parts.day)}`);
-                }
-            }
-        }
-        return dates;
-    },
-
-    _buildMessageDatesIndex(messages) {
-        return new Map(
-            messages.map((message) => [
-                Number(message.id),
-                this._extractAllIsoDates(this._getMessageSearchText(message)),
-            ])
-        );
-    },
-
-    _matchingMessageIds(field, value, messageDates) {
-        if (!DATE_TYPES.has(field.type)) {
-            return [null];
-        }
-        const isoDate = this._parseIsoDate(value);
-        const ids = [...messageDates].filter(([, dates]) => dates.has(isoDate)).map(([id]) => id);
-        return ids.length ? ids : [null];
+        const normalizedDate = String(date).substring(0, 10);
+        if (dateFrom && normalizedDate < dateFrom) return false;
+        if (dateTo && normalizedDate > dateTo) return false;
+        return true;
     },
 
     async _loadInitialData() {
@@ -369,9 +284,8 @@ patch(Chatter.prototype, {
             ACCESS_CHECK.method,
             []
         );
-        if (!this.hasAdvancedChatterAccess) {
-            return;
-        }
+        if (!this.hasAdvancedChatterAccess) return;
+
         await Promise.all([
             ...Object.entries(SELECTION_SOURCES).map(([property, { model, field }]) =>
                 this._loadSelectionOptions(model, field, property)
@@ -386,8 +300,7 @@ patch(Chatter.prototype, {
     async _loadSelectionOptions(model, fieldName, targetProperty) {
         const defs = await this._loadFieldDefs(model, [fieldName], ["selection"]);
         this[targetProperty] = (defs[fieldName]?.selection || []).map(([value, label]) => ({
-            value,
-            label,
+            value, label,
         }));
     },
 
@@ -406,9 +319,6 @@ patch(Chatter.prototype, {
     async loadAllFields() {
         const fields = {};
         await this._collectMessageFields(fields);
-        if (this.resModel) {
-            await this._collectRecordFields(fields);
-        }
         this.searchableFields = fields;
     },
 
@@ -422,32 +332,19 @@ patch(Chatter.prototype, {
         }
     },
 
-    async _collectRecordFields(fields) {
-        const defs = await this._loadFieldDefs(this.resModel);
-        for (const [name, definition] of Object.entries(defs)) {
-            const isUsable =
-                !EXCLUDED_RECORD_FIELDS.has(name) &&
-                SEARCHABLE_FIELD_TYPES.has(definition.type) &&
-                definition.searchable !== false &&
-                !fields[name];
-            if (isUsable) {
-                fields[name] = this._buildFieldEntry(name, definition, "record");
-            }
-        }
-    },
-
     _buildFieldEntry(name, definition, source) {
         const { string, type, relation, selection } = definition;
         return { name, string, type, relation, selection, source };
     },
 
     _currentSignature() {
-        return `${this.resId}|${this.threadMessages.length}`;
+        return `${this.resId}|${this.threadMessages.length}|${this.conversationActivities.length}`;
     },
 
     async _refreshSuggestions() {
         const signature = this._currentSignature();
-        if (!this.threadMessages.length || this._extractedSignature === signature) {
+        const hasData = this.threadMessages.length || this.conversationActivities.length;
+        if (!hasData || this._extractedSignature === signature) {
             return;
         }
         await this.extractAllSuggestions();
@@ -457,7 +354,7 @@ patch(Chatter.prototype, {
 
     async _ensureExtracted() {
         const signature = this._currentSignature();
-        if (this._extractedSignature === signature && this.suggestions.length) {
+        if (this._extractedSignature === signature) {
             return;
         }
         await this.extractAllSuggestions();
@@ -468,17 +365,16 @@ patch(Chatter.prototype, {
         const suggestions = [];
         const seen = new Set();
         const messageIds = new Map();
+        const activityIds = new Map();
 
-        const add = (fieldName, displayName, rawValue, messageId = null) => {
-            if (!displayName) {
-                return;
-            }
+        const add = (fieldName, displayName, rawValue, messageId = null, activityId = null) => {
+            if (!displayName) return;
+
             const label = String(displayName).trim();
-            if (!label || label === "false" || label === "undefined") {
-                return;
-            }
+            if (!label || label === "false" || label === "undefined") return;
 
             const key = this._suggestionKey(fieldName, label);
+
             if (!seen.has(key)) {
                 seen.add(key);
                 const field = this.searchableFields[fieldName];
@@ -486,35 +382,45 @@ patch(Chatter.prototype, {
                     fieldName,
                     fieldLabel: field?.string || fieldName,
                     fieldType: field?.type || "",
+                    fieldSource: field?.source || "",
                     displayName: label,
                     rawValue,
                 });
             }
 
-            const id = Number(messageId);
-            if (messageId !== null && Number.isFinite(id)) {
-                if (!messageIds.has(key)) {
-                    messageIds.set(key, new Set());
+            if (messageId !== null) {
+                const id = Number(messageId);
+                if (Number.isFinite(id)) {
+                    if (!messageIds.has(key)) messageIds.set(key, new Set());
+                    messageIds.get(key).add(id);
                 }
-                messageIds.get(key).add(id);
+            }
+
+            if (activityId !== null) {
+                const id = Number(activityId);
+                if (Number.isFinite(id)) {
+                    if (!activityIds.has(key)) activityIds.set(key, new Set());
+                    activityIds.get(key).add(id);
+                }
             }
         };
 
-        return { add, suggestions, messageIds };
+        return { add, suggestions, messageIds, activityIds };
     },
-
     async extractAllSuggestions() {
-        const { add, suggestions, messageIds } = this._createSuggestionCollector();
+        const { add, suggestions, messageIds, activityIds } = this._createSuggestionCollector();
+
         const messages = this.threadMessages;
-        const messageDates = this._buildMessageDatesIndex(messages);
+        const activities = this.conversationActivities;
 
         this._addMessageFieldSuggestions(messages, add);
-        await this._addRecordFieldSuggestions(add, messageDates);
+        this._addActivitySuggestions(activities, add);
         await this._addTrackingValueSuggestions(messages, add);
         this._addMatchedSelectionLabels(messages, add);
 
         this.suggestions = suggestions;
         this.fieldValueMessageIds = messageIds;
+        this.fieldValueActivityIds = activityIds;
     },
 
     _addMessageFieldSuggestions(messages, add) {
@@ -528,47 +434,59 @@ patch(Chatter.prototype, {
         }
     },
 
-    async _addRecordFieldSuggestions(add, messageDates) {
-        if (!this.resModel || !this.resId) {
-            return;
-        }
-        const fields = Object.values(this.searchableFields).filter((f) => f.source === "record");
-        const [record] = await this._safely(
-            () =>
-                this.orm.read(
-                    this.resModel,
-                    [this.resId],
-                    fields.map((f) => f.name)
-                ),
-            []
-        );
-        if (!record) {
-            return;
+    _addActivitySuggestions(activities, add) {
+        if (!activities?.length) return;
+
+        const fieldDefs = {
+            activity_type_id: { string: "Activity Type",     type: "many2one", relation: "mail.activity.type" },
+            summary:          { string: "Activity Summary",  type: "char" },
+            user_id:          { string: "Activity User",     type: "many2one", relation: "res.users" },
+            date_deadline:    { string: "Activity Deadline", type: "date" },
+            state:            { string: "Activity Status",   type: "selection" },
+        };
+
+        const stateSelection = (this.activityStateOptions || []).map((o) => [o.value, o.label]);
+
+        for (const [name, def] of Object.entries(fieldDefs)) {
+            if (!this.searchableFields[name]) {
+                this.searchableFields[name] = {
+                    name,
+                    relation: null,
+                    selection: name === "state" ? stateSelection : null,
+                    source: "activity",
+                    ...def,
+                };
+            }
         }
 
-        const isX2many = (field) => X2MANY_TYPES.has(field.type);
-        for (const field of fields.filter((f) => !isX2many(f))) {
-            const value = record[field.name];
-            this._addFieldSuggestion(
-                field,
-                value,
-                add,
-                this._matchingMessageIds(field, value, messageDates)
-            );
-        }
-        for (const field of fields.filter(isX2many)) {
-            await this._addRelatedFieldSuggestions(field, record[field.name], add);
+        for (const activity of activities) {
+            for (const name of Object.keys(fieldDefs)) {
+                const value = activity[name];
+                if (this._isEmpty(value)) continue;
+                this._addFieldSuggestion(
+                    this.searchableFields[name],
+                    value,
+                    add,
+                    [],
+                    [activity.id]
+                );
+            }
         }
     },
 
-    _addFieldSuggestion(field, value, add, messageIds = [null]) {
-        if (!field || this._isEmpty(value)) {
-            return;
-        }
+    _addFieldSuggestion(field, value, add, messageIds = [null], activityIds = []) {
+        if (!field || this._isEmpty(value)) return;
+
         const formatted = this._formatFieldValue(field, value);
-        if (!formatted) {
+        if (!formatted) return;
+
+        if (activityIds.length) {
+            for (const activityId of activityIds) {
+                add(field.name, formatted[0], formatted[1], null, activityId);
+            }
             return;
         }
+
         for (const messageId of messageIds) {
             add(field.name, formatted[0], formatted[1], messageId);
         }
@@ -582,6 +500,9 @@ patch(Chatter.prototype, {
             }
             case "selection":
                 return [this._selectionLabel(field.selection, value), value];
+            case "date":
+            case "datetime":
+                return [this._formatDateValue(value, field.type), value];
             case "text":
             case "html": {
                 const text = this.getMessageText(value);
@@ -590,52 +511,6 @@ patch(Chatter.prototype, {
             default:
                 return [String(value), value];
         }
-    },
-
-    async _addRelatedFieldSuggestions(field, ids, add) {
-        if (!field.relation || !Array.isArray(ids) || !ids.length) {
-            return;
-        }
-        await this._safely(async () => {
-            const defs = await this._loadFieldDefs(field.relation);
-            const usable = Object.entries(defs).filter(
-                ([name]) => !EXCLUDED_RELATED_FIELDS.has(name)
-            );
-            const namesOfType = (...types) =>
-                usable.filter(([, def]) => types.includes(def.type)).map(([name]) => name);
-            const many2oneNames = namesOfType("many2one");
-            const plainNames = namesOfType("char", "selection");
-            if (!many2oneNames.length && !plainNames.length) {
-                return;
-            }
-
-            const records = await this.orm.read(
-                field.relation,
-                ids.slice(0, LIMITS.relatedRecords),
-                [...many2oneNames, ...plainNames]
-            );
-            for (const record of records) {
-                for (const name of many2oneNames) {
-                    const [id, label] = Array.isArray(record[name]) ? record[name] : [];
-                    if (id) {
-                        add(name, label, id);
-                    }
-                }
-                for (const name of plainNames) {
-                    const value = record[name];
-                    if (value) {
-                        const { type, selection } = defs[name];
-                        add(
-                            name,
-                            type === "selection"
-                                ? this._selectionLabel(selection, value)
-                                : String(value),
-                            value
-                        );
-                    }
-                }
-            }
-        });
     },
 
     get _trackingReadFields() {
@@ -650,9 +525,8 @@ patch(Chatter.prototype, {
 
     async _addTrackingValueSuggestions(messages, add) {
         const messageIds = this._numericIds(messages);
-        if (!messageIds.length) {
-            return;
-        }
+        if (!messageIds.length) return;
+
         await this._safely(async () => {
             const trackingValues = await this.orm.searchRead(
                 TRACKING_MODEL,
@@ -668,25 +542,25 @@ patch(Chatter.prototype, {
                     Number(this.getMany2OneValue(tracking.field_id).id)
                 );
                 const field = this.searchableFields[definition?.name];
-                if (!messageId || !field) {
-                    continue;
-                }
+                if (!messageId || !field) continue;
+
                 for (const prefix of TRACKING_PREFIXES) {
                     const rawValue = this._readTrackingValue(tracking, prefix, field.type);
-                    if (this._isEmpty(rawValue)) {
-                        continue;
-                    }
-                    add(
-                        field.name,
-                        field.type === "selection"
-                            ? this._selectionLabel(field.selection, rawValue)
-                            : String(rawValue),
-                        rawValue,
-                        messageId
-                    );
+                    if (this._isEmpty(rawValue)) continue;
+                    add(field.name, this._trackingValueLabel(field, rawValue), rawValue, messageId);
                 }
             }
         });
+    },
+
+    _trackingValueLabel(field, rawValue) {
+        if (DATE_TYPES.has(field.type)) {
+            return this._formatDateValue(rawValue, field.type);
+        }
+        if (field.type === "selection") {
+            return this._selectionLabel(field.selection, rawValue);
+        }
+        return String(rawValue);
     },
 
     async _loadTrackingFieldDefs(trackingValues) {
@@ -698,9 +572,8 @@ patch(Chatter.prototype, {
                     .map(Number)
             ),
         ];
-        if (!fieldIds.length) {
-            return new Map();
-        }
+        if (!fieldIds.length) return new Map();
+
         const definitions = await this.orm.searchRead(
             "ir.model.fields",
             [["id", "in", fieldIds]],
@@ -720,9 +593,7 @@ patch(Chatter.prototype, {
         const allText = messages.map((message) => this._getMessageSearchText(message)).join(" ");
 
         for (const [fieldName, field] of Object.entries(this.searchableFields)) {
-            if (field.type !== "selection" || !Array.isArray(field.selection)) {
-                continue;
-            }
+            if (field.type !== "selection" || !Array.isArray(field.selection)) continue;
             for (const [value, label] of field.selection) {
                 const isUsefulLabel =
                     typeof label === "string" &&
@@ -782,9 +653,7 @@ patch(Chatter.prototype, {
     },
 
     get searchFilterMessages() {
-        return this.threadMessages.filter((message) =>
-            this._matchesSearchFilter(message)
-        );
+        return this.threadMessages.filter((message) => this._matchesSearchFilter(message));
     },
 
     get conversationActivities() {
@@ -853,39 +722,81 @@ patch(Chatter.prototype, {
 
     get activeAdvancedFilterCount() {
         const filters = this.advancedFilterState.filters;
-        const keys = [...this._filterKeys("date", "message", "activity"), "fieldValueLabel"];
+        const dateActive = Boolean(filters.dateFrom || filters.dateTo);
+        const keys = [...this._filterKeys("message", "activity"), "fieldValueLabel"];
         const hasMessageKeyword =
             filters.activeKeywordMode === KEYWORD_MODE.MESSAGE && filters.activeKeyword;
-        return keys.filter((key) => filters[key]).length + Number(Boolean(hasMessageKeyword));
+        return (
+            keys.filter((key) => filters[key]).length +
+            Number(Boolean(hasMessageKeyword)) +
+            Number(dateActive)
+        );
+    },
+
+    _activeFieldMatchActivityIds() {
+        const filters = this.advancedFilterState.filters;
+        if (
+            filters.activeKeywordMode !== KEYWORD_MODE.FIELD ||
+            !filters.fieldName
+        ) {
+            return null;
+        }
+        const key = this._suggestionKey(filters.fieldName, filters.fieldValueLabel);
+        return this.fieldValueActivityIds.get(key) || null;
     },
 
     get activities() {
-        if (this.isMessageFilterActive || this.isSearchFilterActive) {
+        if (this.isSearchFilterActive) {
             return [];
         }
+
+        const activityIds = this._activeFieldMatchActivityIds();
+        if (activityIds?.size) {
+            return this.conversationActivities.filter(
+                (activity) =>
+                    activityIds.has(Number(activity.id)) &&
+                    this._isInDateRange(this.getActivityDate(activity)) &&
+                    this._matchesRecordFilters(activity, "activity")
+            );
+        }
+
+        if (this.isMessageFilterActive) {
+            return [];
+        }
+
         const activities = this.conversationActivities;
+
         if (!this._hasActiveFilter(this._filterKeys("date", "activity"))) {
             return activities;
         }
+
         return activities.filter(
             (activity) =>
-                this._isInDateRange(activity.date_deadline || "") &&
+                this._isInDateRange(this.getActivityDate(activity)) &&
                 this._matchesRecordFilters(activity, "activity")
         );
     },
 
     get filteredMessages() {
-        if (this.isActivityFilterActive) {
+        if (this._activeFieldMatchActivityIds()?.size) {
             return [];
         }
+
+        if (this.isActivityFilterActive) return [];
+
         const hasFilter =
             this.isSearchFilterActive ||
-            this._hasActiveFilter([...this._messageResultKeys, ...this._filterKeys("date")]);
-        if (!hasFilter) {
-            return this.threadMessages;
-        }
+            this._hasActiveFilter([
+                ...this._messageResultKeys,
+                ...this._filterKeys("date"),
+            ]);
+
+        if (!hasFilter) return this.threadMessages;
+
         return this._applyStructuredFilters(
-            this._applyFieldValueFilter(this._applyKeywordFilter(this.threadMessages))
+            this._applyFieldValueFilter(
+                this._applyKeywordFilter(this.threadMessages)
+            )
         );
     },
 
@@ -899,49 +810,55 @@ patch(Chatter.prototype, {
     },
 
     _applyFieldValueFilter(messages) {
-        const { activeKeywordMode, fieldName, fieldValue, fieldValueLabel } =
-            this.advancedFilterState.filters;
-        if (activeKeywordMode !== KEYWORD_MODE.FIELD || !fieldName || !fieldValueLabel) {
+        const {
+            activeKeywordMode,
+            fieldName,
+            fieldValueLabel,
+        } = this.advancedFilterState.filters;
+
+        if (
+            activeKeywordMode !== KEYWORD_MODE.FIELD ||
+            !fieldName ||
+            !fieldValueLabel
+        ) {
             return messages;
         }
-        const fieldType = this.searchableFields[fieldName]?.type;
-        const needle = fieldValueLabel.trim().toLowerCase();
-        const compact = (text) => text.replace(/[,\s]/g, "");
 
-        const textMatched = messages.filter((message) => {
-            const text = this._getMessageSearchText(message);
-            if (!NUMERIC_TYPES.has(fieldType)) {
-                return text.includes(needle);
-            }
-            const compactText = compact(text);
-            const compactNeedle = compact(needle);
-            return (
-                compactText.includes(compactNeedle) ||
-                compactText.includes(compactNeedle.replace(/\.0+$/, ""))
+        const key = this._suggestionKey(fieldName, fieldValueLabel);
+        const messageIds = this.fieldValueMessageIds.get(key);
+
+        if (messageIds?.size) {
+            return messages.filter((message) => messageIds.has(Number(message.id)));
+        }
+
+        const needle = String(fieldValueLabel).trim().toLowerCase();
+        if (!needle) {
+            return [];
+        }
+
+        const exactMatches = messages.filter((message) =>
+            this._getMessageSearchText(message).includes(needle)
+        );
+        if (exactMatches.length) {
+            return exactMatches;
+        }
+
+        const primary = needle.split(/\s*[\(\[].*$/)[0].trim();
+        if (primary && primary !== needle) {
+            return messages.filter((message) =>
+                this._getMessageSearchText(message).includes(primary)
             );
-        });
-        if (textMatched.length) {
-            return textMatched;
         }
 
-        if (DATE_TYPES.has(fieldType)) {
-            const targetIso = this._parseIsoDate(fieldValue) || this._parseIsoDate(fieldValueLabel);
-            return targetIso
-                ? messages.filter((message) =>
-                      this._extractAllIsoDates(this._getMessageSearchText(message)).has(targetIso)
-                  )
-                : messages;
-        }
-
-        const messageIds = this.fieldValueMessageIds.get(this._suggestionKey(fieldName, needle));
-        return messageIds?.size
-            ? messages.filter((message) => messageIds.has(Number(message.id)))
-            : messages;
+        return [];
     },
 
     _matchesSearchFilter(message) {
         const { isNotification } = this.advancedFilterState;
-        return isNotification === undefined || (message.message_type === "notification") === isNotification;
+        return (
+            isNotification === undefined ||
+            (message.message_type === "notification") === isNotification
+        );
     },
 
     _applyStructuredFilters(messages) {
@@ -959,15 +876,12 @@ patch(Chatter.prototype, {
 
     get searchSuggestionGroups() {
         const term = this.currentSearchKeyword.trim().toLowerCase();
-        if (!term) {
-            return [];
-        }
-        const regex = new RegExp(`(^|[\\s\\W_])${escapeRegExp(term)}([\\s\\W_]|$)`, "i");
+        if (!term) return [];
+
+        const regex = new RegExp(`(^|[\\s\\W_])${escapeRegExp(term)}`, "i");
 
         const fieldGroups = Object.entries(groupBy(this.suggestions, "fieldName"))
-            .map(([fieldName, items]) =>
-                this._buildFieldSuggestionGroup(fieldName, items, term, regex)
-            )
+            .map(([fieldName, items]) => this._buildFieldSuggestionGroup(fieldName, items, term, regex))
             .filter(Boolean)
             .sort((a, b) => Number(a._fieldMatched) - Number(b._fieldMatched));
 
@@ -977,23 +891,11 @@ patch(Chatter.prototype, {
         ];
     },
 
-    _matchSuggestionValues(items, term, regex, field) {
-        const matches = items.filter((item) => {
+    _matchSuggestionValues(items, term, regex) {
+        return items.filter((item) => {
             const text = item.displayName.toLowerCase();
             return regex.test(text) || text === term;
         });
-        if (matches.length || !DATE_TYPES.has(field?.type)) {
-            return matches;
-        }
-        const termDates = this._extractAllIsoDates(term);
-        if (!termDates.size) {
-            return matches;
-        }
-        return items.filter((item) =>
-            [...this._extractAllIsoDates(String(item.rawValue || ""))].some((date) =>
-                termDates.has(date)
-            )
-        );
     },
 
     _buildFieldSuggestionGroup(fieldName, items, term, regex) {
@@ -1007,10 +909,8 @@ patch(Chatter.prototype, {
             matches = [...items].sort((a, b) => a.displayName.localeCompare(b.displayName));
             limit = LIMITS.fieldMatchItems;
         } else {
-            matches = this._matchSuggestionValues(items, term, regex, field);
-            if (!matches.length) {
-                return null;
-            }
+            matches = this._matchSuggestionValues(items, term, regex);
+            if (!matches.length) return null;
             const rank = (item) => {
                 const text = item.displayName.toLowerCase();
                 return text === term ? 0 : text.startsWith(term) ? 1 : 2;
@@ -1045,9 +945,21 @@ patch(Chatter.prototype, {
     },
 
     selectSearchSuggestion(group, item = null) {
+        if (!group?.key) {
+            return;
+        }
+
         if (group.key.startsWith(FIELD_GROUP_PREFIX)) {
-            if (item) {
-                this.selectFieldSuggestion(group.fieldName, item, group.label);
+            const selectedItem =
+                item ||
+                (group.items?.length === 1 ? group.items[0] : null);
+
+            if (selectedItem) {
+                this.selectFieldSuggestion(
+                    group.fieldName,
+                    selectedItem,
+                    group.label
+                );
             }
         } else if (group.key === MESSAGE_GROUP_KEY) {
             this.selectMessageSuggestion();
@@ -1071,9 +983,7 @@ patch(Chatter.prototype, {
     selectMessageSuggestion() {
         const filters = this.advancedFilterState.filters;
         const keyword = filters.keyword.trim();
-        if (!keyword) {
-            return;
-        }
+        if (!keyword) return;
         filters.activeKeyword = keyword;
         filters.activeKeywordMode = KEYWORD_MODE.MESSAGE;
         this.clearFieldSelection();
@@ -1093,11 +1003,13 @@ patch(Chatter.prototype, {
             .toLowerCase();
     },
 
+    getActivityDate(activity) {
+        return activity?.date_deadline ? String(activity.date_deadline).substring(0, 10) : null;
+    },
+
     getMessageDate(message) {
         const date = message?.date;
-        if (!date) {
-            return null;
-        }
+        if (!date) return null;
         try {
             if (typeof date.toISODate === "function") {
                 return date.toISODate();
@@ -1115,9 +1027,7 @@ patch(Chatter.prototype, {
     async exportAdvancedResults() {
         const messages = this.filteredMessages || [];
         const activities = this.activities || [];
-        if (!messages.length && !activities.length) {
-            return;
-        }
+        if (!messages.length && !activities.length) return;
 
         const [messageAudit, activityAudit] = await this._fetchAuditData(messages, activities);
         const records = [
@@ -1144,9 +1054,7 @@ patch(Chatter.prototype, {
 
     async _fetchAuditById(model, records) {
         const ids = this._numericIds(records);
-        if (!ids.length) {
-            return new Map();
-        }
+        if (!ids.length) return new Map();
         const audits = await this.orm.searchRead(model, [["id", "in", ids]], AUDIT_FIELDS, {
             limit: ids.length,
         });
@@ -1155,19 +1063,20 @@ patch(Chatter.prototype, {
 
     _auditInfo(audit = {}) {
         return {
-            createDate: audit.create_date || "",
+            createDate: audit.create_date ? this._formatDateValue(audit.create_date, "datetime") : "",
             createdBy: this._relationName(audit.create_uid),
-            updatedDate: audit.write_date || "",
+            updatedDate: audit.write_date ? this._formatDateValue(audit.write_date, "datetime") : "",
             updatedBy: this._relationName(audit.write_uid),
         };
     },
 
     _messageExportRecord(message, audit) {
         const typeOption = this.messageTypeOptions.find((t) => t.value === message.message_type);
+        const date = this.getMessageDate(message);
         return {
             id: message.id || "",
             ...this._auditInfo(audit),
-            date: this.getMessageDate(message) || "",
+            date: date ? this._formatDateValue(date, "date") : "",
             user: message.author?.name || "",
             type: typeOption?.label || message.message_type || "",
             subject: this.getMessageText(message.subject),
@@ -1180,7 +1089,7 @@ patch(Chatter.prototype, {
         return {
             id: activity.id || "",
             ...this._auditInfo(audit),
-            date: activity.date_deadline || "",
+            date: activity.date_deadline ? this._formatDateValue(activity.date_deadline, "date") : "",
             user: this._relationName(activity.user_id),
             type: this._relationName(activity.activity_type_id),
             subject: activity.summary || "",
