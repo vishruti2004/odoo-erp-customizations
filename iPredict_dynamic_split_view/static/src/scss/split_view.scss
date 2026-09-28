@@ -1,0 +1,177 @@
+.o_ipredict_split_divider {
+    flex: 0 0 6px;
+    align-self: stretch;
+    cursor: col-resize;
+    background: rgba(184, 184, 184, 0.28);
+    position: relative;
+    z-index: 5;
+    touch-action: none;
+    transition: background-color 0.15s ease;
+
+    &::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 2px;
+        height: 32px;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 1px;
+    }
+
+    &:hover {
+        background: rgba(0, 123, 255, 0.3);
+    }
+}
+
+body.o_ipredict_resizing {
+    user-select: none;
+    cursor: col-resize;
+}
+
+.o_content:has(> .o_ipredict_split_panel) {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+
+    > .o_search_panel {
+        flex: 0 0 auto;
+    }
+
+    > :not(.o_ipredict_split_panel):not(.o_ipredict_split_divider):not(.o_search_panel) {
+        flex: 0 0 var(--ipredict-split-left, 50%);   // width comes from the divider
+        box-sizing: border-box;
+        min-width: 0;
+        overflow: auto;
+    }
+
+    > .o_kanban_renderer {
+        overflow: auto;
+        padding-bottom: 1rem;
+    }
+}
+
+
+// ---------- Right panel (form) ----------
+.o_ipredict_split_panel {
+    flex: 1 1 0%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .o_ipredict_split_form {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        > .o_view_controller {
+            flex: 1 1 auto;
+            min-height: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    // ---------- Control panel inside the split ----------
+    .o_control_panel,
+    .o_control_panel_main,
+    .o_control_panel_breadcrumbs,
+    .o_control_panel_actions {
+        height: auto !important;     
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .o_control_panel {
+        flex: 0 0 auto;
+        padding: 0.4rem 0.75rem 0;
+        margin-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .o_control_panel_main {
+        flex-wrap: wrap !important;   
+        align-items: flex-start;
+    }
+
+    .o_control_panel_breadcrumbs {
+        flex: 1 1 auto;
+        align-items: center;
+    }
+
+    .o_control_panel_actions {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+
+        .o-form-buttonbox {
+            flex-wrap: wrap;
+            gap: 0.25rem;
+        }
+    }
+
+    .o_control_panel_navigation,
+    .o_cp_pager {
+        display: none;                
+    }
+
+    .o_breadcrumb {
+        min-width: 0;
+    }
+
+    .o_content {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .o_form_view {
+        min-width: 0;
+
+        .o_form_sheet_bg {
+            padding: 0;
+            width: 100%;
+
+            .o_form_sheet {
+                min-width: 0;
+                max-width: 100%;
+                margin: 0.5rem 0;
+            }
+        }
+
+        .o_FormRenderer_chatterContainer {
+            width: 100%;
+        }
+    }
+}
+
+.o_data_row.o_ipredict_split_selected {
+    background-color: #d1ecf1 !important;
+
+    td {
+        background-color: #d1ecf1 !important;
+    }
+}
+
+.o_kanban_record.o_ipredict_split_selected {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
+    background-color: #d1ecf1 !important;
+}
+
+.o_cp_switch_buttons {
+    > .o_ipredict_split_view_button {
+        border-radius: 0.375rem;
+
+        i {
+            color: currentColor;
+        }
+    }
+}

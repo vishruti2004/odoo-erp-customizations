@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<odoo>
+
+    <record id="res_config_settings_view_form_dynamic_split_view"
+            model="ir.ui.view">
+
+        <field name="name">res.config.settings.view.form.dynamic.split.view</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+
+        <field name="arch" type="xml">
+
+            <xpath expr="//form" position="inside">
+
+                <app string="Dynamic Split View"
+                     name="iPredict_dynamic_split_view">
+
+                    <block title="Split View Configuration">
+
+                        <setting string="Enable List Split View"
+                                 help="Display list views in a split-screen layout, allowing you to view records and related details side by side.">
+                            <field name="enable_list_split_view"/>
+                        </setting>
+
+                        <setting string="Enable Kanban Split View"
+                                 help="Display kanban views in a split-screen layout to work with cards and details at the same time.">
+                            <field name="enable_kanban_split_view"/>
+                        </setting>
+
+                    </block>
+
+                </app>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

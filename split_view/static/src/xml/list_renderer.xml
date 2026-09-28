@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!-- Extend ListRenderer to add split view container -->
+    <t t-inherit="web.ListRenderer" t-inherit-mode="extension">
+
+        <!--
+            Wrap the list renderer so the split panel can sit next to it.
+            `$0` re-injects the original node untouched, so upstream changes to
+            the core list template still apply instead of being frozen into a
+            copy maintained here.
+        -->
+        <xpath expr="//div[hasclass('o_list_renderer', 'o_renderer', 'table-responsive')]" position="replace">
+            <div class="split_view_list_wrapper">$0</div>
+            <t t-log="'>>> SPLITVIEW TEMPLATE RENDERING'"/>
+            <SplitviewContainer t-if="splitViewState and splitViewState.show" t-props="getSplitviewContainerProps()"/>
+        </xpath>
+
+    </t>
+
+</templates>
+<!-- SaleListRenderer -->
