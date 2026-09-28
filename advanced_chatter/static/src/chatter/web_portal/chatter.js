@@ -23,7 +23,6 @@ const LIMITS = {
 const FIELD_ATTRIBUTES = ["string", "type", "relation", "selection", "searchable"];
 const AUDIT_FIELDS = ["id", "create_date", "create_uid", "write_date", "write_uid"];
 
-
 const DATE_TYPES = new Set(["date", "datetime"]);
 
 const SELECTION_SOURCES = {
@@ -52,6 +51,9 @@ const MESSAGE_SUGGESTION_FIELDS = {
     subject: "subject",
 };
 const HTML_MESSAGE_FIELDS = new Set(["subject"]);
+
+const REFERENCE_CODE_FIELDS = ["default_code", "code", "reference", "ref"];
+const REFERENCE_MODEL_TYPES = new Set(["many2one", "one2many", "many2many"]);
 
 const RECORD_FILTERS = {
     message: { userId: "author", messageType: "message_type", subtypeId: "subtype_id" },
@@ -107,6 +109,7 @@ patch(Chatter.prototype, {
         this.suggestions = [];
         this.fieldValueMessageIds = new Map();
         this.fieldValueActivityIds = new Map();
+        this._referenceModelCache = null;
 
         for (const property of Object.keys(SELECTION_SOURCES)) {
             this[property] = [];
@@ -407,6 +410,8 @@ patch(Chatter.prototype, {
 
         return { add, suggestions, messageIds, activityIds };
     },
+
+  
     async extractAllSuggestions() {
         const { add, suggestions, messageIds, activityIds } = this._createSuggestionCollector();
 
@@ -417,6 +422,7 @@ patch(Chatter.prototype, {
         this._addActivitySuggestions(activities, add);
         await this._addTrackingValueSuggestions(messages, add);
         this._addMatchedSelectionLabels(messages, add);
+        await this._addMessageBodyReferenceSuggestions(messages, add);
 
         this.suggestions = suggestions;
         this.fieldValueMessageIds = messageIds;
@@ -541,8 +547,19 @@ patch(Chatter.prototype, {
                 const definition = fieldDefs.get(
                     Number(this.getMany2OneValue(tracking.field_id).id)
                 );
-                const field = this.searchableFields[definition?.name];
-                if (!messageId || !field) continue;
+                if (!messageId || !definition) continue;
+
+                if (!this.searchableFields[definition.name]) {
+                    this.searchableFields[definition.name] = {
+                        name: definition.name,
+                        string: definition.field_description || definition.name,
+                        type: definition.ttype || "char",
+                        relation: definition.relation || null,
+                        selection: definition.selection || null,
+                        source: "tracking",
+                    };
+                }
+                const field = this.searchableFields[definition.name];
 
                 for (const prefix of TRACKING_PREFIXES) {
                     const rawValue = this._readTrackingValue(tracking, prefix, field.type);
@@ -577,10 +594,37 @@ patch(Chatter.prototype, {
         const definitions = await this.orm.searchRead(
             "ir.model.fields",
             [["id", "in", fieldIds]],
-            ["id", "name"],
+            ["id", "name", "field_description", "ttype", "relation", "model"],
             { limit: fieldIds.length }
         );
-        return new Map(definitions.map((definition) => [Number(definition.id), definition]));
+
+        const selectionNamesByModel = new Map();
+        for (const def of definitions) {
+            if (def.ttype === "selection" && def.model) {
+                if (!selectionNamesByModel.has(def.model)) {
+                    selectionNamesByModel.set(def.model, []);
+                }
+                selectionNamesByModel.get(def.model).push(def.name);
+            }
+        }
+
+        const selectionByKey = new Map();
+        for (const [model, names] of selectionNamesByModel) {
+            const defs = await this._loadFieldDefs(model, names, ["selection"]);
+            for (const name of names) {
+                selectionByKey.set(`${model}|${name}`, defs?.[name]?.selection || null);
+            }
+        }
+
+        return new Map(
+            definitions.map((def) => [
+                Number(def.id),
+                {
+                    ...def,
+                    selection: selectionByKey.get(`${def.model}|${def.name}`) || null,
+                },
+            ])
+        );
     },
 
     _readTrackingValue(tracking, prefix, fieldType) {
@@ -602,6 +646,122 @@ patch(Chatter.prototype, {
                 if (isUsefulLabel && allText.includes(label.toLowerCase())) {
                     add(fieldName, label, value);
                 }
+            }
+        }
+    },
+
+    async _loadReferenceModels() {
+        if (this._referenceModelCache) return this._referenceModelCache;
+
+        const result = [];
+        if (!this.resModel || !this.resId) {
+            this._referenceModelCache = result;
+            return result;
+        }
+
+        const parentDefs = await this._loadFieldDefs(this.resModel);
+        const relatedModels = new Set();
+        for (const def of Object.values(parentDefs || {})) {
+            if (def.relation && REFERENCE_MODEL_TYPES.has(def.type)) {
+                relatedModels.add(def.relation);
+            }
+        }
+        if (!relatedModels.size) {
+            this._referenceModelCache = result;
+            return result;
+        }
+
+        const modelList = [...relatedModels];
+
+        const codeFieldDefs = await this._safely(() =>
+            this.orm.searchRead(
+                "ir.model.fields",
+                [
+                    ["model", "in", modelList],
+                    ["ttype", "==", "char"],
+                    ["store", "==", true],
+                    ["name", "in", REFERENCE_CODE_FIELDS],
+                ],
+                ["model", "name"]
+            )
+        , []);
+
+        const modelInfos = await this._safely(() =>
+            this.orm.searchRead(
+                "ir.model",
+                [["model", "in", modelList]],
+                ["model", "name"]
+            )
+        , []);
+        const labelByModel = new Map(modelInfos.map((m) => [m.model, m.name]));
+
+        for (const cf of codeFieldDefs) {
+            result.push({
+                model: cf.model,
+                codeField: cf.name,
+                label: labelByModel.get(cf.model) || cf.model,
+            });
+        }
+
+        this._referenceModelCache = result;
+        return result;
+    },
+
+    async _addMessageBodyReferenceSuggestions(messages, add) {
+        const candidates = await this._loadReferenceModels();
+        if (!candidates.length) return;
+
+        const referenceRegex = /\[([A-Z0-9][A-Z0-9_\-\.]*)\]\s*([A-Za-z0-9][^:<\n\r&\[\]]*)/g;
+        const references = new Map();
+
+        for (const message of messages) {
+            const text = [message.subject, message.body]
+                .map((v) => this.getMessageText(v))
+                .join(" ");
+            if (!text) continue;
+
+            referenceRegex.lastIndex = 0;
+            let match;
+            while ((match = referenceRegex.exec(text)) !== null) {
+                const code = match[1];
+                const name = match[2].trim().replace(/[\s.,;:!?]+$/, "");
+                if (!name || name.length < 2) continue;
+                if (!references.has(code)) {
+                    references.set(code, {
+                        code,
+                        label: `[${code}] ${name}`,
+                        messageId: message.id,
+                    });
+                }
+            }
+        }
+        if (!references.size) return;
+
+        for (const ref of references.values()) {
+            for (const cand of candidates) {
+                const found = await this._safely(() =>
+                    this.orm.searchRead(
+                        cand.model,
+                        [[cand.codeField, "=", ref.code]],
+                        ["id"],
+                        { limit: 1 }
+                    )
+                , []);
+                if (!found?.length) continue;
+                
+                const fieldName = `__ref_${cand.model}`;
+                if (!this.searchableFields[fieldName]) {
+                    this.searchableFields[fieldName] = {
+                        name: fieldName,
+                        string: cand.label,
+                        type: "char",
+                        relation: cand.model,
+                        selection: null,
+                        source: "message",
+                    };
+                }
+                add(fieldName, ref.label, ref.label, ref.messageId);
+                break;
             }
         }
     },
