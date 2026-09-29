@@ -24,7 +24,6 @@ Features:
 - Pagination Support
 - Native Form Operations
 - Chatter and Activities Support
-- Smart Buttons and Wizards Support
 - Split View State Persistence
 - Record Navigation Support
 - Action-based Split View
@@ -46,21 +45,38 @@ Features:
 
    "assets": {
     "web.assets_backend": [
-        "iPredict_dynamic_split_view/static/src/js/split_view_state.js",
-        "iPredict_dynamic_split_view/static/src/js/split_view_container.js",
-        "iPredict_dynamic_split_view/static/src/js/split_view_divider.js",
+        # Shared state / helpers
+        "iPredict_dynamic_split_view/static/src/js/views/split_view/split_view_state.js",
+        "iPredict_dynamic_split_view/static/src/js/utils/split_view_utils.js",
 
-        "iPredict_dynamic_split_view/static/src/js/list_split_view.js",
-        "iPredict_dynamic_split_view/static/src/js/kanban_split_view.js",
-        "iPredict_dynamic_split_view/static/src/js/split_view_control_panel.js",
-        "iPredict_dynamic_split_view/static/src/js/split_view_layout.js",  
-        "iPredict_dynamic_split_view/static/src/js/split_view_form_layout.js",  
+        # List
+        "iPredict_dynamic_split_view/static/src/js/views/list/list_controller.js",
+        "iPredict_dynamic_split_view/static/src/js/views/list/list_renderer.js",
+        "iPredict_dynamic_split_view/static/src/js/views/list/list_action_menu.js",
+
+        # Kanban
+        "iPredict_dynamic_split_view/static/src/js/views/kanban/kanban_controller.js",
+        "iPredict_dynamic_split_view/static/src/js/views/kanban/kanban_record.js",
+        "iPredict_dynamic_split_view/static/src/js/views/kanban/kanban_action_menu.js",
 
 
-        "iPredict_dynamic_split_view/static/src/xml/split_view_buttons.xml",
-        "iPredict_dynamic_split_view/static/src/xml/split_view_container.xml",
-        "iPredict_dynamic_split_view/static/src/xml/split_view_layout.xml", 
+        # Form
+        "iPredict_dynamic_split_view/static/src/js/views/form/form_controller.js",
 
+        # Control Panel
+        "iPredict_dynamic_split_view/static/src/js/search/control_panel/control_panel.js",
+
+        # Split View
+        "iPredict_dynamic_split_view/static/src/js/views/split_view/split_view_divider.js",
+        "iPredict_dynamic_split_view/static/src/js/views/split_view/split_view_container.js",
+        "iPredict_dynamic_split_view/static/src/js/views/split_view/split_view_layout.js",
+
+        # XML
+        "iPredict_dynamic_split_view/static/src/xml/search/control_panel/control_panel.xml",
+        "iPredict_dynamic_split_view/static/src/xml/views/split_view/split_view_container.xml",
+        "iPredict_dynamic_split_view/static/src/xml/layout/layout.xml",
+
+        # Style
         "iPredict_dynamic_split_view/static/src/scss/split_view.scss",
     ],
 },
