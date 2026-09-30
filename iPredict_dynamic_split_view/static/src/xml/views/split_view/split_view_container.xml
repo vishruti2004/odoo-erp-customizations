@@ -1,40 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <templates xml:space="preserve">
-
     <t t-name="ipredict_dynamic_split_view.SplitViewContainer">
-
-        <div
-            class="o_ipredict_split_divider"
-            t-ref="divider"
-            title="Drag to resize (double click to reset)"
-            t-on-pointerdown="onDividerPointerDown"
-            t-on-dblclick="onDividerDblClick"
-        />
-
-        <div
-            class="o_ipredict_split_panel"
-            t-ref="panel"
-            t-att-class="{
-                'o_ipredict_split_vertical':
-                    splitViewState.direction === 'vertical'
-            }"
-        >
-
+        <div class="o_ipredict_split_divider"
+             t-ref="divider"
+             title="Drag to resize (double click to reset)"
+             t-on-pointerdown="onDividerPointerDown"
+             t-on-dblclick="onDividerDblClick"/>
+        <div class="o_ipredict_split_panel"
+             t-ref="panel"
+             t-att-class="{'o_ipredict_split_vertical': splitViewState.direction === 'vertical'}">
             <div class="o_ipredict_split_form">
-
-                <View
-                    t-key="(props.resId || 'new') + '_' + splitViewState.hostRefreshTick"
-                    type="'form'"
-                    resModel="props.resModel"
-                    resId="props.resId"
-                    preventCreate="true"
-                />
-
+                <View t-key="(props.resId || 'new') + '_' + splitViewState.hostRefreshTick"
+                      type="'form'"
+                      resModel="props.resModel"
+                      resId="props.resId"
+                      preventCreate="true"/>
             </div>
-
         </div>
-
     </t>
-
 </templates>

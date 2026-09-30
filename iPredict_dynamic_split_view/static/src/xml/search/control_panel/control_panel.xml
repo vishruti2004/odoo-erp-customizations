@@ -1,62 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <templates xml:space="preserve">
-
-    <t
-        t-inherit="web.ControlPanel"
-        t-inherit-mode="extension"
-    >
-
-        <xpath
-            expr="//t[@t-slot='layout-actions']"
-            position="after"
-        >
-
-            <button
-                t-if="showSplitView()"
-                type="button"
-                class="btn btn-secondary o_ipredict_split_view_button ms-4"
-                t-att-class="{
-                    active: splitViewState.active
-                }"
-                data-tooltip="Split View"
-                aria-label="Split View"
-                t-on-click="onSplitViewClicked"
-            >
+    <t t-inherit="web.ControlPanel" t-inherit-mode="extension">
+        <xpath expr="//t[@t-slot='layout-actions']" position="after">
+            <!-- Split View Button -->
+            <button t-if="showSplitView()"
+                    type="button"
+                    class="btn btn-secondary o_ipredict_split_view_button ms-4"
+                    t-att-class="{ active: splitViewState.active }"
+                    data-tooltip="Split View"
+                    aria-label="Split View"
+                    t-on-click="onSplitViewClicked">
                 <i class="oi-fw oi oi-panel-right"/>
             </button>
-
-            <button
-                t-if="showSplitDirection()"
-                type="button"
-                class="btn btn-secondary o_ipredict_split_direction_button"
-                t-att-data-tooltip="
-                    splitViewState.direction === 'horizontal'
-                        ? 'Switch to Vertical Split'
-                        : 'Switch to Horizontal Split'
-                "
-                t-att-aria-label="
-                    splitViewState.direction === 'horizontal'
-                        ? 'Switch to Vertical Split'
-                        : 'Switch to Horizontal Split'
-                "
-                t-on-click="onSplitDirectionClicked"
-            >
-                <i
-                    t-if="
-                        splitViewState.direction === 'horizontal'
-                    "
-                    class="fa fa-arrows-h"
-                />
-
-                <i
-                    t-else=""
-                    class="fa fa-arrows-v"
-                />
+            <!-- Split Direction Button -->
+            <button t-if="showSplitDirection()"
+                    type="button"
+                    class="btn btn-secondary o_ipredict_split_direction_button"
+                    t-att-data-tooltip="isSplitDirectionToggle ? (splitViewState.direction === 'horizontal' ? 'Switch to Vertical Split' : 'Switch to Horizontal Split') : (splitViewState.direction === 'horizontal' ? 'Horizontal Split' : 'Vertical Split')"
+                    t-att-aria-label="isSplitDirectionToggle ? (splitViewState.direction === 'horizontal' ? 'Switch to Vertical Split' : 'Switch to Horizontal Split') : (splitViewState.direction === 'horizontal' ? 'Horizontal Split' : 'Vertical Split')"
+                    t-on-click="onSplitDirectionClicked">
+                <i t-if="splitViewState.direction === 'horizontal'"
+                   class="fa fa-arrows-h"/>
+                <i t-else=""
+                   class="fa fa-arrows-v"/>
             </button>
-
         </xpath>
-
     </t>
-
 </templates>

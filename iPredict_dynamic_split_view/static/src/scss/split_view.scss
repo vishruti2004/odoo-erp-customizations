@@ -245,3 +245,30 @@ body.o_ipredict_resizing:has(
 .o_ipredict_split_view_button + .o_ipredict_split_direction_button {
     margin-left: 8px !important;
 }
+
+// ---------- Split Direction Radio ----------
+// ---------- Split Direction Radio ----------
+
+.o_ipredict_split_direction {
+    width: 100% !important;
+
+    .o_field_radio {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .o_field_radio > div {
+        display: inline-flex !important;
+        align-items: center !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        margin-right: 24px !important;
+        white-space: nowrap !important;
+    }
+
+    .o_field_radio > div:last-child {
+        margin-right: 0 !important;
+    }
+}

@@ -178,7 +178,7 @@ export class SplitViewContainer extends Component {
 
     onDividerPointerDown(ev) {
         const divider = this.dividerRef.el;
-        const parent = this.parentEl;z
+        const parent = this.parentEl;
 
         if (!divider || !parent) {
             return;

@@ -16,20 +16,20 @@ import { hasFormView } from "../../utils/split_view_utils";
 patch(ListController.prototype, {
     async createRecord(params = {}) {
         if (
-            isNewSplitEnabled() &&
-            splitViewState.gate &&
-            splitViewState.active &&
-            isSplitEnabled("list") &&
-            hasFormView(this.env) &&
-            !this.env.inSplitView &&
-            !this.env.inDialog &&
-            !this.env.isSmall
+            this.editable ||
+            !isNewSplitEnabled() ||
+            !splitViewState.gate ||
+            !splitViewState.active ||
+            !isSplitEnabled("list") ||
+            !hasFormView(this.env) ||
+            this.env.inSplitView ||
+            this.env.inDialog ||
+            this.env.isSmall
         ) {
-            openSplit(this.props.resModel, false);
-            return;
+            return super.createRecord(...arguments);
         }
 
-        return super.createRecord(...arguments);
+        openSplit(this.props.resModel, false);
     },
 
     get actionMenuProps() {

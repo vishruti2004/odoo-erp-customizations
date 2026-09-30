@@ -12,6 +12,8 @@ import {
     setSplitGate,
     toggleSplitDirection,
     isDirectionToggleEnabled,
+    openSplit,
+    closeSplit,
 } from "../../views/split_view/split_view_state";
 
 import { hasFormView } from "../../utils/split_view_utils";
@@ -25,6 +27,7 @@ patch(ControlPanel.prototype, {
 
     showSplitGate() {
         return (
+            session.enable_split_view &&
             isSplitEnabled(this.env.config?.viewType) &&
             hasFormView(this.env) &&
             !this.env.inSplitView &&
@@ -44,31 +47,33 @@ patch(ControlPanel.prototype, {
         return (
             this.showSplitView() &&
             splitViewState.active &&
-            (
-                session.split_horizontal ||
-                session.split_vertical
-            )
+            !!session.split_direction
         );
+    },
+
+    get splitDirection() {
+        return session.split_direction || "horizontal";
+    },
+
+    get isSplitDirectionToggle() {
+        return session.split_direction === "both";
     },
 
     onSplitGateClicked() {
         setSplitGate(!splitViewState.gate);
-
-        this.env.services.notification.add(
-            splitViewState.gate
-                ? "Split View button enabled"
-                : "Split View button disabled",
-            {
-                type: splitViewState.gate
-                    ? "success"
-                    : "warning",
-                title: "Split View",
-            }
-        );
     },
 
     onSplitViewClicked() {
-        if (splitViewState.defaultSplitView) {
+        if (session.default_split_view) {
+            if (splitViewState.show) {
+                closeSplit();
+            } else if (splitViewState.previousResId) {
+                openSplit(
+                    splitViewState.previousResModel,
+                    splitViewState.previousResId
+                );
+            }
+
             return;
         }
 

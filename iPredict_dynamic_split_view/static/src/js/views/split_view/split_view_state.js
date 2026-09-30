@@ -14,11 +14,15 @@ const storedGate =
 const defaultSplitView = !!session.default_split_view;
 
 const configuredDirection =
-    session.split_horizontal && session.split_vertical
-        ? browser.localStorage.getItem(DIRECTION_KEY) || "horizontal"
-        : session.split_vertical
-            ? "vertical"
-            : "horizontal";
+    session.split_direction || "horizontal";
+
+const storedDirection =
+    browser.localStorage.getItem(DIRECTION_KEY);
+
+const defaultDirection =
+    configuredDirection === "both"
+        ? (storedDirection || "horizontal")
+        : configuredDirection;
 
 export const splitViewState = reactive({
     gate: storedGate,
@@ -30,7 +34,7 @@ export const splitViewState = reactive({
             browser.localStorage.getItem(ACTIVE_KEY) === "1"
         ),
 
-    direction: configuredDirection,
+    direction: defaultDirection,
 
     show: false,
 
@@ -40,8 +44,8 @@ export const splitViewState = reactive({
     previousResModel: null,
     previousResId: false,
 
-    syncTick: 0,        // split form saved -> host list/kanban reloads
-    hostRefreshTick: 0,  // host list/kanban action executed -> split form reloads
+    syncTick: 0,
+    hostRefreshTick: 0,
 });
 
 export function isSplitEnabled(viewType) {
@@ -61,10 +65,7 @@ export function isNewSplitEnabled() {
 }
 
 export function isDirectionToggleEnabled() {
-    return (
-        !!session.split_horizontal &&
-        !!session.split_vertical
-    );
+    return session.split_direction === "both";
 }
 
 export function openSplit(resModel, resId = false) {
@@ -88,6 +89,7 @@ export function closeSplit() {
 }
 
 export function setSplitActive(value) {
+
     if (session.default_split_view) {
         splitViewState.active = true;
 
@@ -95,6 +97,10 @@ export function setSplitActive(value) {
             ACTIVE_KEY,
             "1"
         );
+
+        if (!value) {
+            closeSplit();
+        }
 
         return;
     }
@@ -142,13 +148,10 @@ export function toggleSplitDirection() {
     );
 }
 
-// Split form was saved -> tell the host list/kanban to reload
 export function notifySplitSaved() {
     splitViewState.syncTick++;
 }
 
-// Host list/kanban ran an Action (Cancel, Delete, Archive, statusbar
-// button, ...) that may have changed the record open in the split panel.
 export function notifyHostRefreshed() {
     splitViewState.hostRefreshTick++;
 }

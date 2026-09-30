@@ -9,41 +9,41 @@ class ResConfigSettings(models.TransientModel):
     enable_split_view = fields.Boolean(
         related="company_id.enable_split_view",
         readonly=False,
-        help="Enable Split View across the application for this company.",
+        help="Enable Split View functionality for supported List and Kanban views.",
     )
 
-    split_view_default = fields.Boolean(
-        related="company_id.split_view_default",
+    split_direction = fields.Selection(
+        related="company_id.split_direction",
         readonly=False,
-        help="Automatically open supported List and Kanban views in Split View.",
+        help="Choose the Split View orientation available to users.",
+    )
+
+    enable_split_view_type = fields.Boolean(
+        related="company_id.enable_split_view_type",
+        readonly=False,
+        help="Enable Split View for selected List and Kanban views.",
     )
 
     enable_list_split_view = fields.Boolean(
         related="company_id.enable_list_split_view",
         readonly=False,
-        help="Allow records in List views to be opened in the Split View panel.",
+        help="Enable Split View for List views.",
     )
 
     enable_kanban_split_view = fields.Boolean(
         related="company_id.enable_kanban_split_view",
         readonly=False,
-        help="Allow records in Kanban views to be opened in the Split View panel.",
+        help="Enable Split View for Kanban views.",
     )
 
-    split_horizontal = fields.Boolean(
-        related="company_id.split_horizontal",
+    split_view_default = fields.Boolean(
+        related="company_id.split_view_default",
         readonly=False,
-        help="Display the record panel beside the List or Kanban view.",
-    )
-
-    split_vertical = fields.Boolean(
-        related="company_id.split_vertical",
-        readonly=False,
-        help="Display the record panel below the List or Kanban view.",
+        help="Open supported List and Kanban views with Split View enabled by default.",
     )
 
     enable_new_split_view = fields.Boolean(
         related="company_id.enable_new_split_view",
         readonly=False,
-        help="Open new records directly in the Split View panel instead of a full-page form.",
+        help="Open newly created records directly in the Split View panel instead of a full-page form.",
     )

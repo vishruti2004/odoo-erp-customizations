@@ -19,8 +19,7 @@ function isRelevantHost(controller) {
 }
 
 patch(ListController.prototype, {
-    // "Actions" (cog) menu on selected records: Export/Duplicate/Delete/
-    // Cancel/etc.
+    
     get actionMenuProps() {
         const props = super.actionMenuProps;
 
@@ -38,8 +37,6 @@ patch(ListController.prototype, {
         };
     },
 
-    // Header / statusbar contextual buttons (e.g. the "Cancel" button that
-    // appears above the list when quotations are selected).
     async afterExecuteActionButton(clickParams) {
         const result = await super.afterExecuteActionButton(clickParams);
 

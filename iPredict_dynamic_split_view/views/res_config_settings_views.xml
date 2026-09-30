@@ -7,71 +7,42 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@name='users_setting_container']" position="after">
                 <block title="Dynamic Split View" name="dynamic_split_view_setting_container">
-                    <div class="row">
-                        <div class="col-12 col-lg-6">
-                            <setting id="enable_split_view_setting"
-                                     string="Enable Split View"
-                                     help="Enable Split View across the application for this company.">
-                                <field name="enable_split_view"/>
-                            </setting>
+                    <!-- 1. Enable Split View -->
+                    <setting string="Enable Split View"
+                             help="Choose the preferred Split View orientation — Horizontal, Vertical, or Both.">
+                        <field name="enable_split_view"/>
+                        <div class="o_ipredict_split_direction" invisible="not enable_split_view">
+                            <field name="split_direction" widget="radio" options="{'horizontal': true}"/>
                         </div>
-                        <div class="col-12 col-lg-6">
-                            <setting id="default_split_view_setting"
-                                     string="Default Split View"
-                                     help="Automatically open supported List and Kanban views in Split View.">
-                                <field name="split_view_default"/>
-                            </setting>
+                    </setting>
+                    <!-- 2. Split View Type -->
+                    <setting string="Split View Type"
+                             help="Enable Split View functionality across supported List and Kanban views."
+                             invisible="not enable_split_view">
+                        <field name="enable_split_view_type"/>
+                        <div class="d-flex align-items-center gap-4" invisible="not enable_split_view_type">
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="enable_list_split_view" class="oe_inline"/>
+                                <label for="enable_list_split_view" string="List View" class="mb-0"/>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="enable_kanban_split_view" class="oe_inline"/>
+                                <label for="enable_kanban_split_view" string="Kanban View" class="mb-0"/>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="row mt-3" invisible="not enable_split_view">
-                        <div class="col-12 col-lg-6">
-                            <setting id="list_split_view_setting"
-                                     string="Enable List View"
-                                     help="Allow records in List views to be opened in the Split View panel.">
-                                <field name="enable_list_split_view"/>
-                            </setting>
-                        </div>
-
-                        <div class="col-12 col-lg-6">
-                            <setting id="kanban_split_view_setting"
-                                     string="Enable Kanban View"
-                                     help="Allow records in Kanban views to be opened in the Split View panel.">
-                                <field name="enable_kanban_split_view"/>
-                            </setting>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3" invisible="not enable_split_view">
-                        <div class="col-12 col-lg-6">
-                            <setting id="new_record_split_view_setting"
-                                     string="Enable New Record in Split View"
-                                     help="Open new records directly in the Split View panel instead of a full-page form.">
-                                <field name="enable_new_split_view"/>
-                            </setting>
-                        </div>
-
-                        <div class="col-12 col-lg-6"
-                             invisible="not (enable_list_split_view or enable_kanban_split_view)">
-                            <setting id="split_direction_setting"
-                                     string="Split Direction">
-                                <div class="d-flex align-items-center">
-                                    <div class="d-flex align-items-center me-4">
-                                        <field name="split_horizontal" class="oe_inline"/>
-                                        <label for="split_horizontal"
-                                               string="Horizontal"
-                                               class="ms-2 mb-0"/>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <field name="split_vertical" class="oe_inline"/>
-                                        <label for="split_vertical"
-                                               string="Vertical"
-                                               class="ms-2 mb-0"/>
-                                    </div>
-                                </div>
-                            </setting>
-                        </div>
-                    </div>
+                    </setting>
+                    <!-- 3. Default Value -->
+                    <setting string="Allow Split View by Default"
+                             help="Open supported List and Kanban views in Split View by default."
+                             invisible="not enable_split_view">
+                        <field name="split_view_default"/>
+                    </setting>
+                    <!-- 4. New Button Flow -->
+                    <setting string="Allow New Records in Split View Screen"
+                             help="Open newly created records directly in the Split View panel instead of a full-page form."
+                             invisible="not enable_split_view">
+                        <field name="enable_new_split_view"/>
+                    </setting>
                 </block>
             </xpath>
         </field>
