@@ -49,6 +49,10 @@ export const splitViewState = reactive({
 });
 
 export function isSplitEnabled(viewType) {
+    if (!session.enable_split_view) {
+        return false;
+    }
+
     if (viewType === "list") {
         return !!session.enable_list_split_view;
     }

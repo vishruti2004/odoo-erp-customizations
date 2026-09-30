@@ -73,21 +73,4 @@ patch(KanbanController.prototype, {
 
         return super.createRecord(...arguments);
     },
-
-        get actionMenuProps() {
-        const props = super.actionMenuProps;
-        return {
-            ...props,
-            onActionExecuted: (options) => {
-                const result = props.onActionExecuted(options);
-                if (
-                    splitViewState.show &&
-                    splitViewState.resModel === this.model.root.resModel
-                ) {
-                    notifyHostRefreshed();
-                }
-                return result;
-            },
-        };
-    },
 });

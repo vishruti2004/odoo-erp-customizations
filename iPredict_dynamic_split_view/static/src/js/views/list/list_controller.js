@@ -8,7 +8,6 @@ import {
     isSplitEnabled,
     isNewSplitEnabled,
     openSplit,
-    notifyHostRefreshed,
 } from "../split_view/split_view_state";
 
 import { hasFormView } from "../../utils/split_view_utils";
@@ -30,28 +29,5 @@ patch(ListController.prototype, {
         }
 
         openSplit(this.props.resModel, false);
-    },
-
-    get actionMenuProps() {
-        const props = super.actionMenuProps;
-
-        return {
-            ...props,
-
-            onActionExecuted: async (...args) => {
-                const result =
-                    await props.onActionExecuted(...args);
-
-                if (
-                    splitViewState.show &&
-                    splitViewState.resModel ===
-                        this.model.root.resModel
-                ) {
-                    notifyHostRefreshed();
-                }
-
-                return result;
-            },
-        };
     },
 });

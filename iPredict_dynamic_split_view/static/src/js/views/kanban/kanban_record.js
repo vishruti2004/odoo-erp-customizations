@@ -4,7 +4,7 @@ import { patch } from "@web/core/utils/patch";
 import { useState } from "@odoo/owl";
 import { KanbanRecord } from "@web/views/kanban/kanban_record";
 
-import { splitViewState } from "../split_view/split_view_state";
+import { splitViewState, isSplitEnabled } from "../split_view/split_view_state";
 
 patch(KanbanRecord.prototype, {
     setup() {
@@ -17,6 +17,7 @@ patch(KanbanRecord.prototype, {
         let cls = super.getRecordClasses(...arguments);
 
         if (
+            isSplitEnabled("kanban") &&
             this.env.config?.viewType === "kanban" &&
             !this.env.inSplitView &&
             this.ipSplit.show &&
