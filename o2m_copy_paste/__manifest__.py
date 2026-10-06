@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "O2M Copy Paste",
+    "name": "One2Many Copy Paste",
     "version": "19.0.1.0.0",
     "summary": "Copy and paste One2many lines between records (Ctrl+C / Ctrl+V).",
     "description": """
@@ -17,11 +17,10 @@ Generic One2many line copy & paste for every form view.
     "author": "iPredict IT Solutions Pvt. Ltd.",
     "website": "https://ipredictitsolutions.com",
     "license": "LGPL-3",
-    "depends": ["web",  "purchase"],
+    "depends": ["web"],
 
     "data": [    
         "views/res_config_settings_views.xml",
-
     ],
     "assets": {
         "web.assets_backend": [

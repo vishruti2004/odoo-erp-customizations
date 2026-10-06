@@ -8,60 +8,120 @@ import { getListDescriptor, isCompatible } from "../utils/compatibility";
 import { serializeRecord } from "../utils/line_serializer";
 
 const STORAGE_KEY = "o2m_copy_paste.clipboard";
+const SETTINGS_MODEL = "o2m.copy.paste";
+const PRIORITY_FIELDS = ["product_template_id", "product_id"];
+const UNSUPPORTED_TYPES = ["one2many", "properties", "reference", "many2one_reference"];
+
+function toClientValue(field, value) {
+    switch (field.type) {
+        case "many2one":
+            return value ? { id: value[0], display_name: value[1] } : false;
+        case "many2many":
+            return [[6, false, value || []]];
+        default:
+            return parseServerValue(field, value);
+    }
+}
+
+function isSameValue(field, current, wanted) {
+    switch (field.type) {
+        case "many2one":
+            return (current?.id || false) === (wanted?.id || false);
+        case "many2many": {
+            const currentIds = (current?.currentIds || []).filter((id) => typeof id === "number");
+            const wantedIds = wanted?.[0]?.[2] || [];
+            return [...currentIds].sort().join() === [...wantedIds].sort().join();
+        }
+        case "date":
+        case "datetime":
+            return (current?.toMillis?.() ?? current) === (wanted?.toMillis?.() ?? wanted);
+        default:
+            return (current || false) === (wanted || false);
+    }
+}
+
+function buildChanges(list, values, copyFields, copyFalseEnabled) {
+    const changes = {};
+    for (const [name, value] of Object.entries(values)) {
+        const field = list.fields[name];
+        const info = copyFields[name];
+        const copyFalse = info?.copy === false;
+        const allowed = !copyFalse || (copyFalseEnabled && !info.compute);
+        const known = name in list.activeFields || (copyFalse && copyFalseEnabled);
+        if (
+            !field ||
+            !allowed ||
+            !known ||
+            UNSUPPORTED_TYPES.includes(field.type) ||
+            name === list.handleField ||
+            name === list.config.relationField
+        ) {
+            continue;
+        }
+        changes[name] = toClientValue(field, value);
+    }
+    return changes;
+}
+
+async function applyChanges(record, list, changes) {
+    const rank = (name) => (PRIORITY_FIELDS.includes(name) ? 0 : 1);
+    const names = Object.keys(changes).sort((a, b) => rank(a) - rank(b));
+    for (let pass = 0; pass < 3; pass++) {
+        let updated = false;
+        for (const name of names) {
+            if (pass && !(name in record.data)) {
+                continue;
+            }
+            if (isSameValue(list.fields[name], record.data[name], changes[name])) {
+                continue;
+            }
+            await record.update({ [name]: changes[name] });
+            updated = true;
+        }
+        if (!updated) {
+            return;
+        }
+    }
+}
 
 export const o2mCopyPasteService = {
     dependencies: ["notification", "orm"],
 
-    start(env, { notification, orm }) {
+    async start(env, { notification, orm }) {
         const renderers = new Set();
+        const copyFieldsCache = new Map();
         let active = null;
         let memory = null;
 
+        const call = (method, args = [], fallback) =>
+            orm.call(SETTINGS_MODEL, method, args).catch(() => fallback);
+        const [enabled, copyFalseEnabled] = await Promise.all([
+            call("get_copy_paste_enabled", [], false),
+            call("get_copy_false_setting", [], false),
+        ]);
+        const notify = (message, type = "success") => notification.add(message, { type });
+
         function readClipboard() {
             try {
-                const raw = browser.localStorage.getItem(STORAGE_KEY);
-
-                if (raw) {
-                    return JSON.parse(raw);
-                }
+                return JSON.parse(browser.localStorage.getItem(STORAGE_KEY)) || memory;
             } catch {
+                return memory;
             }
-            return memory;
         }
 
         function writeClipboard(payload) {
             memory = payload;
             try {
-                browser.localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(payload)
-                );
+                browser.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
             } catch {
             }
         }
 
-        async function getCopyFalseFields(list) {
-            try {
-                return await orm.call(
-                    "o2m.copy.paste",
-                    "get_copy_fields",
-                    [list.resModel]
-                );
-            } catch {
-                return {};
+        async function getCopyFields(resModel) {
+            if (!copyFieldsCache.has(resModel)) {
+                copyFieldsCache.set(resModel, await call("get_copy_fields", [resModel], {}));
             }
-        }
-
-        async function getCopyFalseSetting() {
-            try {
-                return await orm.call(
-                    "o2m.copy.paste",
-                    "get_copy_false_setting",
-                    []
-                );
-            } catch {
-                return false;
-            }
+            return copyFieldsCache.get(resModel);
         }
 
         function liveRenderers() {
@@ -70,402 +130,130 @@ export const o2mCopyPasteService = {
                     renderers.delete(renderer);
                 }
             }
-
             if (active && !renderers.has(active)) {
                 active = null;
             }
-
             return [...renderers];
         }
 
         function setActiveFromTarget(target) {
-            for (const renderer of liveRenderers()) {
-                if (renderer.rootRef.el.contains(target)) {
-                    active = renderer;
-                    return;
-                }
-            }
+            active = liveRenderers().find((r) => r.rootRef.el.contains(target)) || active;
         }
 
         function pickSource() {
-            const withSelection = liveRenderers().filter(
-                (renderer) => renderer.getO2MSelectedRecords().length
-            );
-
-            if (active && withSelection.includes(active)) {
-                return active;
-            }
-
-            return withSelection[0] || null;
-        }
-
-        async function copy(renderer) {
-            const list = renderer.props.list;
-
-            const records = renderer.getO2MSelectedRecords();
-
-            if (!records.length) {
-                return false;
-            }
-
-            const copyFalseFields = await getCopyFalseFields(list);
-
-            const copyFalseFieldsEnabled =
-                await getCopyFalseSetting();
-
-            const serializedLines = records.map((record) => {
-                return serializeRecord(
-                    record,
-                    copyFalseFields,
-                    copyFalseFieldsEnabled
-                );
-            });
-
-            writeClipboard({
-                version: 1,
-                ...getListDescriptor(list),
-                copiedAt: Date.now(),
-                lines: serializedLines,
-            });
-
-            notification.add(
-                records.length === 1
-                    ? _t("1 line copied")
-                    : _t("%(count)s lines copied", {
-                        count: records.length,
-                    }),
-                { type: "success" }
-            );
-
-            return true;
+            const withSelection = liveRenderers().filter((r) => r.getO2MSelectedRecords().length);
+            return withSelection.includes(active) ? active : withSelection[0] || null;
         }
 
         function pickTarget(clipboard) {
-            const all = liveRenderers();
-
-            if (!all.length) {
-                return { renderer: null };
-            }
-
-            const compatible = all.filter((renderer) =>
-                isCompatible(
-                    clipboard,
-                    renderer.props.list
-                )
-            );
-
+            const compatible = liveRenderers().filter((r) => isCompatible(clipboard, r.props.list));
             if (!compatible.length) {
-                return {
-                    renderer: null,
-                    reason: "incompatible",
-                };
+                return { renderer: null, reason: "incompatible" };
             }
-
-            if (active && compatible.includes(active)) {
+            if (compatible.includes(active)) {
                 return { renderer: active };
             }
-
-            if (compatible.length === 1) {
-                return {
-                    renderer: compatible[0],
-                };
-            }
-
-            return {
-                renderer: null,
-                reason: "ambiguous",
-            };
+            return compatible.length === 1
+                ? { renderer: compatible[0] }
+                : { renderer: null, reason: "ambiguous" };
         }
 
-        function toClientChanges(
-            list,
-            values,
-            copyFalseFields = {},
-            copyFalseFieldsEnabled = false
-        ) {
-            const changes = {};
-
-            for (const [name, value] of Object.entries(values)) {
-                const field = list.fields[name];
-
-                const fieldInfo = copyFalseFields[name];
-
-                const isCopyFalse = fieldInfo?.copy === false;
-
-                const allowCopyFalseField =
-                    isCopyFalse && copyFalseFieldsEnabled;
-
-                if (
-                    !field ||
-                    (!(name in list.activeFields) &&
-                        !allowCopyFalseField) ||
-                    name === list.handleField ||
-                    name === list.config.relationField
-                ) {
-                    continue;
-                }
-
-                switch (field.type) {
-                    case "many2one":
-                        changes[name] = value
-                            ? {
-                                id: value[0],
-                                display_name: value[1],
-                            }
-                            : false;
-                        break;
-
-                    case "many2many":
-                        changes[name] = [
-                            [6, false, value || []],
-                        ];
-                        break;
-
-                    case "one2many":
-                    case "properties":
-                    case "reference":
-                    case "many2one_reference":
-                        break;
-
-                    default:
-                        changes[name] = parseServerValue(
-                            field,
-                            value
-                        );
-                }
+        async function copy(renderer) {
+            const records = renderer.getO2MSelectedRecords();
+            if (!enabled || !records.length) {
+                return false;
             }
-
-            return changes;
-        }
-
-        function getPasteValues(
-            values,
-            copyFalseFields,
-            copyFalseFieldsEnabled
-        ) {
-            const allowedValues = {};
-
-            for (const [name, value] of Object.entries(values)) {
-                const fieldInfo = copyFalseFields[name];
-
-                if (!fieldInfo) {
-                    allowedValues[name] = value;
-                    continue;
-                }
-
-                const isComputed = fieldInfo.compute === true;
-
-                const isCopyFalse = fieldInfo.copy === false;
-
-                if (isComputed) {
-                    if (!isCopyFalse) {
-                        allowedValues[name] = value;
-                    }
-
-                    continue;
-                }
-
-                if (!isCopyFalse) {
-                    allowedValues[name] = value;
-                    continue;
-                }
-
-                if (copyFalseFieldsEnabled) {
-                    allowedValues[name] = value;
-                }
-            }
-
-            return allowedValues;
-        }
-
-        function getPreservedCopyFalseValues(
-            list,
-            values,
-            copyFalseFields,
-            copyFalseFieldsEnabled
-        ) {
-            if (!copyFalseFieldsEnabled) {
-                return {};
-            }
-
-            const preservedRawValues = {};
-
-            for (const [name, value] of Object.entries(values)) {
-                const fieldInfo = copyFalseFields[name];
-
-                if (!fieldInfo) {
-                    continue;
-                }
-
-                const isComputed = fieldInfo.compute === true;
-
-                const isCopyFalse = fieldInfo.copy === false;
-
-                if (isComputed) {
-                    continue;
-                }
-
-                if (isCopyFalse) {
-                    preservedRawValues[name] = value;
-                }
-            }
-
-            return toClientChanges(
-                list,
-                preservedRawValues,
-                copyFalseFields,
-                copyFalseFieldsEnabled
-            );
+            const copyFields = await getCopyFields(renderer.props.list.resModel);
+            writeClipboard({
+                version: 1,
+                ...getListDescriptor(renderer.props.list),
+                copiedAt: Date.now(),
+                lines: records.map((record) =>
+                    serializeRecord(record, copyFields, copyFalseEnabled)
+                ),
+            });
+            const count = records.length;
+            notify(count === 1 ? _t("1 line copied") : _t("%(count)s lines copied", { count }));
+            return true;
         }
 
         async function paste(renderer, clipboard) {
-            const list = renderer.props.list;
-
+            if (!enabled) {
+                return false;
+            }
             if (!renderer.canO2MPaste()) {
-                notification.add(
-                    _t("You cannot add lines here."),
-                    { type: "warning" }
-                );
-
+                notify(_t("You cannot add lines here."), "warning");
                 return false;
             }
-
-            const left = await list.leaveEditMode();
-
-            if (!left) {
+            const list = renderer.props.list;
+            if (!(await list.leaveEditMode())) {
                 return false;
             }
-
-            const copyFalseFields =
-                await getCopyFalseFields(list);
-
-            const copyFalseFieldsEnabled =
-                await getCopyFalseSetting();
-
-            let done = 0;
-
+            const copyFields = await getCopyFields(list.resModel);
+            let count = 0;
             try {
                 for (const values of clipboard.lines) {
-                    const params = {
+                    const record = await list.addNewRecord({
                         position: "bottom",
                         mode: "readonly",
-                    };
-
-                    if (values.display_type) {
-                        params.context = {
-                            default_display_type:
-                                values.display_type,
-                        };
-                    }
-
-                    const record =
-                        await list.addNewRecord(params);
-
-                    const pasteValues =
-                        getPasteValues(
-                            values,
-                            copyFalseFields,
-                            copyFalseFieldsEnabled
-                        );
-
-                    const changes =
-                        toClientChanges(
-                            list,
-                            pasteValues,
-                            copyFalseFields,
-                            copyFalseFieldsEnabled
-                        );
-
-                    if (values.display_type) {
-                        delete changes.display_type;
-                    }
-
-                    if (Object.keys(changes).length) {
-                        await record.update(changes);
-                    }
-
-                    const preservedChanges =
-                        getPreservedCopyFalseValues(
-                            list,
-                            values,
-                            copyFalseFields,
-                            copyFalseFieldsEnabled
-                        );
-
-                    if (
-                        Object.keys(preservedChanges).length
-                    ) {
-                        await record.update(
-                            preservedChanges
-                        );
-                    }
-
-                    done++;
+                        ...(values.display_type && {
+                            context: { default_display_type: values.display_type },
+                        }),
+                    });
+                    const changes = buildChanges(list, values, copyFields, copyFalseEnabled);
+                    delete changes.display_type;
+                    await applyChanges(record, list, changes);
+                    count++;
                 }
             } finally {
-                if (done) {
-                    notification.add(
-                        done === 1
+                if (count) {
+                    notify(
+                        count === 1
                             ? _t("1 line pasted")
-                            : _t(
-                                "%(count)s lines pasted",
-                                { count: done }
-                            ),
-                        { type: "success" }
+                            : _t("%(count)s lines pasted", { count })
                     );
                 }
             }
-
             return true;
         }
 
         return {
+            isEnabled: () => enabled,
             register(renderer) {
-                renderers.add(renderer);
+                if (enabled) {
+                    renderers.add(renderer);
+                }
             },
-
             unregister(renderer) {
                 renderers.delete(renderer);
-
                 if (active === renderer) {
                     active = null;
                 }
             },
-
             setActiveFromTarget,
             pickSource,
             pickTarget,
             copy,
             paste,
             readClipboard,
-            hasRenderers: () =>
-                liveRenderers().length > 0,
-
+            hasRenderers: () => liveRenderers().length > 0,
             clear() {
                 memory = null;
-
                 try {
-                    browser.localStorage.removeItem(
-                        STORAGE_KEY
-                    );
+                    browser.localStorage.removeItem(STORAGE_KEY);
                 } catch {
                 }
             },
-
             notifyNoTarget(reason) {
                 if (reason === "ambiguous") {
-                    notification.add(
-                        _t(
-                            "Click inside the lines table where you want to paste, then press Ctrl+V."
-                        ),
-                        { type: "warning" }
+                    notify(
+                        _t("Click inside the lines table where you want to paste, then press Ctrl+V."),
+                        "warning"
                     );
                 } else if (reason === "incompatible") {
-                    notification.add(
-                        _t(
-                            "The copied lines cannot be pasted in this list (different line type)."
-                        ),
-                        { type: "warning" }
+                    notify(
+                        _t("You can only paste copied lines into a One2many field of the same model."),
+                        "warning"
                     );
                 }
             },
@@ -473,4 +261,4 @@ export const o2mCopyPasteService = {
     },
 };
 
-registry.category("services").add("o2m_copy_paste",o2mCopyPasteService);
+registry.category("services").add("o2m_copy_paste", o2mCopyPasteService);

@@ -11,8 +11,14 @@
                 <block title="O2M Copy/Paste"
                        name="o2m_copy_paste_setting_container">
 
-                    <setting string="Preserve Field Values on Copy/Paste"
-                            help="Preserve the current values of fields marked with copy=False when copying and pasting One2many lines.">
+                   <setting string="Enable One2many Copy/Paste"
+                            help="Allows copying and pasting One2many lines from List View using Ctrl+C and Ctrl+V.">
+                        <field name="o2m_copy_paste_enabled"/>
+                    </setting>
+
+                    <setting string="Preserve Copied Field Values"
+                            help="Keeps the current values of fields marked as copy=False when pasting One2many lines."
+                            invisible="not o2m_copy_paste_enabled">
                         <field name="o2m_copy_false_fields"/>
                     </setting>
 

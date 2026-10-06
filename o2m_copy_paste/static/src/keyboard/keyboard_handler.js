@@ -2,100 +2,76 @@
 
 import { registry } from "@web/core/registry";
 
-// Checks whether the current element is a text-editable field.
+const NON_TEXT_INPUTS = ["checkbox", "radio", "button", "submit", "reset", "image", "range", "color", "file"];
+
 function isTextEditable(el) {
-    if (!el || el.nodeType !== 1) {
+    if (el?.nodeType !== 1) {
         return false;
     }
-
     if (el.isContentEditable || el.tagName === "TEXTAREA") {
         return true;
     }
-
-    return el.tagName === "INPUT" && el.type !== "checkbox";
+    return el.tagName === "INPUT" && !NON_TEXT_INPUTS.includes(el.type);
 }
 
-// Checks whether the user has selected text on the page.
 function hasTextSelection() {
-    const selection = window.getSelection?.();
-
-    return Boolean(
-        selection &&
-        !selection.isCollapsed &&
-        selection.toString().trim()
-    );
+    return Boolean(window.getSelection?.().toString().trim());
 }
 
 export const o2mKeyboardService = {
     dependencies: ["o2m_copy_paste"],
 
     start(_env, { o2m_copy_paste: clipboard }) {
-        window.addEventListener(
-            "pointerdown",
-            (ev) => clipboard.setActiveFromTarget(ev.target),
-            true
-        );
-        window.addEventListener(
-            "focusin",
-            (ev) => clipboard.setActiveFromTarget(ev.target),
-            true
-        );
-        window.addEventListener("keydown", async (ev) => {
-            if (
-                ev.defaultPrevented ||
-                !(ev.ctrlKey || ev.metaKey) ||
-                ev.altKey ||
-                ev.shiftKey
-            ) {
-                return;
+        let pasting = false;
+
+        for (const eventName of ["pointerdown", "focusin"]) {
+            window.addEventListener(eventName, (ev) => clipboard.setActiveFromTarget(ev.target), true);
+        }
+
+        async function onCopy(ev) {
+            const source = !hasTextSelection() && clipboard.pickSource();
+            if (source) {
+                ev.preventDefault();
+                await clipboard.copy(source);
             }
+        }
 
-            const isCopy = ev.code === "KeyC";
-            const isPaste = ev.code === "KeyV";
-
-            if (!isCopy && !isPaste) {
-                return;
-            }
-
-            if (isTextEditable(ev.target)) {
-                return;
-            }
-
-            if (isCopy) {
-                if (hasTextSelection()) {
-                    return;
-                }
-
-                const source = clipboard.pickSource();
-
-                if (source) {
-                    ev.preventDefault();
-                    clipboard.copy(source);
-                }
-
-                return;
-            }
-
-            if (!clipboard.hasRenderers()) {
-                return;
-            }
-
+        async function onPaste(ev) {
             const data = clipboard.readClipboard();
-
-            if (!data?.lines?.length) {
+            if (pasting || !data?.lines?.length || !clipboard.hasRenderers()) {
                 return;
             }
-
-            const { renderer, reason } = clipboard.pickTarget(data);
-
             ev.preventDefault();
-
+            const { renderer, reason } = clipboard.pickTarget(data);
             if (!renderer) {
                 clipboard.notifyNoTarget(reason);
                 return;
             }
+            pasting = true;
+            try {
+                await clipboard.paste(renderer, data);
+            } finally {
+                pasting = false;
+            }
+        }
 
-            await clipboard.paste(renderer, data);
+        window.addEventListener("keydown", (ev) => {
+            if (
+                !clipboard.isEnabled() ||
+                ev.defaultPrevented ||
+                ev.repeat ||
+                !(ev.ctrlKey || ev.metaKey) ||
+                ev.altKey ||
+                ev.shiftKey ||
+                isTextEditable(ev.target)
+            ) {
+                return;
+            }
+            if (ev.code === "KeyC") {
+                onCopy(ev);
+            } else if (ev.code === "KeyV") {
+                onPaste(ev);
+            }
         });
     },
 };
