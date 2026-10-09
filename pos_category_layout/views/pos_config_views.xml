@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="pos_config_view_form_category_layout"
+            model="ir.ui.view">
+        <field name="name">pos.config.form.category.layout</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id"
+               ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//sheet" position="inside">
+                <group string="POS Category Layout &amp; Product Display">
+
+                    <group string="Category Layout">
+                        <field name="category_layout"/>
+
+                        <field name="category_sidebar_position"
+                               invisible="category_layout != 'sidebar'"/>
+
+                        <field name="category_sort_order"/>
+                    </group>
+
+                    <group string="Product Display">
+                        <field name="product_card_style"/>
+                        <field name="product_grid_columns"/>
+                        <field name="product_card_spacing"/>
+                    </group>
+
+                    <group string="Color Configuration">
+                        <field name="primary_color" widget="color"/>
+                        <field name="category_color" widget="color"/>
+                        <field name="product_color" widget="color"/>
+                    </group>
+
+                    <group string="Font Configuration">
+                        <field name="font_family"/>
+                    </group>
+
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

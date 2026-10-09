@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.CategorySelector" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@t-attf-class, 'category-list')]" position="replace">
+            <div class="o_pos_cat" t-att-class="this.layoutClass">
+                <div class="o_pos_cat_header d-flex align-items-center gap-2">
+                    <button t-if="this.isSidebar" type="button" class="o_pos_cat_toggle btn btn-light"
+                            t-on-click="() => this.toggleSidebar()"
+                            t-att-title="this.sidebar.collapsed ? 'Expand categories' : 'Collapse categories'">
+                        <span t-out="this.sidebar.collapsed ? '»' : '«'"/>
+                    </button>
+                    <nav class="o_pos_cat_breadcrumb" aria-label="breadcrumb">
+                        <button type="button" class="o_pos_cat_crumb btn btn-link p-0"
+                                t-att-class="{'active': !this.pos.selectedCategory}"
+                                t-on-click="() => this.onBreadcrumbClick(0)">All</button>
+                        <t t-foreach="this.getBreadcrumbs()" t-as="crumb" t-key="crumb.id">
+                            <span class="o_pos_cat_sep">/</span>
+                            <button type="button" class="o_pos_cat_crumb btn btn-link p-0"
+                                    t-att-class="{'active': crumb_last}"
+                                    t-on-click="() => this.onBreadcrumbClick(crumb.id)"
+                                    t-out="crumb.name"/>
+                        </t>
+                    </nav>
+                </div>
+                <div class="o_pos_cat_list">
+                    <button t-foreach="this.getCategoriesAndSub()" t-as="category" t-key="category.id"
+                            type="button"
+                            t-on-click="() => this.pos.setSelectedCategory(category.id)"
+                            t-attf-class="o_pos_cat_button category-button btn btn-light d-flex align-items-center rounded-3 gap-2 o_colorlist_item_color_{{category.color or 'none'}}"
+                            t-att-class="{'o_selected': category.isSelected}"
+                            t-att-title="category.name">
+                        <img t-if="this.showCategoryImg(category)" t-att-src="category.imgSrc"
+                             class="o_pos_cat_img rounded-3 object-fit-cover pe-none" alt="Category"/>
+                        <span class="o_pos_cat_name o_line_clamp o_line_clamp_2" t-out="category.name"/>
+                    </button>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

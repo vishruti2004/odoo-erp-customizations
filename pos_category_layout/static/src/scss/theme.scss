@@ -1,0 +1,33 @@
+@font-face {
+    font-family: "PclInconsolata";
+    src: url("/pos_category_layout/static/src/fonts/Inconsolata.ttf") format("truetype");
+    font-weight: 200 900;
+    font-stretch: 50% 200%;
+    font-display: swap;
+}
+
+.o_pcl_scope {
+    &.o_pcl_font_inconsolata,
+    &.o_pcl_font_inconsolata *:not(.oi):not([class*="fa-"]) {
+        font-family: "PclInconsolata", monospace;
+    }
+
+    // Product card color + primary accent
+    .product.btn {
+        --btn-bg: var(--pcl-product-bg);
+        --btn-hover-bg: var(--pcl-product-bg);
+        --btn-border-color: var(--pcl-primary);
+        &:not([class*="o_colorlist_item_color_transparent_"]) { background-color: var(--pcl-product-bg); }
+        &:hover { border-color: var(--pcl-primary) !important; }
+        border-bottom-color: var(--pcl-primary) !important;
+    }
+
+    // Category buttons + breadcrumb
+    .o_pos_cat_button {
+        background-color: var(--pcl-category-bg);
+        &.o_selected { border-color: var(--pcl-primary); box-shadow: 0 0 0 1px var(--pcl-primary); }
+        &:hover { border-color: var(--pcl-primary); }
+    }
+    .o_pos_cat_crumb:not(.active) { color: var(--pcl-primary); filter: brightness(0.75); }
+    .o_pos_cat_toggle { border: 1px solid var(--pcl-primary); }
+}

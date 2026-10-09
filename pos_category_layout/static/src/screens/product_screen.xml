@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('rightpane')]/div[hasclass('position-relative')]" position="attributes">
+            <attribute name="t-att-class">this.categoryLayoutClasses</attribute>
+            <attribute name="t-att-style">this.categoryLayoutStyle</attribute>
+        </xpath>
+    </t>
+</templates>
