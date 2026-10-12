@@ -1,44 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="pos_config_view_form_category_layout"
-            model="ir.ui.view">
+    <record id="pos_config_view_form_category_layout" model="ir.ui.view">
         <field name="name">pos.config.form.category.layout</field>
         <field name="model">pos.config</field>
-        <field name="inherit_id"
-               ref="point_of_sale.pos_config_view_form"/>
-        <field name="arch" type="xml">
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
 
+        <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
-                <group string="POS Category Layout &amp; Product Display">
+
+                <separator string="POS Category Layout &amp; Product Display"/>
+
+                <group string="Custom Configuration">
+                    <field name="enable_custom_layout"/>
+                </group>
+
+                <!-- CATEGORY CONFIGURATION -->
+                <group string="Category Configuration"
+                       col="2"
+                       invisible="not enable_custom_layout">
 
                     <group string="Category Layout">
-                        <field name="category_layout"/>
+                        <field name="category_layout"
+                               widget="radio"
+                               options="{'horizontal': true}"/>
 
                         <field name="category_sidebar_position"
+                               widget="radio"
+                               options="{'horizontal': true}"
                                invisible="category_layout != 'sidebar'"/>
 
+                        <field name="category_display_style"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               invisible="category_layout != 'sidebar'"/>
+
+                        <field name="category_content"
+                               widget="radio"
+                               options="{'horizontal': true}"/>
+                    </group>
+
+                    <group string="Category Display Options">
                         <field name="category_sort_order"/>
+                        <field name="category_show_breadcrumb"/>
+                        <field name="category_show_product_count"/>
+                        <field name="category_show_search"/>
                     </group>
 
-                    <group string="Product Display">
-                        <field name="product_card_style"/>
+                </group>
+
+                <!-- PRODUCT CONFIGURATION -->
+                <group string="Product Configuration"
+                       col="2"
+                       invisible="not enable_custom_layout">
+
+                    <group string="Product Layout">
                         <field name="product_grid_columns"/>
-                        <field name="product_card_spacing"/>
+                        <field name="product_sort_order"/>
+                        <field name="product_show_list_view"/>
                     </group>
 
-                    <group string="Color Configuration">
-                        <field name="primary_color" widget="color"/>
-                        <field name="category_color" widget="color"/>
-                        <field name="product_color" widget="color"/>
+                    <group string="Product Information">
+                        <field name="product_show_price"/>
+                        <field name="product_show_description"/>
                     </group>
 
-                    <group string="Font Configuration">
+                </group>
+
+                <!-- APPEARANCE CONFIGURATION -->
+                <group string="Appearance Configuration"
+                       col="2"
+                       invisible="not enable_custom_layout">
+
+                    <group string="Product Card Styling">
+                        <field name="product_name_bg_color" widget="color"/>
+                    </group>
+
+                    <group string="Typography">
                         <field name="font_family"/>
                     </group>
 
                 </group>
-            </xpath>
 
+            </xpath>
         </field>
     </record>
 </odoo>

@@ -1,10 +1,10 @@
-// ---------- Breadcrumb ----------
 .o_pos_cat {
     flex-shrink: 0;
     padding: 0.5rem;
+    min-width: 0;
+    min-height: 0;
 
     .o_pos_cat_header { margin-bottom: 0.5rem; min-height: 2rem; }
-
     .o_pos_cat_breadcrumb {
         display: flex;
         flex-wrap: wrap;
@@ -13,55 +13,122 @@
         min-width: 0;
     }
     .o_pos_cat_crumb {
+        max-width: 100%;
         text-decoration: none;
         font-weight: 500;
+        overflow-wrap: anywhere;
         &.active { font-weight: 700; pointer-events: none; color: var(--bs-body-color); }
     }
-    .o_pos_cat_sep { opacity: 0.5; }
+    .o_pos_cat_sep { opacity: 0.55; }
 
-    .o_pos_cat_button {
-        --btn-border-color: #dee2e6;
-        border-width: 2px;
-        min-height: 3.5rem;
-        padding: 0.25rem 0.5rem;
-        justify-content: center;
-        &.o_selected {
-            border-color: var(--bs-primary, #714b67);
-            font-weight: 700;
-        }
+    .o_pos_cat_list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        align-content: start;
+        gap: 0.5rem;
+        min-width: 0;
+        max-height: 16.5rem;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
-    .o_pos_cat_img { width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
-    .o_pos_cat_name { text-align: center; min-width: 0; }
+
+    .o_pos_cat_item {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        min-height: 3.5rem;
+        height: auto;
+        padding: 0.4rem;
+        text-align: left;
+        justify-content: flex-start;
+        &.o_pos_cat_current { font-weight: 700; }
+    }
+    .o_pos_cat_thumb {
+        flex: 0 0 2.5rem;
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    .o_pos_cat_img,
+    .o_pos_cat_initial {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 0.4rem;
+    }
+    .o_pos_cat_img { object-fit: cover; }
+    .o_pos_cat_initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bs-primary, #714b67);
+        color: #fff;
+        font-size: 1.15rem;
+        font-weight: 600;
+    }
+    .o_pos_cat_text {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+    }
+    .o_pos_cat_name {
+        max-width: 100%;
+        line-height: 1.2;
+        overflow-wrap: break-word;
+        word-break: normal;
+        hyphens: none;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+    .o_pos_cat_count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        padding: 0 0.4rem;
+        background-color: var(--bs-primary, #714b67);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .o_pos_cat_caret {
+        flex: 0 0 1rem;
+        width: 1rem;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    &.o_pos_cat_content_name .o_pos_cat_text { align-items: center; text-align: center; }
+    &.o_pos_cat_content_name .o_pos_cat_item { justify-content: center; }
+    &.o_pos_cat_content_image .o_pos_cat_item { justify-content: center; }
+    &.o_pos_cat_content_image .o_pos_cat_thumb { flex-basis: 3rem; width: 3rem; height: 3rem; }
 }
 
-// ---------- Top bar: wrapping grid ----------
-.o_pos_cat_top_bar .o_pos_cat_list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-    gap: 0.5rem;
-    max-height: 12rem;
-    overflow-y: auto;
+.o_pos_cat_style_list .o_pos_cat_list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+    max-height: 20rem;
 }
+.o_pos_cat_style_list .o_pos_cat_item { min-height: 2.75rem; }
+.o_pos_cat_style_list .o_pos_cat_thumb { flex-basis: 2rem; width: 2rem; height: 2rem; }
+.o_pos_cat_style_list .o_pos_cat_initial { font-size: 0.9rem; }
 
-// ---------- Horizontal: one scrolling row ----------
-.o_pos_cat_horizontal .o_pos_cat_list {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.5rem;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-    .o_pos_cat_button { flex: 0 0 auto; min-width: 115px; max-width: 200px; }
-}
 
-// ---------- Sidebar ----------
 .o_pos_cat_sidebar_mode {
     display: grid !important;
-    grid-template-columns: 15rem minmax(0, 1fr);
+    grid-template-columns: 16rem minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
 
     > .o_pos_cat_sidebar {
         grid-column: 1;
         grid-row: 1 / span 3;
+        overflow-x: hidden;
         overflow-y: auto;
         background: var(--bs-body-bg);
         border-right: 1px solid var(--bs-border-color);
@@ -69,7 +136,7 @@
     > :not(.o_pos_cat_sidebar) { grid-column: 2; min-width: 0; }
 
     &.o_pos_cat_sidebar_right {
-        grid-template-columns: minmax(0, 1fr) 15rem;
+        grid-template-columns: minmax(0, 1fr) 16rem;
         > .o_pos_cat_sidebar {
             grid-column: 2;
             border-right: 0;
@@ -78,19 +145,83 @@
         > :not(.o_pos_cat_sidebar) { grid-column: 1; }
     }
 
-    &:has(.o_pos_cat_sidebar.o_pos_cat_collapsed) { grid-template-columns: 3.5rem minmax(0, 1fr); }
-    &.o_pos_cat_sidebar_right:has(.o_pos_cat_sidebar.o_pos_cat_collapsed) {
-        grid-template-columns: minmax(0, 1fr) 3.5rem;
-    }
+    &.o_pos_cat_sidebar_collapsed { grid-template-columns: 3.5rem minmax(0, 1fr); }
+    &.o_pos_cat_sidebar_collapsed.o_pos_cat_sidebar_right { grid-template-columns: minmax(0, 1fr) 3.5rem; }
 }
 .o_pos_cat_sidebar {
-    .o_pos_cat_list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .o_pos_cat_button { width: 100%; justify-content: flex-start; }
-    .o_pos_cat_name { text-align: left; }
+    .o_pos_cat_list { grid-template-columns: minmax(0, 1fr); max-height: none; overflow: visible; }
 
     &.o_pos_cat_collapsed {
-        padding: 0.5rem 0.25rem;
-        .o_pos_cat_breadcrumb, .o_pos_cat_list { display: none; }
+        padding: 0.25rem;
+        .o_pos_cat_breadcrumb, .o_pos_cat_list, .o_pos_cat_search_wrap, .o_pos_cat_back { display: none; }
         .o_pos_cat_toggle { width: 100%; }
     }
+}
+
+// Small screens
+@media (max-width: 767.98px) {
+    .o_pos_cat { padding: 0.25rem; }
+    .o_pos_cat .o_pos_cat_list { gap: 0.35rem; }
+    .o_pos_cat_style_grid .o_pos_cat_list {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        max-height: 11rem;
+    }
+}
+
+// Search bar, back button
+.o_pos_cat {
+    .o_pos_cat_back { padding: 0.15rem 0.6rem; font-weight: 700; line-height: 1.2; }
+    .o_pos_cat_search_wrap { position: relative; margin-bottom: 0.5rem; }
+    .o_pos_cat_search { padding-right: 2rem; }
+    .o_pos_cat_search_clear {
+        position: absolute;
+        top: 50%;
+        right: 0.4rem;
+        transform: translateY(-50%);
+        line-height: 1;
+        padding: 0 0.3rem;
+        border: 0;
+        background: transparent;
+        opacity: 0.6;
+        &:hover { opacity: 1; }
+    }
+    .o_pos_cat_path {
+        max-width: 100%;
+        font-size: 0.72rem;
+        opacity: 0.65;
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .o_pos_cat_empty { padding: 0.5rem; opacity: 0.7; }
+}
+.o_pos_cat_sidebar_mode > .o_pos_cat_sidebar {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.o_pos_cat_sidebar {
+    .o_pos_cat_controls { flex: 0 0 auto; }
+    .o_pos_cat_list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+}
+
+// Dense mode: more than 12 categories on screen (40-50 categories)
+.o_pos_cat.o_pos_cat_dense {
+    &.o_pos_cat_style_grid .o_pos_cat_list {
+        grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        gap: 0.3rem;
+        max-height: 9.5rem;
+    }
+    &.o_pos_cat_style_list .o_pos_cat_list { gap: 0.2rem; }
+    .o_pos_cat_item { min-height: 2.25rem; padding: 0.2rem 0.4rem; font-size: 0.85rem; }
+    .o_pos_cat_thumb { flex-basis: 1.75rem; width: 1.75rem; height: 1.75rem; }
+    .o_pos_cat_initial { font-size: 0.8rem; }
+    .o_pos_cat_count { min-width: 1.25rem; height: 1.25rem; font-size: 0.65rem; }
 }

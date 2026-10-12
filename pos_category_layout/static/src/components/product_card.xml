@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.ProductCard" t-inherit-mode="extension">
+        <xpath expr="//div[contains(@class, 'product-name')]" position="after">
+            <div t-if="this.pclHasInfo" class="o_pcl_info">
+                <div t-if="this.pclDescription" class="o_pcl_description" t-out="this.pclDescription"/>
+                <div t-if="this.pclShowPrice" class="o_pcl_price" t-out="this.pclPrice"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

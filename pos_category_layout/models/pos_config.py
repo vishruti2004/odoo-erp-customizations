@@ -1,58 +1,120 @@
+# -*- coding: utf-8 -*-
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
-
 
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
-    # Category layout
+    enable_custom_layout = fields.Boolean(
+        string="Enable Custom Layout & Configuration",
+        default=False,
+    )
+
     category_layout = fields.Selection(
         [
-            ("top_bar", "Top Bar Display"),
-            ("horizontal", "Horizontal Category Layout"),
-            ("sidebar", "Sidebar Display"),
+            ("top_bar", "Top Bar"),
+            ("sidebar", "Sidebar"),
         ],
         string="Category Layout",
         default="top_bar",
         required=True,
     )
+
     category_sidebar_position = fields.Selection(
-        [("left", "Left"), ("right", "Right")],
-        string="Category Sidebar Position",
+        [
+            ("left", "Left"),
+            ("right", "Right"),
+        ],
+        string="Sidebar Position",
         default="left",
         required=True,
     )
-    category_sort_order = fields.Selection(
-        [("sequence", "Sequence"), ("alphabetical", "Alphabetical")],
-        string="Category Sorting",
-        default="alphabetical",
-        required=True,
-    )
 
-    # Product display
-    product_card_style = fields.Selection(
+    category_display_style = fields.Selection(
         [
-            ("standard", "Standard"),
-            ("compact", "Compact"),
-            ("image_focused", "Image-Focused"),
+            ("grid", "Grid Cards"),
+            ("list", "List (Nested Tree)"),
         ],
-        string="Product Card Design",
-        default="standard",
-        required=True,
-    )
-    product_grid_columns = fields.Integer(string="Product Grid Columns", default=4)
-    product_card_spacing = fields.Selection(
-        [("compact", "Compact"), ("normal", "Normal"), ("spacious", "Spacious")],
-        string="Product Card Spacing",
-        default="normal",
+        string="Category Display Style",
+        default="grid",
         required=True,
     )
 
-    # Colors
-    primary_color = fields.Char(string="Primary Color", default="#8CC187")
-    category_color = fields.Char(string="Category Color", default="#FFFFFF")
-    product_color = fields.Char(string="Product Card Color", default="#FFFFFF")
+    category_content = fields.Selection(
+        [
+            ("image_name", "Image & Name"),
+            ("name", "Name Only"),
+            ("image", "Image Only"),
+        ],
+        string="Category Content",
+        default="image_name",
+        required=True,
+    )
 
+    category_show_breadcrumb = fields.Boolean(
+        string="Show Category Breadcrumb",
+        default=True,
+    )
+
+    category_sort_order = fields.Selection(
+        [
+            ("sequence", "Sequence"),
+            ("alphabetical", "Category Name(A to Z)"),
+        ],
+        string="Category Sorting",
+        default="sequence",
+        required=True,
+    )
+
+    category_show_product_count = fields.Boolean(
+        string="Show Product Count",
+        default=False,
+    )
+
+    category_show_search = fields.Boolean(
+        string="Show Category Search Bar",
+        default=False,
+    )
+
+    product_grid_columns = fields.Integer(
+        string="Products Per Row",
+        default=4,
+        required=True,
+    )
+
+    product_sort_order = fields.Selection(
+        [
+            ("featured", "Featured"),
+            ("new_arrivals", "New Arrivals"),
+            ("name", "Product Name (A to Z)"),
+            ("price_low_high", "Price: Low to High"),
+            ("price_high_low", "Price: High to Low"),
+        ],
+        string="Product Sorting",
+        default="featured",
+        required=True,
+    )
+
+    product_show_price = fields.Boolean(
+        string="Show Product Price",
+        default=True,
+    )
+
+    product_show_description = fields.Boolean(
+        string="Show Product Description",
+        default=False,
+    )
+
+    product_show_list_view = fields.Boolean(
+        string="Enable Product List View",
+        default=False,
+    )
+
+    product_name_bg_color = fields.Char(
+        string="Product Background Color",
+        default="#FFFFFF",
+    )
     @api.model
     def _get_available_document_fonts(self):
         font_field = self.env["base.document.layout"]._fields["font"]
@@ -68,5 +130,9 @@ class PosConfig(models.Model):
     @api.constrains("product_grid_columns")
     def _check_product_grid_columns(self):
         for config in self:
-            if not 1 <= config.product_grid_columns <= 12:
-                raise ValidationError(self.env._("Product grid columns must be between 1 and 12."))
+            if not 2 <= config.product_grid_columns <= 12:
+                raise ValidationError(
+                    self.env._(
+                        "Products per row must be between 2 and 12."
+                    )
+                )
