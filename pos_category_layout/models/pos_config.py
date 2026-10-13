@@ -3,22 +3,29 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
     enable_custom_layout = fields.Boolean(
-        string="Enable Custom Layout & Configuration",
+        string="Enable Custom Category Layout",
         default=False,
     )
 
+    # ------------------------------------------------------------------
+    # Layout
+    # ------------------------------------------------------------------
     category_layout = fields.Selection(
         [
             ("top_bar", "Top Bar"),
             ("sidebar", "Sidebar"),
+            ("popup", "Popup (Icon Only)"),
         ],
         string="Category Layout",
         default="top_bar",
         required=True,
+        help="Popup: the product screen keeps the full page, categories open from "
+        "an icon in a popup.",
     )
 
     category_sidebar_position = fields.Selection(
@@ -41,6 +48,16 @@ class PosConfig(models.Model):
         required=True,
     )
 
+    category_card_style = fields.Selection(
+        [
+            ("classic", "Normal Cards"),
+            ("cover", "Cover Image Cards"),
+        ],
+        string="Card Style",
+        default="classic",
+        required=True,
+    )
+
     category_content = fields.Selection(
         [
             ("image_name", "Image & Name"),
@@ -52,11 +69,52 @@ class PosConfig(models.Model):
         required=True,
     )
 
-    category_show_breadcrumb = fields.Boolean(
-        string="Show Category Breadcrumb",
-        default=True,
+    category_image_position = fields.Selection(
+        [
+            ("top", "Top"),
+            ("bottom", "Bottom"),
+            ("left", "Left"),
+            ("right", "Right"),
+        ],
+        string="Image Position",
+        default="left",
+        required=True,
     )
 
+    category_grid_columns = fields.Integer(
+        string="Categories Per Row",
+        default=0,
+        help="0 = automatic (as many as fit). Applies to the top bar and to the categories popup.",
+    )
+
+    category_rows = fields.Integer(
+        string="Visible Category Rows",
+        default=3,
+        help="Rows shown before scrolling (or before the next page). Applies to the top bar "
+        "and to the categories popup.",
+    )
+
+    category_carousel = fields.Boolean(
+        string="Pagination Instead of Scrollbar",
+        default=False,
+        help="Show the categories page by page (arrows and swipe) instead of a "
+        "scrollbar. Applies to the top bar and to the categories popup.",
+    )
+
+    category_scroll_direction = fields.Selection(
+        [
+            ("vertical", "Vertical"),
+            ("horizontal", "Horizontal"),
+        ],
+        string="Scrollbar Direction",
+        default="vertical",
+        required=True,
+        help="Vertical: rows scroll up / down. Horizontal: the visible rows scroll left / right. "
+        "Applies to the top bar and to the categories popup.",
+    )
+    # ------------------------------------------------------------------
+    # Display options
+    # ------------------------------------------------------------------
     category_sort_order = fields.Selection(
         [
             ("sequence", "Sequence"),
@@ -65,6 +123,11 @@ class PosConfig(models.Model):
         string="Category Sorting",
         default="sequence",
         required=True,
+    )
+
+    category_show_breadcrumb = fields.Boolean(
+        string="Show Category Breadcrumb",
+        default=True,
     )
 
     category_show_product_count = fields.Boolean(
@@ -77,44 +140,23 @@ class PosConfig(models.Model):
         default=False,
     )
 
-    product_grid_columns = fields.Integer(
-        string="Products Per Row",
-        default=4,
-        required=True,
-    )
-
-    product_sort_order = fields.Selection(
-        [
-            ("featured", "Featured"),
-            ("new_arrivals", "New Arrivals"),
-            ("name", "Product Name (A to Z)"),
-            ("price_low_high", "Price: Low to High"),
-            ("price_high_low", "Price: High to Low"),
-        ],
-        string="Product Sorting",
-        default="featured",
-        required=True,
-    )
-
-    product_show_price = fields.Boolean(
-        string="Show Product Price",
-        default=True,
-    )
-
-    product_show_description = fields.Boolean(
-        string="Show Product Description",
+    category_use_color = fields.Boolean(
+        string="Use Category Colors",
         default=False,
+        help="Show the category color on parent and sub categories. "
+        "Categories without any parent or child stay white.",
     )
 
-    product_show_list_view = fields.Boolean(
-        string="Enable Product List View",
+    category_show_all_popup = fields.Boolean(
+        string="Show 'All Categories' Button",
         default=False,
+        help="Adds a button that opens a popup with the categories shown in the "
+        "category view, with a search bar. Click the button again to close it.",
     )
 
-    product_name_bg_color = fields.Char(
-        string="Product Background Color",
-        default="#FFFFFF",
-    )
+    # ------------------------------------------------------------------
+    # Typography (categories only)
+    # ------------------------------------------------------------------
     @api.model
     def _get_available_document_fonts(self):
         font_field = self.env["base.document.layout"]._fields["font"]
@@ -127,12 +169,14 @@ class PosConfig(models.Model):
         required=True,
     )
 
-    @api.constrains("product_grid_columns")
-    def _check_product_grid_columns(self):
+    @api.constrains("category_grid_columns", "category_rows")
+    def _check_category_grid(self):
         for config in self:
-            if not 2 <= config.product_grid_columns <= 12:
+            if not 0 <= config.category_grid_columns <= 12:
                 raise ValidationError(
-                    self.env._(
-                        "Products per row must be between 2 and 12."
-                    )
+                    self.env._("Categories per row must be between 0 (auto) and 12.")
+                )
+            if not 1 <= config.category_rows <= 8:
+                raise ValidationError(
+                    self.env._("Visible category rows must be between 1 and 8.")
                 )

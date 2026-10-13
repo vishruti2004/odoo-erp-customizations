@@ -8,13 +8,12 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
 
-                <separator string="POS Category Layout &amp; Product Display"/>
+                <separator string="POS Category Layout"/>
 
                 <group string="Custom Configuration">
                     <field name="enable_custom_layout"/>
                 </group>
 
-                <!-- CATEGORY CONFIGURATION -->
                 <group string="Category Configuration"
                        col="2"
                        invisible="not enable_custom_layout">
@@ -34,48 +33,41 @@
                                options="{'horizontal': true}"
                                invisible="category_layout != 'sidebar'"/>
 
+                        <field name="category_card_style"
+                               invisible="category_layout == 'sidebar' and category_display_style == 'list'"/>
+
                         <field name="category_content"
                                widget="radio"
-                               options="{'horizontal': true}"/>
+                               options="{'horizontal': true}"
+                               invisible="category_card_style != 'classic' and not (category_layout == 'sidebar' and category_display_style == 'list')"/>
+
+                        <field name="category_image_position"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               invisible="category_content != 'image_name' or category_card_style != 'classic'"/>
+
+                        <field name="category_grid_columns"
+                               invisible="category_layout == 'sidebar' and not category_show_all_popup"/>
+                        <field name="category_rows"
+                               invisible="category_layout == 'sidebar' and not category_show_all_popup"/>
+                        <field name="category_carousel"
+                               invisible="category_layout == 'sidebar' and not category_show_all_popup"/>
+                        <field name="category_scroll_direction"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               invisible="(category_layout == 'sidebar' and not category_show_all_popup) or category_carousel"/>
                     </group>
 
                     <group string="Category Display Options">
                         <field name="category_sort_order"/>
-                        <field name="category_show_breadcrumb"/>
+                        <field name="category_show_breadcrumb"
+                               invisible="category_layout == 'popup'"/>
                         <field name="category_show_product_count"/>
-                        <field name="category_show_search"/>
-                    </group>
-
-                </group>
-
-                <!-- PRODUCT CONFIGURATION -->
-                <group string="Product Configuration"
-                       col="2"
-                       invisible="not enable_custom_layout">
-
-                    <group string="Product Layout">
-                        <field name="product_grid_columns"/>
-                        <field name="product_sort_order"/>
-                        <field name="product_show_list_view"/>
-                    </group>
-
-                    <group string="Product Information">
-                        <field name="product_show_price"/>
-                        <field name="product_show_description"/>
-                    </group>
-
-                </group>
-
-                <!-- APPEARANCE CONFIGURATION -->
-                <group string="Appearance Configuration"
-                       col="2"
-                       invisible="not enable_custom_layout">
-
-                    <group string="Product Card Styling">
-                        <field name="product_name_bg_color" widget="color"/>
-                    </group>
-
-                    <group string="Typography">
+                        <field name="category_show_search"
+                               invisible="category_layout == 'popup'"/>
+                        <field name="category_use_color"/>
+                        <field name="category_show_all_popup"
+                               invisible="category_layout == 'popup'"/>
                         <field name="font_family"/>
                     </group>
 

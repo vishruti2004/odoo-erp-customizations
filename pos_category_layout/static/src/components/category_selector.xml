@@ -7,8 +7,9 @@
         </xpath>
 
         <xpath expr="//div[contains(@t-attf-class, 'category-list')]" position="after">
-            <div t-else="" class="o_pos_cat" t-att-class="this.layoutClass">
-                <t t-set="items" t-value="this.getLayoutItems()"/>
+            <div t-else="" class="o_pos_cat" t-att-class="this.layoutClass" t-att-style="this.layoutStyle">
+                <t t-set="paging" t-value="this.getPaging()"/>
+                <t t-set="items" t-value="paging.items"/>
 
                 <div t-if="this.showHeader" class="o_pos_cat_controls">
                     <!-- Sidebar toggle + back + breadcrumb -->
@@ -17,24 +18,63 @@
                         <button t-if="this.isSidebar" type="button" class="o_pos_cat_toggle btn btn-light"
                                 t-on-click="() => this.toggleSidebar()"
                                 t-att-title="this.layoutState.collapsed ? 'Expand categories' : 'Collapse categories'">
-                            <span t-out="this.layoutState.collapsed ? '»' : '«'"/>
+                            <i t-att-class="this.layoutState.collapsed ? 'fa fa-chevron-right' : 'fa fa-chevron-left'" aria-hidden="true"/>
                         </button>
                         <button t-if="this.pos.selectedCategory and !this.showBreadcrumb" type="button" class="o_pos_cat_back btn btn-light"
                                 title="Back" t-on-click="() => this.onBackClick()">
-                            <span>‹</span>
+                            <i class="fa fa-chevron-left" aria-hidden="true"/>
                         </button>
                         <nav t-if="this.showBreadcrumb" class="o_pos_cat_breadcrumb" aria-label="breadcrumb">
-                            <button type="button" class="o_pos_cat_crumb btn btn-link p-0"
+                            <button type="button" class="o_pos_cat_crumb o_pos_cat_home"
                                     t-att-class="{'active': !this.pos.selectedCategory}"
-                                    t-on-click="() => this.onBreadcrumbClick(0)">All</button>
+                                    title="All categories"
+                                    t-on-click="() => this.onBreadcrumbClick(0)">
+                                <i class="fa fa-home"/>
+                            </button>
                             <t t-foreach="this.getBreadcrumbs()" t-as="crumb" t-key="crumb.id">
-                                <span class="o_pos_cat_sep">/</span>
-                                <button type="button" class="o_pos_cat_crumb btn btn-link p-0"
+                                <i class="fa fa-angle-right o_pos_cat_sep"/>
+                                <button type="button" class="o_pos_cat_crumb"
                                         t-att-class="{'active': crumb_last}"
                                         t-on-click="() => this.onBreadcrumbClick(crumb.id)"
                                         t-out="crumb.name"/>
                             </t>
                         </nav>
+                    </div>
+
+                    <!-- Categories popup button> -->
+                    <t t-if="this.hasPopupButton">
+                        <button t-if="this.isPopupLayout" type="button"
+                                class="o_pos_cat_icon_btn btn btn-primary"
+                                t-att-class="{'active': this.layoutState.popup}"
+                                title="Categories"
+                                t-on-click="(ev) => this.togglePopup(ev)">
+                            <i class="fa fa-th-large"/>
+                        </button>
+                        <button t-else="" type="button" class="o_pos_cat_all_btn btn btn-primary"
+                                t-att-class="{'active': this.layoutState.popup}"
+                                t-on-click="(ev) => this.togglePopup(ev)">
+                            <i class="fa fa-th-large"/>
+                            <span>All categories</span>
+                        </button>
+                    </t>
+
+                    <!-- pagination  -->
+                    <div t-if="paging.pages > 1" class="o_pos_cat_pager">
+                            <button type="button" class="o_pos_cat_nav btn btn-light"
+                                    t-att-disabled="paging.page === 0"
+                                    title="Previous page"
+                                    aria-label="Previous page"
+                                    t-on-click="() => this.changePage(-1)">
+                                <i class="fa fa-chevron-left" aria-hidden="true"/>
+                            </button>
+                        <span class="o_pos_cat_page" t-out="(paging.page + 1) + ' / ' + paging.pages"/>
+                            <button type="button" class="o_pos_cat_nav btn btn-light"
+                                    t-att-disabled="paging.page === paging.pages - 1"
+                                    title="Next page"
+                                    aria-label="Next page"
+                                    t-on-click="() => this.changePage(1)">
+                                <i class="fa fa-chevron-right" aria-hidden="true"/>
+                            </button>
                     </div>
 
                     <!-- Category search -->
@@ -43,24 +83,37 @@
                                placeholder="Search category..."
                                t-att-value="this.layoutState.search"
                                t-on-input="(ev) => this.onSearchInput(ev)"/>
-                        <button t-if="this.isSearching" type="button" class="o_pos_cat_search_clear"
-                                title="Clear" t-on-click="() => this.clearSearch()">✕</button>
+                                <button t-if="this.isSearching"
+                                        type="button"
+                                        class="o_pos_cat_search_clear"
+                                        title="Clear"
+                                        aria-label="Clear search"
+                                        t-on-click="() => this.clearSearch()">
+                                    <i class="fa fa-times" aria-hidden="true"/>
+                                </button>
                     </div>
                 </div>
 
-                <div class="o_pos_cat_list">
+                <div t-if="!this.isPopupLayout" class="o_pos_cat_list"
+                     t-on-touchstart="(ev) => this.onTouchStart(ev)"
+                     t-on-touchend="(ev) => this.onTouchEnd(ev)"
+                     t-on-wheel="(ev) => this.onListWheel(ev)">
                     <button t-foreach="items" t-as="item" t-key="item.id" type="button"
-                            t-attf-class="o_colorlist_item_color_{{item.color or 'none'}}"
                             t-att-class="this.getItemClass(item)"
                             t-att-style="this.getItemStyle(item)"
                             t-att-title="item.path ? item.path + ' / ' + item.name : item.name"
                             t-on-click="() => this.onCategoryClick(item.id)"
                             class="o_pos_cat_item category-button btn btn-light d-flex align-items-center rounded-3 gap-1 p-1">
 
-                        <span t-if="this.isNested and item.hasChildren" class="o_pos_cat_caret" role="button"
-                              t-on-click.stop="() => this.toggleNode(item)"
-                              t-out="item.expanded ? '▾' : '▸'"/>
-                        <span t-elif="this.isNested" class="o_pos_cat_caret"/>
+                        <span t-if="this.isNested and !this.isSearching and item.hasChildren"
+                            class="o_pos_cat_caret"
+                            role="button"
+                            t-on-click.stop="() => this.toggleNode(item)"
+                            t-att-title="item.expanded ? 'Collapse category' : 'Expand category'">
+                            <i t-att-class="item.expanded ? 'fa fa-chevron-down' : 'fa fa-chevron-right'"
+                            aria-hidden="true"/>
+                        </span>
+                        <span t-elif="this.isNested and !this.isSearching" class="o_pos_cat_caret"/>
 
                         <div t-if="this.showImage" class="o_pos_cat_thumb">
                             <img t-if="item.imgSrc" t-att-src="item.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false"/>
@@ -77,6 +130,74 @@
                 </div>
 
             </div>
+
+            <t t-if="this.layoutState.popup">
+                <t t-set="pp" t-value="this.getPopupPaging()"/>
+                <div class="o_pos_cat_backdrop" t-on-click="() => this.closePopup()"/>
+                <div class="o_pos_cat_popover" t-att-style="this.layoutState.popupStyle"
+                     t-on-keydown="(ev) => this.onPopupKeydown(ev)">
+                    <div class="o_pos_cat o_pos_cat_in_popup"
+                         t-att-class="this.getPopupLayoutClass(pp.total)"
+                         t-att-style="this.popupLayoutStyle">
+
+                        <div class="o_pos_cat_popover_head">
+                            <div class="o_pos_cat_popover_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" t-ref="popupSearch"
+                                       placeholder="Search category..."
+                                       t-att-value="this.layoutState.popupSearch"
+                                       t-on-input="(ev) => this.onPopupSearch(ev)"/>
+                            </div>
+                            <div t-if="pp.pages > 1" class="o_pos_cat_pager">
+                               <button type="button" class="o_pos_cat_nav btn btn-light"
+                                        t-att-disabled="pp.page === 0"
+                                        title="Previous page"
+                                        aria-label="Previous page"
+                                        t-on-click="() => this.changePopupPage(-1)">
+                                    <i class="fa fa-chevron-left" aria-hidden="true"/>
+                                </button>
+                                <span class="o_pos_cat_page" t-out="(pp.page + 1) + ' / ' + pp.pages"/>
+                               <button type="button" class="o_pos_cat_nav btn btn-light"
+                                        t-att-disabled="pp.page === pp.pages - 1"
+                                        title="Next page"
+                                        aria-label="Next page"
+                                        t-on-click="() => this.changePopupPage(1)">
+                                    <i class="fa fa-chevron-right" aria-hidden="true"/>
+                                </button>
+                            </div>
+                           <button type="button"
+                                    class="o_pos_cat_popover_close"
+                                    title="Close"
+                                    aria-label="Close"
+                                    t-on-click="() => this.closePopup()">
+                                <i class="fa fa-times" aria-hidden="true"/>
+                            </button>
+                        </div>
+
+                        <div class="o_pos_cat_list"
+                             t-on-touchstart="(ev) => this.onTouchStart(ev)"
+                             t-on-touchend="(ev) => this.onTouchEnd(ev, true)"
+                             t-on-wheel="(ev) => this.onListWheel(ev)">
+                            <button t-foreach="pp.items" t-as="p" t-key="p.id" type="button"
+                                    t-att-class="this.getItemClass(p, true)"
+                                    t-att-style="this.getItemStyle(p)"
+                                    t-att-title="p.name"
+                                    t-on-click="() => this.onPopupPick(p.id)"
+                                    class="o_pos_cat_item category-button btn btn-light d-flex align-items-center rounded-3 gap-1 p-1">
+                                <div t-if="this.showImage" class="o_pos_cat_thumb">
+                                    <img t-if="p.imgSrc" t-att-src="p.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false"/>
+                                    <span t-else="" class="o_pos_cat_initial" t-out="p.initial"/>
+                                </div>
+                                <div t-if="this.showName or this.showProductCount" class="o_pos_cat_text">
+                                    <span t-if="this.showName" class="o_pos_cat_name" t-out="p.name"/>
+                                    <span t-if="this.showProductCount" class="o_pos_cat_count badge rounded-pill" t-out="p.count"/>
+                                </div>
+                            </button>
+                            <div t-if="!pp.items.length" class="o_pos_cat_empty">No category found</div>
+                        </div>
+                    </div>
+                </div>
+            </t>
         </xpath>
     </t>
 </templates>
