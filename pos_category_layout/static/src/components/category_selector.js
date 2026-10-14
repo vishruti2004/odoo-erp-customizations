@@ -1,5 +1,12 @@
 import { patch } from "@web/core/utils/patch";
-import { reactive, useEffect, useRef, useState } from "@odoo/owl";
+import {
+    onWillRender,
+    reactive,
+    useEffect,
+    useExternalListener,
+    useRef,
+    useState,
+} from "@odoo/owl";
 import { CategorySelector } from "@point_of_sale/app/components/category_selector/category_selector";
 
 const STORAGE_KEY = "pos_category_layout.sidebar_collapsed";
@@ -28,15 +35,141 @@ export const categoryLayoutState = reactive({
     popupSearch: "",
     popupStyle: "",
     popupPage: 0,
+    popupMode: "icon",
+    // live screen / DOM measurements
+    viewW: window.innerWidth,
+    viewH: window.innerHeight,
+    rootTop: 0,
+    chromePx: 0,
+    gapPx: 0,
+    rowPx: 0,
+    colPx: 0,
+    listW: 0,
+    tracks: 0,
+    popChromePx: 0,
+    popGapPx: 0,
+    popRowPx: 0,
+    popColPx: 0,
+    popListW: 0,
+    popTracks: 0,
 });
 
 const DENSE_THRESHOLD = 12;
+const MAX_CATEGORY_HEIGHT_RATIO = 0.7;
+const VERTICAL_POPUP_WIDTH_RATIO = 0.5;
 
 patch(CategorySelector.prototype, {
     setup() {
         super.setup(...arguments);
         this.layoutState = useState(categoryLayoutState);
         this.popupInput = useRef("popupSearch");
+        this.catRoot = useRef("catRoot");
+        this.popRoot = useRef("popRoot");
+
+        this._cache = {};
+        onWillRender(() => {
+            this._cache = {};
+        });
+
+        useExternalListener(window, "resize", () => {
+            this.layoutState.viewW = window.innerWidth;
+            this.layoutState.viewH = window.innerHeight;
+        });
+        useEffect(
+            (el) => {
+                const list = el?.querySelector(".o_pos_cat_list");
+                if (!list || typeof ResizeObserver === "undefined") {
+                    return;
+                }
+                const observer = new ResizeObserver(() => {
+                    this.layoutState.listW = Math.round(list.clientWidth);
+                });
+                observer.observe(list);
+                return () => observer.disconnect();
+            },
+            () => [this.catRoot.el]
+        );
+        useEffect(
+            (el) => {
+                const list = el?.querySelector(".o_pos_cat_list");
+                if (!list || typeof ResizeObserver === "undefined") {
+                    return;
+                }
+                const observer = new ResizeObserver(() => {
+                    this.layoutState.popListW = Math.round(list.clientWidth);
+                });
+                observer.observe(list);
+                return () => observer.disconnect();
+            },
+            () => [this.popRoot.el]
+        );
+        
+        useEffect(() => {
+            const state = this.layoutState;
+            const set = (key, value) => {
+                if (value && Math.abs(value - state[key]) >= 1) {
+                    state[key] = Math.round(value);
+                }
+            };
+            const popEl = this.popRoot.el;
+            const popList = popEl?.querySelector(".o_pos_cat_list");
+            if (popEl && popList && this.layoutState.popupMode === "icon") {
+                const popStyle = window.getComputedStyle(popList);
+                const inner = popEl.querySelector(".o_pos_cat_in_popup");
+                const popItem = popList.querySelector(".o_pos_cat_item");
+                set("popGapPx", parseFloat(popStyle.rowGap));
+                set("popListW", popList.clientWidth);
+                set(
+                    "popChromePx",
+                    popList.getBoundingClientRect().top -
+                        popEl.getBoundingClientRect().top +
+                        parseFloat(window.getComputedStyle(inner || popEl).paddingBottom || 0) +
+                        2
+                );
+                if (popItem) {
+                    const box = popItem.getBoundingClientRect();
+                    set("popRowPx", box.height);
+                    set("popColPx", box.width);
+                }
+                const popTracks = (popStyle.gridTemplateColumns || "")
+                    .split(" ")
+                    .filter((track) => track.endsWith("px")).length;
+                if (popTracks && popTracks !== state.popTracks && !this.popupHScroll) {
+                    state.popTracks = popTracks;
+                }
+            }
+            const rootEl = this.catRoot.el;
+            const list = rootEl?.querySelector(".o_pos_cat_list");
+            if (!rootEl || !list) {
+                return;
+            }
+            const rootRect = rootEl.getBoundingClientRect();
+            const style = window.getComputedStyle(list);
+            const item = list.querySelector(".o_pos_cat_item");
+            if (Math.abs(rootRect.top - state.rootTop) >= 1) {
+                state.rootTop = Math.round(rootRect.top);
+            }
+            set("gapPx", parseFloat(style.rowGap));
+            set("listW", list.clientWidth);
+            set(
+                "chromePx",
+                list.getBoundingClientRect().top -
+                    rootRect.top +
+                    parseFloat(window.getComputedStyle(rootEl).paddingBottom || 0)
+            );
+            if (item) {
+                const box = item.getBoundingClientRect();
+                set("rowPx", box.height);
+                set("colPx", box.width);
+            }
+            // the grid resolves auto-fill to real px tracks: that is the number of columns
+            const tracks = (style.gridTemplateColumns || "")
+                .split(" ")
+                .filter((track) => track.endsWith("px")).length;
+            if (tracks && tracks !== state.tracks && !this.isHorizontalScroll) {
+                state.tracks = tracks;
+            }
+        });
         useEffect(
             (open) => {
                 if (open) {
@@ -127,24 +260,43 @@ patch(CategorySelector.prototype, {
     },
 
     get visibleRows() {
-        return Math.min(Math.max(parseInt(this.pos.config.category_rows) || 3, 1), 8);
+        return Math.max(parseInt(this.pos.config.category_rows) || 3, 1);
     },
 
-    getGridColumns(paginated) {
-        let columns = Math.min(Math.max(parseInt(this.pos.config.category_grid_columns) || 0, 0), 12);
-        if (!columns && paginated) {
-            columns = 6;
+    getEffectiveRows(popup = false) {
+        const state = this.layoutState;
+        const rows = this.visibleRows;
+        const rowPx = popup ? state.popRowPx : state.rowPx;
+        if (!rowPx) {
+            return rows; // first render: nothing measured yet
         }
-        return this.ui.isSmall && columns ? Math.min(columns, 3) : columns;
+        const gap = popup ? state.popGapPx : state.gapPx;
+        let budget;
+        if (popup) {
+            const match = /max-height:([\d.]+)px/.exec(state.popupStyle || "");
+            budget = (match ? parseFloat(match[1]) : state.viewH) - state.popChromePx;
+        } else {
+            const free = Math.max(state.viewH - state.rootTop, rowPx * 2);
+            budget = free * MAX_CATEGORY_HEIGHT_RATIO - state.chromePx;
+        }
+        let fit = Math.min(rows, Math.max(1, Math.floor((budget + gap) / (rowPx + gap))));
+        const horizontal = popup ? this.popupHScroll : this.isHorizontalScroll;
+        const colPx = popup ? state.popColPx : state.colPx;
+        const listW = popup ? state.popListW : state.listW;
+        if (horizontal && colPx && listW) {
+            const columns = Math.max(1, Math.floor((listW + gap) / (colPx + gap)));
+            const count = popup ? this.getPopupItems().length : this.getLayoutItems().length;
+            fit = Math.min(fit, Math.max(1, Math.ceil(count / columns)));
+        }
+        return fit;
     },
 
     get gridColumns() {
-        return this.getGridColumns(this.isCarousel);
+        return this.layoutState.tracks || 1;
     },
 
     get imagePosition() {
         const position = this.pos.config.category_image_position;
-        // search results always use the compact "image left" card
         if (
             this.isSearching ||
             this.cardStyle !== "classic" ||
@@ -156,14 +308,15 @@ patch(CategorySelector.prototype, {
     },
 
     get layoutStyle() {
-        return this.isSidebar || this.isPopupLayout ? "" : `--cat-cols:${this.gridColumns || 1};--cat-rows:${this.visibleRows}`;
+        return this.isSidebar || this.isPopupLayout ? "" : `--cat-rows:${this.getEffectiveRows()}`;
     },
 
-    paginate(all, columns, paginated, currentPage) {
-        if (!paginated) {
+    paginate(all, columns, paginated, currentPage, rows, ready = true) {
+        // not measured yet: show everything once, the next render has the real numbers
+        if (!paginated || !ready) {
             return { items: all, pages: 1, page: 0, total: all.length };
         }
-        const size = Math.max(columns, 1) * this.visibleRows;
+        const size = Math.max(columns, 1) * rows;
         const pages = Math.max(1, Math.ceil(all.length / size));
         const page = Math.min(currentPage, pages - 1);
         return { items: all.slice(page * size, (page + 1) * size), pages, page, total: all.length };
@@ -177,7 +330,9 @@ patch(CategorySelector.prototype, {
             this.getLayoutItems(),
             this.gridColumns,
             this.isCarousel,
-            this.layoutState.page
+            this.layoutState.page,
+            this.getEffectiveRows(),
+            Boolean(this.layoutState.tracks && this.layoutState.rowPx)
         );
     },
 
@@ -191,7 +346,7 @@ patch(CategorySelector.prototype, {
     },
 
     onTouchEnd(ev, inPopup = false) {
-        const paginated = inPopup ? this.popupPaginated : this.isCarousel;
+        const paginated = inPopup ? this.isIconPopup && this.popupPaginated : this.isCarousel;
         if (!paginated || this.touchStartX == null) {
             return;
         }
@@ -219,7 +374,6 @@ patch(CategorySelector.prototype, {
     },
 
     get showName() {
-        // image-only mode still needs the name while searching (results come from every level)
         return !this.isImageOnly || this.isSearching;
     },
 
@@ -235,17 +389,29 @@ patch(CategorySelector.prototype, {
         );
     },
 
+    getRootCount() {
+        if (this._cache.rootCount === undefined) {
+            this._cache.rootCount = [...this.pos.rootCategories].filter((c) =>
+                this.hasProducts(c)
+            ).length;
+        }
+        return this._cache.rootCount;
+    },
+
     get isDense() {
-        return !this.isPopupLayout && this.getLayoutItems().length > DENSE_THRESHOLD;
+        return (
+            !this.isPopupLayout &&
+            Math.max(this.getLayoutItems().length, this.getRootCount()) > DENSE_THRESHOLD
+        );
     },
 
     get layoutClass() {
         return {
             o_pos_cat_dense: this.isDense,
             o_pos_cat_searching: this.isSearching,
+            o_pos_cat_pathmode: this.isSearching || this.isAllScope,
             o_pos_cat_carousel: this.isCarousel,
             o_pos_cat_hscroll: this.isHorizontalScroll,
-            o_pos_cat_fixed_cols: !this.isSidebar && this.gridColumns > 0,
             [`o_pos_cat_card_${this.cardStyle}`]: true,
             [`o_pos_cat_imgpos_${this.imagePosition}`]: true,
             [`o_pos_cat_${this.isPopupLayout ? "popuplayout" : this.categoryLayout}`]: true,
@@ -305,7 +471,7 @@ patch(CategorySelector.prototype, {
 
     onBreadcrumbClick(categoryId) {
         if (categoryId === (this.pos.selectedCategory?.id || 0)) {
-            return; 
+            return;
         }
         this.onCategoryClick(categoryId);
     },
@@ -343,25 +509,54 @@ patch(CategorySelector.prototype, {
         return category.associatedProducts.filter((product) => product.canBeDisplayed).length;
     },
 
+    hasProducts(category) {
+        const cache = (this._cache.hasProducts ||= new Map());
+        if (!cache.has(category.id)) {
+            cache.set(category.id, category.hasProductsToShow);
+        }
+        return cache.get(category.id);
+    },
+
+    getChildIdSet() {
+        if (!this._cache.childIds) {
+            const selected = this.pos.selectedCategory;
+            const list = selected ? [...(selected.child_ids || [])] : [...this.pos.rootCategories];
+            this._cache.childIds = new Set(list.map((c) => c.id));
+        }
+        return this._cache.childIds;
+    },
+
     toItem(category, extra = {}) {
         return {
-            ...this.getChildCategoriesInfo(category),
+            id: category.id,
+            name: category.name,
+            color: category.color,
+            isSelected: this.isAncestorOrSelected(category),
+            isChildren: this.getChildIdSet().has(category.id),
             imgSrc: this.showImage ? this.getCategoryImage(category) : undefined,
             initial: (category.name || "?").trim().charAt(0).toUpperCase(),
             count: this.showProductCount ? this.getProductCount(category) : 0,
             depth: 0,
-            hasChildren: [...(category.child_ids || [])].some((c) => c.hasProductsToShow),
+            hasChildren: [...(category.child_ids || [])].some((c) => this.hasProducts(c)),
             hasParent: Boolean(category.parent_id),
             expanded: false,
             ...extra,
         };
     },
 
+    get isAllScope() {
+        return this.pos.config.category_scope === "all";
+    },
+
     getLayoutItems() {
-        if (this.isSearching) {
-            return this.getSearchItems();
+        if (!this._cache.layout) {
+            if (this.isSearching) {
+                this._cache.layout = this.getSearchItems();
+            } else {
+                this._cache.layout = this.isNested ? this.getNestedItems() : this.getFlatItems();
+            }
         }
-        return this.isNested ? this.getNestedItems() : this.getFlatItems();
+        return this._cache.layout;
     },
 
     // categories popup
@@ -373,11 +568,28 @@ patch(CategorySelector.prototype, {
         return this.isPopupLayout || this.showAllPopup;
     },
 
+    get isAllModal() {
+        return this.layoutState.popup && this.layoutState.popupMode === "all";
+    },
+
+    openAllModal() {
+        if (this.layoutState.popup) {
+            this.closePopup();
+            return;
+        }
+        this.layoutState.popupMode = "all";
+        this.layoutState.popupStyle = "";
+        this.layoutState.popupSearch = "";
+        this.layoutState.popupPage = 0;
+        this.layoutState.popup = true;
+    },
+
     togglePopup(ev) {
         if (this.layoutState.popup) {
             this.closePopup();
             return;
         }
+        this.layoutState.popupMode = "icon";
         const button = ev.currentTarget;
         const rect = button.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
@@ -395,8 +607,18 @@ patch(CategorySelector.prototype, {
             this.layoutState.popupStyle = `top:${top}px;left:${left}px;width:${width}px;max-height:${maxHeight}px`;
         } else {
             const rootRect = root.getBoundingClientRect();
-            const left = Math.max(8, rootRect.left + 8);
-            const width = Math.max(Math.min(rootRect.width - 16, viewportWidth - left - 8), 280);
+            let left;
+            let width;
+            if (this.popupVertical) {
+                width = Math.min(
+                    Math.max(rootRect.width * VERTICAL_POPUP_WIDTH_RATIO, 280),
+                    viewportWidth - 16
+                );
+                left = Math.max(8, Math.min(rootRect.right - width - 8, viewportWidth - width - 8));
+            } else {
+                left = Math.max(8, rootRect.left + 8);
+                width = Math.max(Math.min(rootRect.width - 16, viewportWidth - left - 8), 280);
+            }
             const top = rootRect.bottom + 2;
             const maxHeight = Math.max(viewportHeight - top - 12, 200);
             this.layoutState.popupStyle = `top:${top}px;left:${left}px;width:${width}px;max-height:${maxHeight}px`;
@@ -415,20 +637,45 @@ patch(CategorySelector.prototype, {
         this.layoutState.popupPage = 0;
     },
 
+    get isIconPopup() {
+        return this.layoutState.popupMode === "icon";
+    },
+
     get popupPaginated() {
         return Boolean(this.pos.config.category_carousel);
     },
 
+    get popupVertical() {
+        return (
+            this.isIconPopup &&
+            this.pos.config.category_popup_scroll_direction !== "horizontal"
+        );
+    },
+
+    get popupHScroll() {
+        return (
+            this.isIconPopup &&
+            !this.popupPaginated &&
+            this.pos.config.category_scroll_direction === "horizontal"
+        );
+    },
+
     get popupColumns() {
-        return this.getGridColumns(this.popupPaginated);
+        return this.layoutState.popTracks || 1;
     },
 
     getPopupPaging() {
+        const items = this.getPopupItems();
+        if (!this.isIconPopup) {
+            return { items, pages: 1, page: 0, total: items.length };
+        }
         return this.paginate(
-            this.getPopupItems(),
+            items,
             this.popupColumns,
             this.popupPaginated,
-            this.layoutState.popupPage
+            this.layoutState.popupPage,
+            this.getEffectiveRows(true),
+            Boolean(this.layoutState.popTracks && this.layoutState.popRowPx)
         );
     },
 
@@ -438,16 +685,16 @@ patch(CategorySelector.prototype, {
     },
 
     get popupLayoutStyle() {
-        return `--cat-cols:${this.popupColumns || 1};--cat-rows:${this.visibleRows}`;
+        return this.isIconPopup ? `--cat-rows:${this.getEffectiveRows(true)}` : "";
     },
 
     getPopupLayoutClass(count) {
+        const icon = this.isIconPopup;
         return {
-            o_pos_cat_dense: count > DENSE_THRESHOLD,
-            o_pos_cat_carousel: this.popupPaginated,
-            o_pos_cat_hscroll:
-                !this.popupPaginated && this.pos.config.category_scroll_direction === "horizontal",
-            o_pos_cat_fixed_cols: this.popupColumns > 0,
+            o_pos_cat_dense: Math.max(count, this.getRootCount()) > DENSE_THRESHOLD,
+            o_pos_cat_pathmode: this.isAllScope,
+            o_pos_cat_carousel: icon && this.popupPaginated,
+            o_pos_cat_hscroll: this.popupHScroll,
             [`o_pos_cat_card_${this.cardStyle}`]: true,
             [`o_pos_cat_imgpos_${this.imagePosition}`]: true,
             o_pos_cat_top_bar: true,
@@ -469,15 +716,23 @@ patch(CategorySelector.prototype, {
 
     getPopupItems() {
         const term = (this.layoutState.popupSearch || "").trim().toLowerCase();
-        const items = this.isNested ? this.getNestedItems() : this.getFlatItems();
-        return term ? items.filter((item) => (item.name || "").toLowerCase().includes(term)) : items;
+        const key = `popup:${term}`;
+        if (!this._cache[key]) {
+            const items = this.isNested ? this.getNestedItems() : this.getFlatItems();
+            this._cache[key] = term
+                ? items.filter((item) =>
+                      `${item.name || ""} ${item.path || ""}`.toLowerCase().includes(term)
+                  )
+                : items;
+        }
+        return this._cache[key];
     },
 
     getSearchItems(term = this.searchTerm) {
         const result = [];
         const walk = (categories, trail) => {
             for (const category of this.sortCategories(categories)) {
-                if (category.hasProductsToShow && (category.name || "").toLowerCase().includes(term)) {
+                if (this.hasProducts(category) && (category.name || "").toLowerCase().includes(term)) {
                     result.push(this.toItem(category, { path: trail.join(" / ") }));
                 }
                 walk([...(category.child_ids || [])], [...trail, category.name]);
@@ -487,14 +742,32 @@ patch(CategorySelector.prototype, {
         return result;
     },
 
+    getAllItems() {
+        const items = [];
+        const walk = (categories, trail) => {
+            for (const category of this.sortCategories(categories)) {
+                if (!this.hasProducts(category)) {
+                    continue;
+                }
+                items.push(this.toItem(category, { path: trail.join(" / ") }));
+                walk([...(category.child_ids || [])], [...trail, category.name]);
+            }
+        };
+        walk([...this.pos.rootCategories], []);
+        return items;
+    },
+
     getFlatItems() {
+        if (this.isAllScope) {
+            return this.getAllItems();
+        }
         const selected = this.pos.selectedCategory;
         let head = null;
         let level;
         if (!selected) {
             level = [...this.pos.rootCategories];
         } else {
-            const children = [...(selected.child_ids || [])].filter((c) => c.hasProductsToShow);
+            const children = [...(selected.child_ids || [])].filter((c) => this.hasProducts(c));
             if (children.length) {
                 head = selected;
                 level = children;
@@ -506,7 +779,7 @@ patch(CategorySelector.prototype, {
             }
         }
         const items = this.sortCategories(level)
-            .filter((category) => category.hasProductsToShow)
+            .filter((category) => this.hasProducts(category))
             .map((category) => this.toItem(category));
         if (head) {
             items.unshift(this.toItem(head));
@@ -517,8 +790,8 @@ patch(CategorySelector.prototype, {
     getNestedItems() {
         const selected = this.pos.selectedCategory;
         let roots = [...this.pos.rootCategories];
-        if (selected) {
-            const hasChildren = [...(selected.child_ids || [])].some((c) => c.hasProductsToShow);
+        if (selected && !this.isAllScope) {
+            const hasChildren = [...(selected.child_ids || [])].some((c) => this.hasProducts(c));
             if (hasChildren) {
                 roots = [selected];
             } else if (selected.parent_id) {
@@ -528,10 +801,10 @@ patch(CategorySelector.prototype, {
         const items = [];
         const walk = (categories, depth) => {
             for (const category of this.sortCategories(categories)) {
-                if (!category.hasProductsToShow) {
+                if (!this.hasProducts(category)) {
                     continue;
                 }
-                const children = [...(category.child_ids || [])].filter((c) => c.hasProductsToShow);
+                const children = [...(category.child_ids || [])].filter((c) => this.hasProducts(c));
                 const expanded = children.length > 0 && this.isNodeExpanded(category);
                 items.push(
                     this.toItem(category, { depth, hasChildren: children.length > 0, expanded })
@@ -556,7 +829,7 @@ patch(CategorySelector.prototype, {
 
     getItemClass(item, forceGrid = false) {
         const color = this.getColorClass(item);
-        if (!forceGrid && (this.isNested || this.isSearching)) {
+        if ((!forceGrid && (this.isNested || this.isSearching)) || this.isAllScope) {
             return {
                 ...color,
                 o_pos_cat_current: this.pos.selectedCategory?.id === item.id,

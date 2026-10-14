@@ -46,8 +46,9 @@
                                options="{'horizontal': true}"
                                invisible="category_content != 'image_name' or category_card_style != 'classic'"/>
 
-                        <field name="category_grid_columns"
-                               invisible="category_layout == 'sidebar' and not category_show_all_popup"/>
+                        <field name="category_scope"
+                               widget="radio"/>
+
                         <field name="category_rows"
                                invisible="category_layout == 'sidebar' and not category_show_all_popup"/>
                         <field name="category_carousel"
@@ -56,6 +57,10 @@
                                widget="radio"
                                options="{'horizontal': true}"
                                invisible="(category_layout == 'sidebar' and not category_show_all_popup) or category_carousel"/>
+                        <field name="category_popup_scroll_direction"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               invisible="category_layout != 'popup'"/>
                     </group>
 
                     <group string="Category Display Options">

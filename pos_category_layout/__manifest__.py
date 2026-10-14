@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "POS Category Layout Customization",
-    "version": "19.0.2.3.0",
+    "version": "19.0.2.4.0",
     "summary": "Configurable POS category layouts (top bar, sidebar, popup), card styles, search, carousel and font.",
     "description": """
 Customize the POS category navigation, per Point of Sale.

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
-from odoo.exceptions import ValidationError
-
 
 class PosConfig(models.Model):
     _inherit = "pos.config"
@@ -10,22 +8,19 @@ class PosConfig(models.Model):
     enable_custom_layout = fields.Boolean(
         string="Enable Custom Category Layout",
         default=False,
+        help="Customize category layout, appearance, and navigation for this POS.",
     )
 
-    # ------------------------------------------------------------------
-    # Layout
-    # ------------------------------------------------------------------
     category_layout = fields.Selection(
         [
             ("top_bar", "Top Bar"),
             ("sidebar", "Sidebar"),
-            ("popup", "Popup (Icon Only)"),
+            ("popup", "Category Popup"),
         ],
         string="Category Layout",
         default="top_bar",
         required=True,
-        help="Popup: the product screen keeps the full page, categories open from "
-        "an icon in a popup.",
+        help="Display categories in a top bar, sidebar, or popup panel.",
     )
 
     category_sidebar_position = fields.Selection(
@@ -36,26 +31,29 @@ class PosConfig(models.Model):
         string="Sidebar Position",
         default="left",
         required=True,
+        help="Position the category sidebar on the left or right side of the product screen.",
     )
 
     category_display_style = fields.Selection(
         [
             ("grid", "Grid Cards"),
-            ("list", "List (Nested Tree)"),
+            ("list", "Nested List"),
         ],
         string="Category Display Style",
         default="grid",
         required=True,
+        help="Display sidebar categories as grid cards or a hierarchical nested list.",
     )
 
     category_card_style = fields.Selection(
         [
-            ("classic", "Normal Cards"),
+            ("classic", "Standard Cards"),
             ("cover", "Cover Image Cards"),
         ],
         string="Card Style",
         default="classic",
         required=True,
+        help="Display categories using standard cards or cover image cards.",
     )
 
     category_content = fields.Selection(
@@ -67,6 +65,7 @@ class PosConfig(models.Model):
         string="Category Content",
         default="image_name",
         required=True,
+        help="Display an image, category name, or both on category cards.",
     )
 
     category_image_position = fields.Selection(
@@ -79,26 +78,30 @@ class PosConfig(models.Model):
         string="Image Position",
         default="left",
         required=True,
+        help="Position the category image above, below, or beside the category name.",
     )
 
-    category_grid_columns = fields.Integer(
-        string="Categories Per Row",
-        default=0,
-        help="0 = automatic (as many as fit). Applies to the top bar and to the categories popup.",
+    category_scope = fields.Selection(
+        [
+            ("level", "Direct Subcategories"),
+            ("all", "All Nested Categories"),
+        ],
+        string="Category Visibility",
+        default="level",
+        required=True,
+        help="Display immediate subcategories only or include categories from all nested levels.",
     )
 
     category_rows = fields.Integer(
         string="Visible Category Rows",
         default=3,
-        help="Rows shown before scrolling (or before the next page). Applies to the top bar "
-        "and to the categories popup.",
+        help="Set the maximum number of visible rows. The layout adjusts to available screen space while preserving room for products.",
     )
 
     category_carousel = fields.Boolean(
-        string="Pagination Instead of Scrollbar",
+        string="Enable Category Pagination",
         default=False,
-        help="Show the categories page by page (arrows and swipe) instead of a "
-        "scrollbar. Applies to the top bar and to the categories popup.",
+        help="Display categories across multiple pages with navigation controls instead of a scrollbar.",
     )
 
     category_scroll_direction = fields.Selection(
@@ -106,77 +109,72 @@ class PosConfig(models.Model):
             ("vertical", "Vertical"),
             ("horizontal", "Horizontal"),
         ],
-        string="Scrollbar Direction",
+        string="Scroll Direction",
         default="vertical",
         required=True,
-        help="Vertical: rows scroll up / down. Horizontal: the visible rows scroll left / right. "
-        "Applies to the top bar and to the categories popup.",
+        help="Set the scrolling direction for categories in supported layouts.",
     )
-    # ------------------------------------------------------------------
-    # Display options
-    # ------------------------------------------------------------------
+
+    category_popup_scroll_direction = fields.Selection(
+        [
+            ("horizontal", "Horizontal"),
+            ("vertical", "Vertical"),
+        ],
+        string="Popup Direction",
+        default="vertical",
+        required=True,
+        help="Set the popup orientation and scrolling direction for category navigation.",
+    )
+
     category_sort_order = fields.Selection(
         [
-            ("sequence", "Sequence"),
-            ("alphabetical", "Category Name(A to Z)"),
+            ("sequence", "Custom Order"),
+            ("alphabetical", "Name (A to Z)"),
         ],
         string="Category Sorting",
         default="sequence",
         required=True,
+        help="Display categories in their configured sequence or alphabetically by name.",
     )
 
     category_show_breadcrumb = fields.Boolean(
         string="Show Category Breadcrumb",
         default=True,
+        help="Display the navigation path to help users identify their current category level.",
     )
 
     category_show_product_count = fields.Boolean(
         string="Show Product Count",
         default=False,
+        help="Display the number of products associated with each category.",
     )
 
     category_show_search = fields.Boolean(
-        string="Show Category Search Bar",
+        string="Enable Category Search",
         default=False,
+        help="Display a search field to find categories by name.",
     )
 
     category_use_color = fields.Boolean(
         string="Use Category Colors",
         default=False,
-        help="Show the category color on parent and sub categories. "
-        "Categories without any parent or child stay white.",
+        help="Apply configured category colors to supported category elements.",
     )
 
     category_show_all_popup = fields.Boolean(
-        string="Show 'All Categories' Button",
+        string="Show All Categories Button",
         default=False,
-        help="Adds a button that opens a popup with the categories shown in the "
-        "category view, with a search bar. Click the button again to close it.",
+        help="Display a button that opens a searchable window for browsing categories.",
     )
-
-    # ------------------------------------------------------------------
-    # Typography (categories only)
-    # ------------------------------------------------------------------
-    @api.model
-    def _get_available_document_fonts(self):
-        font_field = self.env["base.document.layout"]._fields["font"]
-        return font_field._description_selection(self.env)
 
     font_family = fields.Selection(
         selection="_get_available_document_fonts",
         string="Font Family",
         default="Lato",
         required=True,
+        help="Set the font family used for category text in the POS interface.",
     )
-
-    @api.constrains("category_grid_columns", "category_rows")
-    def _check_category_grid(self):
-        for config in self:
-            if not 0 <= config.category_grid_columns <= 12:
-                raise ValidationError(
-                    self.env._("Categories per row must be between 0 (auto) and 12.")
-                )
-            if not 1 <= config.category_rows <= 8:
-                raise ValidationError(
-                    self.env._("Visible category rows must be between 1 and 8.")
-                )
+    @api.model
+    def _get_available_document_fonts(self):
+            font_field = self.env["base.document.layout"]._fields["font"]
+            return font_field._description_selection(self.env)

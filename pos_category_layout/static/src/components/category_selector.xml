@@ -7,7 +7,7 @@
         </xpath>
 
         <xpath expr="//div[contains(@t-attf-class, 'category-list')]" position="after">
-            <div t-else="" class="o_pos_cat" t-att-class="this.layoutClass" t-att-style="this.layoutStyle">
+            <div t-else="" class="o_pos_cat" t-ref="catRoot" t-att-class="this.layoutClass" t-att-style="this.layoutStyle">
                 <t t-set="paging" t-value="this.getPaging()"/>
                 <t t-set="items" t-value="paging.items"/>
 
@@ -20,10 +20,8 @@
                                 t-att-title="this.layoutState.collapsed ? 'Expand categories' : 'Collapse categories'">
                             <i t-att-class="this.layoutState.collapsed ? 'fa fa-chevron-right' : 'fa fa-chevron-left'" aria-hidden="true"/>
                         </button>
-                        <button t-if="this.pos.selectedCategory and !this.showBreadcrumb" type="button" class="o_pos_cat_back btn btn-light"
-                                title="Back" t-on-click="() => this.onBackClick()">
-                            <i class="fa fa-chevron-left" aria-hidden="true"/>
-                        </button>
+                        <button t-if="this.pos.selectedCategory and !this.showBreadcrumb" type="button" class="o_pos_cat_back"
+                                     title="Back" t-on-click="() => this.onBackClick()">Back</button>
                         <nav t-if="this.showBreadcrumb" class="o_pos_cat_breadcrumb" aria-label="breadcrumb">
                             <button type="button" class="o_pos_cat_crumb o_pos_cat_home"
                                     t-att-class="{'active': !this.pos.selectedCategory}"
@@ -52,11 +50,27 @@
                         </button>
                         <button t-else="" type="button" class="o_pos_cat_all_btn btn btn-primary"
                                 t-att-class="{'active': this.layoutState.popup}"
-                                t-on-click="(ev) => this.togglePopup(ev)">
+                                t-on-click="() => this.openAllModal()">
                             <i class="fa fa-th-large"/>
                             <span>All categories</span>
                         </button>
                     </t>
+
+                    <!-- Category search -->
+                    <div t-if="this.showSearch" class="o_pos_cat_search_wrap">
+                        <input type="text" class="o_pos_cat_search form-control form-control-sm"
+                               placeholder="Search category..."
+                               t-att-value="this.layoutState.search"
+                               t-on-input="(ev) => this.onSearchInput(ev)"/>
+                                <button t-if="this.isSearching"
+                                        type="button"
+                                        class="o_pos_cat_search_clear"
+                                        title="Clear"
+                                        aria-label="Clear search"
+                                        t-on-click="() => this.clearSearch()">
+                                    <i class="fa fa-times" aria-hidden="true"/>
+                                </button>
+                    </div>
 
                     <!-- pagination  -->
                     <div t-if="paging.pages > 1" class="o_pos_cat_pager">
@@ -75,22 +89,6 @@
                                     t-on-click="() => this.changePage(1)">
                                 <i class="fa fa-chevron-right" aria-hidden="true"/>
                             </button>
-                    </div>
-
-                    <!-- Category search -->
-                    <div t-if="this.showSearch" class="o_pos_cat_search_wrap">
-                        <input type="text" class="o_pos_cat_search form-control form-control-sm"
-                               placeholder="Search category..."
-                               t-att-value="this.layoutState.search"
-                               t-on-input="(ev) => this.onSearchInput(ev)"/>
-                                <button t-if="this.isSearching"
-                                        type="button"
-                                        class="o_pos_cat_search_clear"
-                                        title="Clear"
-                                        aria-label="Clear search"
-                                        t-on-click="() => this.clearSearch()">
-                                    <i class="fa fa-times" aria-hidden="true"/>
-                                </button>
                     </div>
                 </div>
 
@@ -116,7 +114,7 @@
                         <span t-elif="this.isNested and !this.isSearching" class="o_pos_cat_caret"/>
 
                         <div t-if="this.showImage" class="o_pos_cat_thumb">
-                            <img t-if="item.imgSrc" t-att-src="item.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false"/>
+                            <img t-if="item.imgSrc" t-att-src="item.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false" loading="lazy" decoding="async"/>
                             <span t-else="" class="o_pos_cat_initial" t-out="item.initial"/>
                         </div>
 
@@ -133,14 +131,18 @@
 
             <t t-if="this.layoutState.popup">
                 <t t-set="pp" t-value="this.getPopupPaging()"/>
-                <div class="o_pos_cat_backdrop" t-on-click="() => this.closePopup()"/>
-                <div class="o_pos_cat_popover" t-att-style="this.layoutState.popupStyle"
+                <div class="o_pos_cat_backdrop" t-att-class="{'o_pos_cat_backdrop_dim': this.isAllModal}"
+                     t-on-click="() => this.closePopup()"/>
+                <div class="o_pos_cat_popover" t-ref="popRoot"
+                     t-att-class="{'o_pos_cat_popover_modal': this.isAllModal}"
+                     t-att-style="this.layoutState.popupStyle"
                      t-on-keydown="(ev) => this.onPopupKeydown(ev)">
                     <div class="o_pos_cat o_pos_cat_in_popup"
                          t-att-class="this.getPopupLayoutClass(pp.total)"
                          t-att-style="this.popupLayoutStyle">
 
                         <div class="o_pos_cat_popover_head">
+                            <span t-if="this.isAllModal" class="o_pos_cat_popover_title">All categories</span>
                             <div class="o_pos_cat_popover_search">
                                 <i class="fa fa-search"/>
                                 <input type="text" t-ref="popupSearch"
@@ -185,11 +187,12 @@
                                     t-on-click="() => this.onPopupPick(p.id)"
                                     class="o_pos_cat_item category-button btn btn-light d-flex align-items-center rounded-3 gap-1 p-1">
                                 <div t-if="this.showImage" class="o_pos_cat_thumb">
-                                    <img t-if="p.imgSrc" t-att-src="p.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false"/>
+                                    <img t-if="p.imgSrc" t-att-src="p.imgSrc" class="o_pos_cat_img pe-none" alt="" draggable="false" loading="lazy" decoding="async"/>
                                     <span t-else="" class="o_pos_cat_initial" t-out="p.initial"/>
                                 </div>
                                 <div t-if="this.showName or this.showProductCount" class="o_pos_cat_text">
                                     <span t-if="this.showName" class="o_pos_cat_name" t-out="p.name"/>
+                                    <span t-if="p.path" class="o_pos_cat_path" t-out="p.path"/>
                                     <span t-if="this.showProductCount" class="o_pos_cat_count badge rounded-pill" t-out="p.count"/>
                                 </div>
                             </button>
