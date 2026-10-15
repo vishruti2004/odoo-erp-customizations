@@ -26,6 +26,7 @@ Customize the POS category navigation, per Point of Sale.
             "pos_category_layout/static/src/components/category_selector.js",
             "pos_category_layout/static/src/components/category_selector.xml",
             "pos_category_layout/static/src/screens/product_screen.js",
+            "pos_category_layout/static/src/navbar/navbar.js",
             "pos_category_layout/static/src/screens/product_screen.xml",
             "pos_category_layout/static/src/scss/category_layout.scss",
         ],

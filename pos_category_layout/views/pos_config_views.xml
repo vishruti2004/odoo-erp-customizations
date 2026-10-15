@@ -8,7 +8,6 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="inside">
 
-                <separator string="POS Category Layout"/>
 
                 <group string="Custom Configuration">
                     <field name="enable_custom_layout"/>
@@ -18,7 +17,7 @@
                        col="2"
                        invisible="not enable_custom_layout">
 
-                    <group string="Category Layout">
+                    <group string="Layout">
                         <field name="category_layout"
                                widget="radio"
                                options="{'horizontal': true}"/>
@@ -63,7 +62,7 @@
                                invisible="category_layout != 'popup'"/>
                     </group>
 
-                    <group string="Category Display Options">
+                    <group string="Options">
                         <field name="category_sort_order"/>
                         <field name="category_show_breadcrumb"
                                invisible="category_layout == 'popup'"/>

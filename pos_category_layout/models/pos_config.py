@@ -15,7 +15,7 @@ class PosConfig(models.Model):
         [
             ("top_bar", "Top Bar"),
             ("sidebar", "Sidebar"),
-            ("popup", "Category Popup"),
+            ("popup", "Show in Popup"),
         ],
         string="Category Layout",
         default="top_bar",
@@ -62,7 +62,7 @@ class PosConfig(models.Model):
             ("name", "Name Only"),
             ("image", "Image Only"),
         ],
-        string="Category Content",
+        string="Visibility Content",
         default="image_name",
         required=True,
         help="Display an image, category name, or both on category cards.",
@@ -83,23 +83,23 @@ class PosConfig(models.Model):
 
     category_scope = fields.Selection(
         [
-            ("level", "Direct Subcategories"),
-            ("all", "All Nested Categories"),
+            ("level", "Main Categories"),
+            ("all", "All Categories"),
         ],
-        string="Category Visibility",
+        string="Visibility Options",
         default="level",
         required=True,
         help="Display immediate subcategories only or include categories from all nested levels.",
     )
 
     category_rows = fields.Integer(
-        string="Visible Category Rows",
+        string="Visible Rows",
         default=3,
         help="Set the maximum number of visible rows. The layout adjusts to available screen space while preserving room for products.",
     )
 
     category_carousel = fields.Boolean(
-        string="Enable Category Pagination",
+        string="Enable Pagination",
         default=False,
         help="Display categories across multiple pages with navigation controls instead of a scrollbar.",
     )
@@ -128,17 +128,17 @@ class PosConfig(models.Model):
 
     category_sort_order = fields.Selection(
         [
-            ("sequence", "Custom Order"),
+            ("sequence", "Featured"),
             ("alphabetical", "Name (A to Z)"),
         ],
-        string="Category Sorting",
+        string="Sorting",
         default="sequence",
         required=True,
         help="Display categories in their configured sequence or alphabetically by name.",
     )
 
     category_show_breadcrumb = fields.Boolean(
-        string="Show Category Breadcrumb",
+        string="Show Breadcrumb",
         default=True,
         help="Display the navigation path to help users identify their current category level.",
     )
@@ -150,19 +150,19 @@ class PosConfig(models.Model):
     )
 
     category_show_search = fields.Boolean(
-        string="Enable Category Search",
+        string="Enable Search",
         default=False,
         help="Display a search field to find categories by name.",
     )
 
     category_use_color = fields.Boolean(
-        string="Use Category Colors",
+        string="Background Colors",
         default=False,
         help="Apply configured category colors to supported category elements.",
     )
 
     category_show_all_popup = fields.Boolean(
-        string="Show All Categories Button",
+        string="Show 'All Categories' Button",
         default=False,
         help="Display a button that opens a searchable window for browsing categories.",
     )

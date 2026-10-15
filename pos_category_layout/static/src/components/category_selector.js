@@ -213,11 +213,12 @@ patch(CategorySelector.prototype, {
     },
 
     get cardStyle() {
-        if (this.isNested || this.isSearching) {
+        if (this.isNested) {
             return "classic";
         }
         return this.pos.config.category_card_style === "cover" ? "cover" : "classic";
     },
+    
 
     get showImage() {
         return this.cardStyle === "cover" || this.categoryContent !== "name";
@@ -312,7 +313,6 @@ patch(CategorySelector.prototype, {
     },
 
     paginate(all, columns, paginated, currentPage, rows, ready = true) {
-        // not measured yet: show everything once, the next render has the real numbers
         if (!paginated || !ready) {
             return { items: all, pages: 1, page: 0, total: all.length };
         }
