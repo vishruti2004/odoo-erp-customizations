@@ -1,7 +1,9 @@
+/** @odoo-module **/
+
+import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { patch } from "@web/core/utils/patch";
 import { useState } from "@odoo/owl";
-import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
-import { categoryLayoutState } from "@pos_category_layout/components/category_selector";
+import { categoryLayoutState } from "@pos_category_layout/app/components/category_selector/category_selector";
 
 patch(ProductScreen.prototype, {
     setup() {
