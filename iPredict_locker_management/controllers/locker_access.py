@@ -12,6 +12,10 @@ from odoo import http
 from odoo.http import request
 
 
+# Allocation states in which the person is still allowed to check in / check out.
+ACTIVE_ALLOCATION_STATES = ("allocated", "renewal_pending", "expired")
+
+
 class LockerAccessController(http.Controller):
     _face_app = None
     _anti_spoof_session = None
@@ -252,6 +256,13 @@ class LockerAccessController(http.Controller):
 
     # COMMON HELPERS
 
+    def _is_locker_admin(self):
+        return request.env.user.has_group("iPredict_locker_management.group_locker_admin")
+
+    def _can_act_for(self, partner):
+        """A locker user may only use the kiosk for himself, an administrator for everybody."""
+        return self._is_locker_admin() or partner.id == request.env.user.partner_id.id
+
     def _get_allocation_payload(
         self,
         allocation,
@@ -346,7 +357,7 @@ class LockerAccessController(http.Controller):
         if not credential.active:
             self._clear_pending_authentication()
             return None
-        if allocation.state != "allocated":
+        if allocation.state not in ACTIVE_ALLOCATION_STATES:
             self._clear_pending_authentication()
             return None
         if credential.allocation_id.id != allocation.id:
@@ -492,6 +503,10 @@ class LockerAccessController(http.Controller):
             ("email", "ilike", identity),
             ("phone", "ilike", identity),
         ])
+        is_admin = self._is_locker_admin()
+        if not is_admin:
+            # A locker user can only look for himself.
+            partners = partners & request.env.user.partner_id
         if not partners:
             return {"success": False, "message": "No person found."}
         allocations = Allocation.search([
@@ -505,6 +520,8 @@ class LockerAccessController(http.Controller):
         persons = []
         for allocation in allocations:
             allowed_partners = allocation.partner_id | allocation.authorized_partner_ids
+            if not is_admin:
+                allowed_partners = allowed_partners & request.env.user.partner_id
             for partner in allowed_partners:
                 credential = Credential.search(
                     [
@@ -640,8 +657,10 @@ class LockerAccessController(http.Controller):
 
         if not qr_token or not str(qr_token).strip():
             return qr_failure("QR token is required.")
-        if allocation.state != "allocated":
+        if allocation.state not in ACTIVE_ALLOCATION_STATES:
             return qr_failure("This locker is not currently allocated.")
+        if not self._can_act_for(partner):
+            return {"success": False, "message": "You can only access your own locker."}
         qr_token = str(qr_token).strip()
         credential = Credential.search(
             [
@@ -687,8 +706,10 @@ class LockerAccessController(http.Controller):
             return {"success": False, "message": "Person not found."}
         if not allocation:
             return {"success": False, "message": "Locker allocation not found."}
-        if allocation.state != "allocated":
+        if allocation.state not in ACTIVE_ALLOCATION_STATES:
             return {"success": False, "message": "This locker is not currently allocated."}
+        if not self._can_act_for(partner):
+            return {"success": False, "message": "You can only access your own locker."}
         allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
         if partner.id not in allowed_partner_ids:
             return {"success": False, "message": "This person is not authorized for this locker."}
@@ -990,10 +1011,16 @@ class LockerAccessController(http.Controller):
                 "message": "Locker allocation not found.",
             }
 
-        if allocation.state != "allocated":
+        if allocation.state not in ACTIVE_ALLOCATION_STATES:
             return {
                 "success": False,
                 "message": "This locker is not currently allocated.",
+            }
+
+        if not self._can_act_for(partner):
+            return {
+                "success": False,
+                "message": "You can only access your own locker.",
             }
 
         allowed_partner_ids = (
@@ -1189,11 +1216,13 @@ class LockerAccessController(http.Controller):
         allocation = Allocation.browse(int(allocation_id)).exists()
         if not allocation:
             return {"success": False, "message": "Locker allocation not found."}
-        if allocation.state != "allocated":
+        if allocation.state not in ACTIVE_ALLOCATION_STATES:
             return {"success": False, "message": "This locker is not currently allocated."}
         partner = request.env["res.partner"].browse(int(authenticated_partner_id)).exists()
         if not partner:
             return {"success": False, "message": "Authenticated person not found."}
+        if not self._can_act_for(partner):
+            return {"success": False, "message": "You can only access your own locker."}
         allowed_partner_ids = allocation.authorized_partner_ids.ids + [allocation.partner_id.id]
         if partner.id not in allowed_partner_ids:
             return {"success": False, "message": "This person is not authorized for this locker."}

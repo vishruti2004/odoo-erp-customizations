@@ -1,5 +1,5 @@
-
 from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 class LockerLocker(models.Model):
@@ -12,7 +12,7 @@ class LockerLocker(models.Model):
     name = fields.Char(string="Locker", required=True, copy=False, default=lambda self: _("New"), tracking=True)
     profile_id = fields.Many2one("locker.profile", string="Locker Profile", required=True, ondelete="restrict", tracking=True)
     company_id = fields.Many2one("res.company", string="Company", default=lambda self: self.env.company, required=True, tracking=True)
-    status = fields.Selection([("available", "Available"), ("allocated", "Allocated")], string="Status", default="available", required=True, tracking=True, copy=False)
+    status = fields.Selection([("available", "Available"), ("reserved", "Reserved"), ("allocated", "Allocated")], string="Status", default="available", required=True, tracking=True, copy=False)
     active = fields.Boolean(default=True, tracking=True)
     note = fields.Html(string="Notes")
     allocation_ids = fields.One2many("locker.allocation", "locker_id", string="Allocations")
@@ -54,18 +54,18 @@ class LockerLocker(models.Model):
     height = fields.Float(string="Height", default=1.0)
     depth = fields.Float(string="Depth", default=1.0)
 
+    current_allocation_id = fields.Many2one(
+        "locker.allocation",
+        string="Current Allocation",
+        compute="_compute_current_allocation",
+    )
+
     @api.depends("allocation_ids.state")
     def _compute_current_allocation(self):
+        active_states = ("allocated", "renewal_pending", "expired")
         for rec in self:
-            allocation = self.env["locker.allocation"].search(
-                [
-                    ("locker_id", "=", rec.id),
-                    ("state", "=", "allocated"),
-                ],
-                order="id desc",
-                limit=1,
-            )
-            rec.current_allocation_id = allocation
+            allocations = rec.allocation_ids.filtered(lambda a: a.state in active_states)
+            rec.current_allocation_id = allocations.sorted("id", reverse=True)[:1]
 
     def action_view_allocations(self):
         self.ensure_one()
@@ -79,6 +79,17 @@ class LockerLocker(models.Model):
             "context": {
                 "default_locker_id": self.id,
             },
+        }
+
+    def action_view_access_history(self):
+        self.ensure_one()
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Access History"),
+            "res_model": "locker.access",
+            "view_mode": "list,form",
+            "domain": [("locker_id", "=", self.id)],
         }
 
     def action_open_locker_allocation(self):
@@ -143,53 +154,122 @@ class LockerLocker(models.Model):
         
     @api.model
     def get_3d_data(self, company_id=None):
-        company_domain = []
-        if company_id:
-            company_domain.append(("id", "=", company_id))
-    
-        companies = self.env["res.company"].search(company_domain, order="name")
-    
-        location_domain = [
-            ("create_3d_view", "=", True),
-        ]
+        is_admin = self.env.user.has_group(
+            "iPredict_locker_management.group_locker_admin"
+        )
+
+        Company = self.env["res.company"]
+        Location = self.env["locker.location"]
+        Site = self.env["locker.site"]
+        Locker = self
+        own_ids = None
+        own_locations = None
+
+        if not is_admin:
+           
+            own_lockers = self.search([("active", "=", True)]) 
+            own_ids = set(own_lockers.ids)
+            own_locations = own_lockers.mapped("locker_location_id").filtered("create_3d_view")
+            Locker = self.sudo()
+            Location = Location.sudo()
+            Site = Site.sudo()
+            Company = Company.sudo()
+
+        # ---- companies
+        if is_admin:
+            company_domain = []
+            if company_id:
+                company_domain.append(("id", "=", company_id))
+            companies = Company.search(company_domain, order="name")
+        else:
+            companies = own_locations.mapped("company_id").sorted("name")
+            if company_id:
+                companies = companies.filtered(lambda c: c.id == company_id)
+
+        # ---- locations
+        location_domain = [("create_3d_view", "=", True)]
         if company_id:
             location_domain.append(("company_id", "=", company_id))
-    
-        locations = self.env["locker.location"].search(
-            location_domain,
-            order="name",
-        )
-    
-        site_domain = [
-            ("active", "=", True),
-        ]
-    
+        if not is_admin:
+            location_domain.append(("id", "in", own_locations.ids))
+        locations = Location.search(location_domain, order="name")
+
+        # ---- sites
+        site_domain = [("active", "=", True)]
         if company_id:
             site_domain.append(("locker_location_id.company_id", "=", company_id))
-    
-        sites = self.env["locker.site"].search(
-            site_domain,
-            order="id",
-        )
-    
-        locker_domain = [
-            ("active", "=", True),
-        ]
-    
+        if not is_admin:
+            site_domain.append(("locker_location_id", "in", own_locations.ids))
+        sites = Site.search(site_domain, order="id")
+
+        # ---- lockers
+        locker_domain = [("active", "=", True)]
         if company_id:
             locker_domain.append(("company_id", "=", company_id))
-    
-        lockers = self.search(
+        if not is_admin:
+            locker_domain.append(("locker_location_id", "in", own_locations.ids))
+        lockers = Locker.search(
             locker_domain,
             order="locker_location_id, site_id, profile_id, name, id",
         )
-    
-        profiles = self.env["locker.profile"].search(
-            [],
-            order="name",
-        )
-    
+
+        profiles = self.env["locker.profile"].search([], order="name")
+        if not is_admin:
+            profiles = profiles & own_lockers.mapped("profile_id")
+
+        status_colors = {
+            company.id: {
+                "available": company.available_locker_color or "#28A745",
+                "allocated": company.allocated_locker_color or "#DC3545",
+                "reserved": company.reserved_locker_color or "#FFC107",
+            }
+            for company in companies
+        }
+
+        def locker_payload(locker):
+            is_mine = is_admin or locker.id in own_ids
+            data = {
+                "id": locker.id,
+                "is_mine": is_mine,
+                "company_id": locker.company_id.id,
+                "locker_location_id": locker.locker_location_id.id,
+                "site_id": locker.site_id.id if locker.site_id else False,
+                "side": locker.side or "side_1",
+                "pos_x": float(locker.pos_x or 0.0),
+                "pos_y": float(locker.pos_y or 0.0),
+                "pos_z": float(locker.pos_z or 0.0),
+                "width": float(locker.width or 1.0),
+                "height": float(locker.height or 1.0),
+                "depth": float(locker.depth or 1.0),
+                "w": float(locker.width or 1.0),
+                "h": float(locker.height or 1.0),
+                "d": float(locker.depth or 1.0),
+            }
+            if is_mine:
+                data.update({
+                    "name": locker.name,
+                    "status": locker.status,
+                    "locker_location": locker.locker_location_id.name or "",
+                    "profile_id": locker.profile_id.id,
+                    "profile_color": locker.profile_id.color,
+                    "profile": locker.profile_id.name,
+                    "color": locker.profile_id.color or "#198754",
+                })
+            else:
+                data.update({
+                    "name": "",
+                    "status": locker.status,
+                    "locker_location": "",
+                    "profile_id": locker.profile_id.id,
+                    "profile_color": locker.profile_id.color,
+                    "profile": "",
+                    "color": locker.profile_id.color or "#198754",
+                })
+            return data
+
         return {
+            "status_colors": status_colors,
+            "current_company_id": self.env.company.id,
             "companies": [
                 {
                     "id": company.id,
@@ -201,6 +281,7 @@ class LockerLocker(models.Model):
                 {
                     "id": location.id,
                     "name": location.name,
+                    "company_id": location.company_id.id,
                 }
                 for location in locations
             ],
@@ -215,40 +296,12 @@ class LockerLocker(models.Model):
                     "pos_y": float(site.pos_y or 0.0),
                     "pos_z": float(site.pos_z or 0.0),
                     "active": site.active,
-                    # NEW: needed so the frontend can filter sites by
-                    # the currently selected company / locker location.
                     "locker_location_id": site.locker_location_id.id,
                     "company_id": site.company_id.id,
                 }
                 for site in sites
             ],
-            "lockers": [
-                {
-                    "id": locker.id,
-                    "name": locker.name,
-                    "status": locker.status,
-                    "company_id": locker.company_id.id,
-                    "locker_location_id": locker.locker_location_id.id,
-                    "locker_location": locker.locker_location_id.name or "",
-                    "site_id": locker.site_id.id if locker.site_id else False,
-                    "side": locker.side or "side_1",
-                    "profile_id": locker.profile_id.id,
-                    "profile_color": locker.profile_id.color,
-                    "profile": locker.profile_id.name,
-                    "pos_x": float(locker.pos_x or 0.0),
-                    "pos_y": float(locker.pos_y or 0.0),
-                    "pos_z": float(locker.pos_z or 0.0),
-                    "width": float(locker.width or 1.0),
-                    "height": float(locker.height or 1.0),
-                    "depth": float(locker.depth or 1.0),
-                    # NEW: aliases the 3D widget actually reads.
-                    "w": float(locker.width or 1.0),
-                    "h": float(locker.height or 1.0),
-                    "d": float(locker.depth or 1.0),
-                    "color": locker.profile_id.color or "#198754",
-                }
-                for locker in lockers
-            ],
+            "lockers": [locker_payload(locker) for locker in lockers],
             "profiles": [
                 {
                     "id": profile.id,
@@ -257,9 +310,7 @@ class LockerLocker(models.Model):
                 }
                 for profile in profiles
             ],
-            "is_admin": self.env.user.has_group(
-                "iPredict_locker_management.group_locker_admin"
-            ),
+            "is_admin": is_admin,
         }
 
     @api.model
@@ -287,8 +338,9 @@ class LockerLocker(models.Model):
         allocation = self.env["locker.allocation"].search(
             [
                 ("locker_id", "=", locker.id),
-                ("state", "=", "allocated"),
+                ("state", "in", ("allocated", "renewal_pending", "expired")),
             ],
+            order="id desc",
             limit=1,
         )
 
@@ -305,6 +357,8 @@ class LockerLocker(models.Model):
 
     @api.model
     def update_locker_position(self, locker_id, pos_x, pos_y, pos_z, side=None,site_id=None,):
+        if not self.env.user.has_group("iPredict_locker_management.group_locker_admin"):
+            raise AccessError(_("Only a Locker Administrator can change the 3D layout."))
         locker = self.browse(locker_id)
         if locker.exists():
             vals = {

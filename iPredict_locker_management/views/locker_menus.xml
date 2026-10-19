@@ -2,104 +2,90 @@
 <odoo>
 
     <!-- Root App Menu -->
-    <menuitem
-        id="menu_locker_root"
-        name="Locker Management"
-        web_icon="iPredict_locker_management,static/description/icon.png"
-        sequence="50"/>
+    <menuitem id="menu_locker_root"
+              name="Locker Management"
+              web_icon="iPredict_locker_management,static/description/icon.png"
+              groups="iPredict_locker_management.group_locker_user"
+              sequence="50" />
 
 
-    <!-- 3D View - Locker Admin Only -->
-    <menuitem
-        id="menu_locker_3d_view"
-        name="3D View"
-        parent="menu_locker_root"
-        action="action_locker_3d_view"
-        groups="iPredict_locker_management.group_locker_admin"
-        sequence="5"/>
+    <!-- 3D View - Locker User and Admin -->
+    <menuitem id="menu_locker_3d_view"
+              name="3D View"
+              parent="menu_locker_root"
+              action="action_locker_3d_view"
+              groups="iPredict_locker_management.group_locker_user"
+              sequence="5" />
 
 
     <!-- Lockers Parent -->
-    <menuitem
-        id="menu_locker_management"
-        name="Lockers"
-        parent="menu_locker_root"
-        sequence="10"/>
+    <menuitem id="menu_locker_management" name="Lockers" parent="menu_locker_root" sequence="10" />
 
     <!-- Lockers -->
-    <menuitem
-        id="menu_locker"
-        name="Lockers"
-        parent="menu_locker_management"
-        action="action_locker"
-        sequence="10"/>
+    <menuitem id="menu_locker"
+              name="Lockers"
+              parent="menu_locker_management"
+              action="action_locker"
+              sequence="10" />
 
     <!-- Locker Locations -->
-    <menuitem
-        id="menu_locker_location"
-        name="Locations"
-        parent="menu_locker_management"
-        action="action_locker_location"
-        sequence="20"/>
+    <menuitem id="menu_locker_location"
+              name="Locations"
+              parent="menu_locker_management"
+              action="action_locker_location"
+              sequence="20" />
 
-    <menuitem
-        id="menu_locker_allocation"
-        name="Locker Allocation"
-        parent="menu_locker_management"
-        action="action_locker_allocation"
-        sequence="30"/>
+    <menuitem id="menu_locker_allocation"
+              name="Locker Allocation"
+              parent="menu_locker_management"
+              action="action_locker_allocation"
+              sequence="30" />
 
 
     <!-- Check In / Check Out -->
-    <menuitem
-        id="menu_locker_access"
-        name="Check In / Check Out"
-        parent="menu_locker_root"
-        action="action_locker_kiosk"
-        sequence="20"/>
+    <menuitem id="menu_locker_access"
+              name="Check In / Check Out"
+              parent="menu_locker_root"
+              action="action_locker_kiosk"
+              sequence="20" />
 
 
 
 
     <!-- Access History -->
-    <menuitem
-        id="menu_locker_access_history"
-        name="Access History"
-        parent="menu_locker_root"
-        action="action_locker_access_history"
-        sequence="30"/>
+    <menuitem id="menu_locker_access_history"
+              name="Access History"
+              parent="menu_locker_root"
+              action="action_locker_access_history"
+              sequence="30" />
 
 
     <!-- Configuration -->
-    <menuitem
-        id="menu_locker_configuration"
-        name="Configuration"
-        parent="menu_locker_root"
-        groups="iPredict_locker_management.group_locker_admin"
-        sequence="100"/>
+    <menuitem id="menu_locker_configuration"
+              name="Configuration"
+              parent="menu_locker_root"
+              groups="iPredict_locker_management.group_locker_admin"
+              sequence="100" />
 
     <!-- Locker Profiles -->
-    <menuitem
-        id="menu_locker_profile"
-        name="Locker Profiles"
-        parent="menu_locker_configuration"
-        action="action_locker_profile"
-        sequence="10"/>
+    <menuitem id="menu_locker_profile"
+              name="Locker Profiles"
+              parent="menu_locker_configuration"
+              action="action_locker_profile"
+              sequence="10" />
 
     <!-- Return Reasons -->
-    <menuitem
-        id="menu_locker_return_reason"
-        name="Return Reasons"
-        parent="menu_locker_configuration"
-        action="action_locker_return_reason"
-        sequence="20"/>
+    <menuitem id="menu_locker_return_reason"
+              name="Return Reasons"
+              parent="menu_locker_configuration"
+              action="action_locker_return_reason"
+              sequence="20" />
 
     <!-- Locker Penalty -->
-    <menuitem
-        id="menu_locker_penalty"
-        name="Locker Penalty"
-        parent="menu_locker_configuration"
-        action="action_locker_penalty"
-        sequence="30"/>
+    <menuitem id="menu_locker_penalty"
+              name="Locker Penalty"
+              parent="menu_locker_configuration"
+              action="action_locker_penalty"
+              sequence="30" />
 
 </odoo>

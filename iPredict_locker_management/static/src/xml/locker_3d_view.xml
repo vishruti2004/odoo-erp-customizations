@@ -5,16 +5,15 @@
         <div class="o_locker_3d_container">
 
             <div class="o_locker_header">
-                <div class="o_locker_filters" t-if="state.isAdmin">
+                <div class="o_locker_filters">
                     <div class="filter_item">
                         <label class="fw-bold text-muted small">Company</label>
                         <select class="form-select form-select-sm" t-on-change="onCompanyChange">
                             <option value="">All Companies</option>
                             <t t-if="state.companies and state.companies.length">
                                 <t t-foreach="state.companies" t-as="company" t-key="company.id">
-                                    <option t-att-value="company.id"
-                                            t-att-selected="company.id === state.selectedCompanyId">
-                                        <t t-esc="company.name"/>
+                                    <option t-att-value="company.id" t-att-selected="company.id === state.selectedCompanyId">
+                                        <t t-esc="company.name" />
                                     </option>
                                 </t>
                             </t>
@@ -24,11 +23,10 @@
                         <label class="fw-bold text-muted small">Locker Location</label>
                         <select class="form-select form-select-sm" t-on-change="onLockerLocationChange">
                             <option value="">All Locations</option>
-                            <t t-if="state.lockerLocations and state.lockerLocations.length">
-                                <t t-foreach="state.lockerLocations" t-as="location" t-key="location.id">
-                                    <option t-att-value="location.id"
-                                            t-att-selected="location.id === state.selectedLockerLocationId">
-                                        <t t-esc="location.name"/>
+                            <t t-if="visibleLocations.length">
+                                <t t-foreach="visibleLocations" t-as="location" t-key="location.id">
+                                    <option t-att-value="location.id" t-att-selected="location.id === state.selectedLockerLocationId">
+                                        <t t-esc="location.name" />
                                     </option>
                                 </t>
                             </t>
@@ -40,24 +38,21 @@
                 <div class="o_locker_search" t-if="state.hasLockers">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0">
-                            <i class="fa fa-search text-muted"/>
+                            <i class="fa fa-search text-muted" />
                         </span>
-                        <input type="text" class="form-control form-control-sm border-start-0" 
-                               placeholder="Search Locker Number..." 
-                               t-model="state.searchQuery" 
-                               t-on-input="apply3DFilters"/>
-                        <button class="btn btn-outline-secondary btn-sm border-start-0" 
-                                t-if="state.searchQuery" 
-                                t-on-click="clearSearch">
-                            <i class="fa fa-times-circle"/>
+                        <input type="text"
+                               class="form-control form-control-sm border-start-0"
+                               placeholder="Search Locker Number..."
+                               t-model="state.searchQuery"
+                               t-on-input="apply3DFilters" />
+                        <button class="btn btn-outline-secondary btn-sm border-start-0" t-if="state.searchQuery" t-on-click="clearSearch">
+                            <i class="fa fa-times-circle" />
                         </button>
                     </div>
                 </div>
 
                 <div class="o_locker_header_right">
-                    <button t-if="state.hasLockers and state.isAdmin" 
-                            class="btn btn-sm btn-primary" 
-                            t-on-click="toggleEditMode">
+                    <button t-if="state.hasLockers and state.isAdmin" class="btn btn-sm btn-primary" t-on-click="toggleEditMode">
                         <t t-if="state.isEditMode">Save</t>
                         <t t-else="">Edit</t>
                     </button>
@@ -65,7 +60,7 @@
             </div>
 
             <div class="locker_canvas_wrapper">
-                <div t-ref="canvas" class="locker_canvas"/>
+                <div t-ref="canvas" class="locker_canvas" />
 
                 <!-- Legend Box -->
                 <div class="o_locker_canvas_legend" t-if="state.hasLockers">
@@ -77,6 +72,12 @@
                                  t-on-click="() => this.toggleStatusFilter('available')">
                                 <span class="o_legend_color" t-attf-style="border: 2px solid {{state.statusColors.available}}; background: transparent;"></span>
                                 <span>Available</span>
+                            </div>
+                            <div class="o_legend_item clickable" 
+                                 t-att-class="{'active-filter': state.activeStatusFilter === 'reserved'}"
+                                 t-on-click="() => this.toggleStatusFilter('reserved')">
+                                <span class="o_legend_color" t-attf-style="border: 2px solid {{state.statusColors.reserved}}; background: transparent;"></span>
+                                <span>Reserved</span>
                             </div>
                             <div class="o_legend_item clickable" 
                                  t-att-class="{'active-filter': state.activeStatusFilter === 'allocated'}"
@@ -98,7 +99,9 @@
                                          t-att-class="{'active-filter': state.activeProfileFilter === prof.id}"
                                          t-on-click="() => this.toggleProfileFilter(prof.id)">
                                         <span class="o_legend_color" t-attf-style="background-color: {{prof.color}};"></span>
-                                        <span><t t-esc="prof.name"/></span>
+                                        <span>
+                                            <t t-esc="prof.name" />
+                                        </span>
                                     </div>
                                 </t>
                             </t>
@@ -112,7 +115,7 @@
                         <div class="popup_header">
                             <span>Locker Detail</span>
                             <button class="popup_close btn btn-link p-0 text-muted" t-on-click="closePopup" aria-label="Close">
-                                <i class="fa fa-times"/>
+                                <i class="fa fa-times" />
                             </button>
                         </div>
 
@@ -121,15 +124,21 @@
                                 <tbody>
                                     <tr>
                                         <td class="label">Locker No</td>
-                                        <td class="value"><t t-esc="state.selectedLocker.name"/></td>
+                                        <td class="value">
+                                            <t t-esc="state.selectedLocker.name" />
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="label">Profile</td>
-                                        <td class="value"><t t-esc="state.selectedLocker.profile"/></td>
+                                        <td class="value">
+                                            <t t-esc="state.selectedLocker.profile" />
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="label">Location</td>
-                                        <td class="value"><t t-esc="state.selectedLocker.locker_location"/></td>
+                                        <td class="value">
+                                            <t t-esc="state.selectedLocker.locker_location" />
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="label">Status</td>
@@ -137,6 +146,11 @@
                                             <t t-if="state.selectedLocker.status === 'allocated'">
                                                 <span class="badge rounded-pill bg-danger">
                                                     Allocated
+                                                </span>
+                                            </t>
+                                            <t t-elif="state.selectedLocker.status === 'reserved'">
+                                                <span class="badge rounded-pill bg-warning text-dark">
+                                                    Reserved
                                                 </span>
                                             </t>
                                             <t t-else="">

@@ -20,7 +20,7 @@ export class LockerKiosk extends Component {
             message: "",
             messageType: "",
             loading: false,
-            // QR AUTHENTICATION
+
             qrScanning: false,
             qrSupported: false,
             qrAuthOptions: false,
@@ -29,7 +29,7 @@ export class LockerKiosk extends Component {
             otpSent: false,
             lockedUntil: null,
             faceScanning: false,
-            // CURRENTLY CHECKED-IN PEOPLE
+
             currentCheckedIn: [],
             currentCheckedInSearch: "",
             currentCheckedInLoading: false,
@@ -231,8 +231,6 @@ export class LockerKiosk extends Component {
         this.resetFaceAuthenticationState();
         this.stopQRScanner();
     }
-
-    // Common state reset shared by backToPersonSearch() and resetScreen().
     resetNavigationState() {
         this.resetSelectionState();
 
@@ -250,8 +248,21 @@ export class LockerKiosk extends Component {
         this.clearMessage();
     }
 
+    onPersonSearchKeydown(ev) {
+        if (ev.key !== "Enter") {
+            return;
+        }
+        ev.preventDefault();
+        this.state.personSearch = ev.target.value || "";
+        this.findPerson();
+    }
+
     async findPerson() {
-        const value = this.state.personSearch.trim();
+        if (this.state.loading) {
+            return;
+        }
+
+        const value = (this.state.personSearch || "").trim();
 
         if (!value) {
             this.showMessage(
@@ -264,12 +275,11 @@ export class LockerKiosk extends Component {
         this.state.loading = true;
         this.clearMessage();
 
-        await this.loadCurrentCheckedIn();
-        // ------------------------------------------------
-
-        this.resetSelectionState();
-
         try {
+            await this.loadCurrentCheckedIn();
+
+            this.resetSelectionState();
+
             const result = await rpc(
                 "/locker/access/find_person",
                 {
@@ -277,9 +287,9 @@ export class LockerKiosk extends Component {
                 }
             );
 
-            if (!result.success) {
+            if (!result || !result.success) {
                 this.showMessage(
-                    result.message || "No person found.",
+                    (result && result.message) || "No person found.",
                     "danger"
                 );
                 return;
@@ -335,7 +345,6 @@ export class LockerKiosk extends Component {
         this.clearMessage();
         this.resetQRAuthenticationState();
 
-        // ---- Check if person is already checked in ----
         if (this.isPersonCheckedIn(person)) {
             this.showMessage(
                 "You are already checked in. Please check out first.",
@@ -343,7 +352,6 @@ export class LockerKiosk extends Component {
             );
             return;
         }
-        // OTP LOCK (existing)
         if (person.otp_locked) {
             this.state.lockedUntil = person.otp_locked_until || null;
             this.state.mode = "locked";
@@ -354,22 +362,18 @@ export class LockerKiosk extends Component {
             return;
         }
 
-        // Companion Selection
         this.state.mode = "companion_selection";
     }
 
-    // BACK TO PERSON SEARCH
     backToPersonSearch() {
         this.resetNavigationState();
     }
 
-    // CREDENTIAL INPUT
     onInputChange(ev) {
         this.state.authentication = ev.target.value;
         this.clearMessage();
     }
 
-    // NORMAL AUTHENTICATION (PIN / RFID)
     async authenticate() {
         if (!this.state.selectedPerson) {
             this.showMessage(
@@ -382,7 +386,6 @@ export class LockerKiosk extends Component {
         const isPhysicalKey = this.state.selectedPerson.access_method === "physical_key";
         const value = this.state.authentication.trim();
 
-        // Physical Key does not require credential input.
         if (!isPhysicalKey && !value) {
             this.showMessage(
                 "Please enter or scan your authentication credential.",
@@ -1016,7 +1019,6 @@ export class LockerKiosk extends Component {
         }
     }
 
-    // BACK TO QR AUTHENTICATION
     backToQRAuthentication() {
         this.state.otp = "";
         this.state.otpSent = false;
@@ -1024,7 +1026,6 @@ export class LockerKiosk extends Component {
         this.state.mode = "qr_verification";
     }
 
-    // QR NEXT FRAME
     scheduleNextQRScan() {
         if (!this.state.qrScanning) {
             return;
@@ -1035,7 +1036,6 @@ export class LockerKiosk extends Component {
         });
     }
 
-    // STOP QR CAMERA
     stopQRScanner() {
         this.state.qrScanning = false;
         this.qrScanInProgress = false;
@@ -1224,7 +1224,6 @@ export class LockerKiosk extends Component {
         }
     }
 
-    // RESET SCREEN
     resetScreen() {
         this.resetNavigationState();
         this.state.companionCount = 0;

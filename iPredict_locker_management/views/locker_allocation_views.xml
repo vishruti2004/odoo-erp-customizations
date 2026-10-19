@@ -9,19 +9,19 @@
         <field name="model">locker.allocation</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="locker_id"/>
-                <field name="partner_id"/>
-                <field name="profile_id"/>
-                <field name="access_method"/>
-                <field name="start_date"/>
-                <field name="end_date"/>
+                <field name="name" />
+                <field name="locker_id" />
+                <field name="partner_id" />
+                <field name="profile_id" />
+                <field name="access_method" />
+                <field name="start_date" />
+                <field name="end_date" />
                 <field name="state"
                        widget="badge"
                        decoration-info="state == 'draft'"
                        decoration-success="state == 'allocated'"
                        decoration-warning="state == 'renewal_pending'"
-                       decoration-danger="state in ('expired', 'cancelled')"/>
+                       decoration-danger="state in ('expired', 'cancelled')" />
             </list>
         </field>
     </record>
@@ -40,67 +40,43 @@
                             type="object"
                             string="Create Invoice"
                             class="btn-primary"
-                            invisible="allocation_type != 'paid' or invoice_id or state != 'draft'"/>
+                            invisible="allocation_type != 'paid' or invoice_id or state != 'draft'"
+                            groups="iPredict_locker_management.group_locker_admin" />
 
                     <button name="action_allocate"
                             type="object"
                             string="Allocate"
                             class="btn-primary"
-                            invisible="state != 'draft' or (allocation_type == 'paid' and not invoice_id)"/>
+                            invisible="state != 'draft' or (allocation_type == 'paid' and not invoice_id)"
+                            groups="iPredict_locker_management.group_locker_admin" />
 
                     <button name="action_renew"
                             type="object"
                             string="Renew"
                             class="btn-primary"
-                            invisible="state not in ('renewal_pending', 'expired') or not renewal_available or (penalty_invoice_id and penalty_payment_state != 'paid')"/>
+                            invisible="state not in ('renewal_pending', 'expired') or not renewal_available or (penalty_invoice_id and penalty_payment_state != 'paid')"
+                            groups="iPredict_locker_management.group_locker_admin" />
 
-                    <button name="action_create_penalty"
-                            type="object"
-                            string="Create Penalty"
-                            class="btn-warning"
-                            icon="fa-money"
-                            invisible="state != 'expired' or not penalty_available or penalty_invoice_id"/>
-
-                   <button name="action_return"
-                            type="object"
-                            string="Return"
-                            invisible="state not in ('allocated', 'renewal_pending', 'expired') or ((penalty_available or penalty_invoice_id) and penalty_payment_state != 'paid')"/>
+                    <button name="action_return" type="object" string="Return" invisible="state not in ('allocated', 'renewal_pending', 'expired') or ((penalty_available or penalty_invoice_id) and penalty_payment_state != 'paid')" />
 
                     <button name="action_cancel"
                             type="object"
                             string="Cancel"
-                            invisible="state != 'draft'"/>
+                            invisible="state != 'draft'"
+                            groups="iPredict_locker_management.group_locker_admin" />
 
                     <!-- Statusbars based on States -->
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,cancelled"
-                           invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,cancelled" invisible="state != 'draft'" />
 
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,returned"
-                           invisible="state != 'allocated'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,returned" invisible="state != 'allocated'" />
 
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,renewal_pending,returned"
-                           invisible="state != 'renewal_pending'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,renewal_pending,returned" invisible="state != 'renewal_pending'" />
 
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,expired"
-                           invisible="state != 'expired'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,expired" invisible="state != 'expired'" />
 
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,returned"
-                           invisible="state != 'returned'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,returned" invisible="state != 'returned'" />
 
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,allocated,cancelled"
-                           invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,allocated,cancelled" invisible="state != 'cancelled'" />
                 </header>
 
                 <sheet>
@@ -110,108 +86,105 @@
                                 type="object"
                                 class="oe_stat_button"
                                 icon="fa-file-text-o"
+                                groups="iPredict_locker_management.group_locker_admin"
                                 invisible="not invoice_id">
-                            <field name="invoice_count" widget="statinfo" string="Invoice"/>
+                            <field name="invoice_count" widget="statinfo" string="Invoice" />
                         </button>
 
                         <button name="action_view_penalty_invoice"
                                 type="object"
                                 class="oe_stat_button"
                                 icon="fa-money"
+                                groups="iPredict_locker_management.group_locker_admin"
                                 invisible="not penalty_invoice_id">
-                            <field name="penalty_invoice_count" widget="statinfo" string="Penalty"/>
+                            <field name="penalty_invoice_count" widget="statinfo" string="Penalty" />
                         </button>
                     </div>
 
                     <!-- Title -->
                     <div class="oe_title">
                         <h1>
-                            <field name="name" readonly="1"/>
+                            <field name="name" readonly="1" />
                         </h1>
                     </div>
 
                     <!-- Main Fields -->
                     <group>
                         <group>
-                            <field name="locker_id" readonly="state != 'draft'"/>
-                            <field name="profile_id" readonly="1"/>
-                            <field name="access_method" readonly="1"/>
-                            <field name="partner_id"
-                                widget="res_partner_many2one"
-                                context="{
+                            <field name="locker_id" readonly="state != 'draft'" />
+                            <field name="profile_id" readonly="1" />
+                            <field name="access_method" readonly="1" />
+                            <field name="partner_id" widget="res_partner_many2one" context="{
                                     'res_partner_search_mode': 'customer',
                                     'show_address': 1,
                                     'show_vat': True
-                                }"
-                                readonly="state != 'draft'"/>                            
-                            <field name="authorized_partner_ids" widget="many2many_tags" readonly="state != 'draft'"/>
-                            <field name="company_id" readonly="state != 'draft'"/>
-                            <field name="state"
-                                   widget="badge"
-                                   decoration-info="state == 'draft'"
-                                   decoration-success="state == 'allocated'"
-                                   decoration-warning="state == 'renewal_pending'"
-                                   decoration-danger="state in ('expired', 'cancelled')"
-                                   readonly="1"/>
-                            <field name="renewal_available" invisible="1"/>
+                                }" readonly="state != 'draft'" />                            
+                            <field name="authorized_partner_ids" widget="many2many_tags" readonly="state != 'draft'" />
+                            <field name="company_id" readonly="state != 'draft'" />
+                            <field name="renewal_available" invisible="1" />
                         </group>
 
                         <group>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
-                            <field name="allocation_type" readonly="1"/>
-                            <field name="invoice_id" readonly="1"/>
-                            <field name="payment_state" readonly="1"/>
+                            <field name="start_date" />
+                            <field name="end_date" />
+                            <field name="reserved_until" invisible="state != 'draft' or not reserved_until" />
+                            <field name="allocation_type" readonly="1" />
+                            <field name="invoice_id" readonly="1" />
+                            <field name="payment_state" readonly="1" />
                         </group>
                     </group>
 
                     <!-- Penalty Section -->
-                    <separator string="Penalty Information"/>
+                    <separator string="Penalty Information" />
                     <group>
                         <group>
-                            <field name="penalty_start_date" readonly="1" invisible="not penalty_start_date"/>
-                            <field name="penalty_invoice_id" readonly="1" invisible="not penalty_invoice_id"/>
+                            <field name="penalty_start_date" readonly="1" invisible="not penalty_start_date" />
+                            <field name="penalty_invoice_id" readonly="1" invisible="not penalty_invoice_id" />
+                            <field name="penalty_days" readonly="1" invisible="not penalty_invoice_id" />
+                            <field name="penalty_amount" readonly="1" invisible="not penalty_invoice_id" />
                         </group>
                     </group>
 
                     <!-- Credentials / Identity Section -->
-                    <separator string="Authentication / Identity"/>
-                    <field name="credential_ids"
-                           nolabel="1"
-                           options="{'no_open': True}"
-                           context="{'active_test': False}">
+                    <separator string="Authentication / Identity" />
+                    <field name="credential_ids" nolabel="1" options="{'no_open': True}" context="{'active_test': False}">
                         <list editable="bottom" create="0" delete="0">
-                            <field name="partner_id" readonly="1"/>
-                            <field name="access_method" readonly="1"/>
-                            <field name="pin_code" readonly="1" column_invisible="parent.access_method != 'pin'"/>
-                            <field name="rfid_uid" readonly="1" column_invisible="parent.access_method != 'rfid'"/>
-                            <field name="qr_token" readonly="1" column_invisible="parent.access_method != 'qr'"/>
-                            <field name="qr_code" widget="image" readonly="1" column_invisible="parent.access_method != 'qr'" options="{'size': [60, 60]}"/>
+                            <field name="partner_id" readonly="1" />
+                            <field name="access_method" readonly="1" />
+                            <field name="pin_code" readonly="1" column_invisible="parent.access_method != 'pin'" />
+                            <field name="rfid_uid" readonly="1" column_invisible="parent.access_method != 'rfid'" />
+                            <field name="qr_token" readonly="1" column_invisible="parent.access_method != 'qr'" />
+                            <field name="qr_code"
+                                   widget="image"
+                                   readonly="1"
+                                   column_invisible="parent.access_method != 'qr'"
+                                   options="{'size': [60, 60]}" />
                             <button name="action_generate_credential"
                                     type="object"
                                     string="Generate"
                                     class="btn-primary"
-                                    column_invisible="parent.access_method in ('physical_key', 'biometric')"/>
+                                    groups="iPredict_locker_management.group_locker_admin"
+                                    column_invisible="parent.access_method in ('physical_key', 'biometric')" />
                         </list>
                     </field>
 
                     <!-- Tabs Notebook -->
                     <notebook>
                         <page string="Notes">
-                            <field name="note" readonly="state != 'draft'"/>
+                            <field name="note" readonly="state != 'draft'" />
                         </page>
 
                         <page string="Return Details" invisible="state != 'returned'">
                             <group>
-                                <field name="return_date"/>
-                                <field name="return_reason_id"/>
+                                <field name="return_date" />
+                                <field name="return_reason_id" />
                             </group>
                         </page>
                     </notebook>
                 </sheet>
 
                 <!-- Chatter Section -->
-                <chatter/>
+                <chatter />
             </form>
         </field>
     </record>
@@ -222,32 +195,32 @@
         <field name="model">locker.allocation</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name" string="Allocation Number"/>
-                <field name="locker_id" string="Locker"/>
-                <field name="partner_id" string="Partner"/>
-                <field name="profile_id" string="Locker Profile"/>
-                <field name="access_method" string="Access Method"/>
-                <field name="state" string="State"/>
-                <field name="allocation_type" string="Allocation Type"/>
-                <field name="invoice_id" string="Invoice"/>
+                <field name="name" string="Allocation Number" />
+                <field name="locker_id" string="Locker" />
+                <field name="partner_id" string="Partner" />
+                <field name="profile_id" string="Locker Profile" />
+                <field name="access_method" string="Access Method" />
+                <field name="state" string="State" />
+                <field name="allocation_type" string="Allocation Type" />
+                <field name="invoice_id" string="Invoice" />
 
-                <separator/>
+                <separator />
 
-                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
-                <filter name="filter_allocated" string="Allocated" domain="[('state', '=', 'allocated')]"/>
-                <filter name="filter_renewal_pending" string="Renewal Pending" domain="[('state', '=', 'renewal_pending')]"/>
-                <filter name="filter_expired" string="Expired" domain="[('state', '=', 'expired')]"/>
-                <filter name="filter_returned" string="Returned" domain="[('state', '=', 'returned')]"/>
-                <filter name="filter_cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]" />
+                <filter name="filter_allocated" string="Allocated" domain="[('state', '=', 'allocated')]" />
+                <filter name="filter_renewal_pending" string="Renewal Pending" domain="[('state', '=', 'renewal_pending')]" />
+                <filter name="filter_expired" string="Expired" domain="[('state', '=', 'expired')]" />
+                <filter name="filter_returned" string="Returned" domain="[('state', '=', 'returned')]" />
+                <filter name="filter_cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]" />
 
-                <separator/>
+                <separator />
 
                 <group>
-                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
-                    <filter name="group_locker" string="Locker" context="{'group_by': 'locker_id'}"/>
-                    <filter name="group_partner" string="Partner" context="{'group_by': 'partner_id'}"/>
-                    <filter name="group_profile" string="Locker Profile" context="{'group_by': 'profile_id'}"/>
-                    <filter name="group_access_method" string="Access Method" context="{'group_by': 'access_method'}"/>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}" />
+                    <filter name="group_locker" string="Locker" context="{'group_by': 'locker_id'}" />
+                    <filter name="group_partner" string="Partner" context="{'group_by': 'partner_id'}" />
+                    <filter name="group_profile" string="Locker Profile" context="{'group_by': 'profile_id'}" />
+                    <filter name="group_access_method" string="Access Method" context="{'group_by': 'access_method'}" />
                 </group>
             </search>
         </field>
@@ -258,7 +231,7 @@
         <field name="name">Locker Allocations</field>
         <field name="res_model">locker.allocation</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_locker_allocation_search"/>
+        <field name="search_view_id" ref="view_locker_allocation_search" />
     </record>
 
 </odoo>

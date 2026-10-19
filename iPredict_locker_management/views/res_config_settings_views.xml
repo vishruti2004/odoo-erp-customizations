@@ -4,7 +4,7 @@
     <record id="res_config_settings_view_form_locker_management" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.locker.management</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form" />
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app string="Locker Management" name="iPredict_locker_management" logo="/iPredict_locker_management/static/description/icon.png">
@@ -12,24 +12,28 @@
                     <!-- LOCKER SETTINGS -->
 
                     <block title="Locker Settings">
-                        <setting string="Available Locker Color"
-                                help="Set the color used for available lockers in the 3D view.">
-                            <field name="available_locker_color" widget="color"/>
+                        <setting string="Available Locker Color" help="Set the color used for available lockers in the 3D view.">
+                            <field name="available_locker_color" widget="color" />
                         </setting>
 
-                        <setting string="Allocated Locker Color"
-                                help="Set the color used for allocated lockers in the 3D view.">
-                            <field name="allocated_locker_color" widget="color"/>
+                        <setting string="Allocated Locker Color" help="Set the color used for allocated lockers in the 3D view.">
+                            <field name="allocated_locker_color" widget="color" />
                         </setting>
 
-                        <setting string="Renewal Reminder Days"
-                                help="Number of days before locker expiry when renewal becomes pending.">
-                            <field name="renewal_reminder_days"/>
+                        <setting string="Reserved Locker Color" help="Set the color used for reserved lockers in the 3D view.">
+                            <field name="reserved_locker_color" widget="color" />
                         </setting>
 
-                        <setting string="Enable 3D Locker View"
-                                help="Enable 3D view configuration for locker locations.">
-                            <field name="enable_3d_locker_view"/>
+                        <setting string="Locker Reservation Hours" help="A reserved locker (draft allocation) is released automatically after these hours.">
+                            <field name="locker_reservation_hours" />
+                        </setting>
+
+                        <setting string="Renewal Reminder Days" help="Number of days before locker expiry when renewal becomes pending.">
+                            <field name="renewal_reminder_days" />
+                        </setting>
+
+                        <setting string="Enable 3D Locker View" help="Enable 3D view configuration for locker locations.">
+                            <field name="enable_3d_locker_view" />
                         </setting>
                     </block>
                 </app>

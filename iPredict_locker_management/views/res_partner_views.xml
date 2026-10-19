@@ -4,13 +4,17 @@
     <record id="view_partner_form_locker" model="ir.ui.view">
         <field name="name">res.partner.form.locker</field>
         <field name="model">res.partner</field>
-        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="inherit_id" ref="base.view_partner_form" />
         <field name="arch" type="xml">
 
             <!-- Locker Allocations Smart Button -->
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_view_locker_allocations" type="object" class="oe_stat_button" icon="fa-lock" invisible="locker_allocation_count == 0">
-                    <field name="locker_allocation_count" widget="statinfo" string="Locker Allocations"/>
+                <button name="action_view_locker_allocations"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-lock"
+                        invisible="locker_allocation_count == 0">
+                    <field name="locker_allocation_count" widget="statinfo" string="Locker Allocations" />
                 </button>
             </xpath>
 

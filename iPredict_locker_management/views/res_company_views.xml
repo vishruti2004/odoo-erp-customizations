@@ -4,7 +4,7 @@
     <record id="view_company_form_inherit_locker_configuration" model="ir.ui.view">
         <field name="name">res.company.form.inherit.locker.configuration</field>
         <field name="model">res.company</field>
-        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="inherit_id" ref="base.view_company_form" />
         <field name="arch" type="xml">
 
             <xpath expr="//notebook" position="inside">
@@ -13,13 +13,15 @@
 
                     <group string="Status Colors">
                         <group>
-                            <field name="available_locker_color" widget="color"/>
-                            <field name="allocated_locker_color" widget="color"/>
+                            <field name="available_locker_color" widget="color" />
+                            <field name="allocated_locker_color" widget="color" />
+                            <field name="reserved_locker_color" widget="color" />
                         </group>
                     </group>
 
                     <group string="Renewal Configuration">
-                        <field name="renewal_reminder_days"/>
+                        <field name="renewal_reminder_days" />
+                        <field name="locker_reservation_hours" />
                     </group>
 
                 </page>

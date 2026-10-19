@@ -15,6 +15,7 @@ class LockerLocation(models.Model):
     active = fields.Boolean(string="Active", default=True)
     partner_id = fields.Many2one("res.partner", string="Responsible Person")
     site_ids = fields.One2many("locker.site", "locker_location_id", string="Sites")
+    locker_ids = fields.One2many("locker.locker", "locker_location_id", string="Lockers")
     locker_config_ids = fields.One2many("locker.location.line", "location_id", string="Locker Configurations")
     total_lockers = fields.Integer(string="Total Lockers", compute="_compute_total_lockers")
     available_lockers = fields.Integer(string="Available Lockers", compute="_compute_locker_statistics")
@@ -193,6 +194,7 @@ class LockerSite(models.Model):
     pos_y = fields.Float(string="Position Y", default=0.0)
     pos_z = fields.Float(string="Position Z", default=0.0)
     line_ids = fields.One2many("locker.location.line", "site_id", string="Locker Types")
+    locker_ids = fields.One2many("locker.locker", "site_id", string="Lockers")
     total_lockers = fields.Integer(string="Total Lockers", compute="_compute_total_lockers", store=True)
 
     @api.depends("line_ids.quantity")
@@ -400,25 +402,28 @@ class LockerSite(models.Model):
                                 "status": "available",
                             })
 
-                existing_count = len(existing_lockers)
-                target_count = len(target_lockers_payload)
+            # NOTE: this block is OUTSIDE the "for line in site.line_ids" loop.
+            # It must run only once per site, after the payload of ALL lines is ready.
+            existing_count = len(existing_lockers)
+            target_count = len(target_lockers_payload)
 
-                for index in range(min(existing_count, target_count)):
-                    existing_lockers[index].write(target_lockers_payload[index])
+            for index in range(min(existing_count, target_count)):
+                existing_lockers[index].write(target_lockers_payload[index])
 
-                if target_count > existing_count:
-                    Locker.create(target_lockers_payload[existing_count:])
-                elif existing_count > target_count:
-                    lockers_to_remove = existing_lockers[target_count:]
-                    allocated_lockers = lockers_to_remove.filtered(lambda locker: locker.status != "available")
+            if target_count > existing_count:
+                # dict(vals) -> copy, because create() writes the sequence "name" into the dict
+                Locker.create([dict(vals) for vals in target_lockers_payload[existing_count:]])
+            elif existing_count > target_count:
+                lockers_to_remove = existing_lockers[target_count:]
+                allocated_lockers = lockers_to_remove.filtered(lambda locker: locker.status != "available")
 
-                    if allocated_lockers:
-                        raise UserError(
-                            "Cannot reduce locker quantity! Some lockers are currently in use: %s"
-                            % ", ".join(allocated_lockers.mapped("name"))
-                        )
+                if allocated_lockers:
+                    raise UserError(
+                        "Cannot reduce locker quantity! Some lockers are currently in use: %s"
+                        % ", ".join(allocated_lockers.mapped("name"))
+                    )
 
-                    lockers_to_remove.unlink()
+                lockers_to_remove.unlink()
 
         return True
 

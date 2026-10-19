@@ -1,24 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- LOCKER MANAGEMENT PRIVILEGE -->
-
     <record id="res_groups_privilege_locker" model="res.groups.privilege">
         <field name="name">Locker Management</field>
         <field name="sequence">30</field>
         <field name="category_id" ref="base.module_category_hidden"/>
     </record>
 
-
-    <!-- LOCKER USER -->
-
     <record id="group_locker_user" model="res.groups">
         <field name="name">User</field>
         <field name="privilege_id" ref="res_groups_privilege_locker"/>
     </record>
-
-
-    <!-- LOCKER ADMIN -->
 
     <record id="group_locker_admin" model="res.groups">
         <field name="name">Administrator</field>
@@ -27,8 +19,9 @@
                eval="[(4, ref('group_locker_user'))]"/>
     </record>
 
-
-    <!-- LOCKER - COMPANY WISE -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(3, ref('group_locker_admin'))]"/>
+    </record>
 
     <record id="locker_company_rule" model="ir.rule">
         <field name="name">Locker Company Wise</field>
@@ -39,9 +32,6 @@
         </field>
     </record>
 
-
-    <!-- LOCKER LOCATION - COMPANY WISE DATA -->
-
     <record id="locker_location_company_rule" model="ir.rule">
         <field name="name">Locker Location Company Wise</field>
         <field name="model_id" ref="model_locker_location"/>
@@ -50,9 +40,6 @@
             [('company_id', 'in', company_ids)]
         </field>
     </record>
-
-
-    <!-- LOCKER PROFILE - GLOBAL / SHARED CONFIGURATION-->
 
     <record id="locker_profile_company_rule" model="ir.rule">
         <field name="name">Locker Profile Global</field>
@@ -63,9 +50,6 @@
         </field>
     </record>
 
-
-    <!-- LOCKER ALLOCATION - COMPANY WISE -->
-
     <record id="locker_allocation_company_rule" model="ir.rule">
         <field name="name">Locker Allocation Company Wise</field>
         <field name="model_id" ref="model_locker_allocation"/>
@@ -74,9 +58,6 @@
             [('company_id', 'in', company_ids)]
         </field>
     </record>
-
-
-    <!-- LOCKER ACCESS / ACCESS HISTORY - COMPANY WISE -->
 
     <record id="locker_access_company_rule" model="ir.rule">
         <field name="name">Locker Access Company Wise</field>
@@ -87,9 +68,6 @@
         </field>
     </record>
 
-
-    <!-- LOCKER RETURN REASON - GLOBAL CONFIGURATION -->
-
     <record id="locker_return_reason_global_rule" model="ir.rule">
         <field name="name">Locker Return Reason Global</field>
         <field name="model_id" ref="model_locker_return_reason"/>
@@ -97,6 +75,104 @@
         <field name="domain_force">
             [(1, '=', 1)]
         </field>
+    </record>
+
+    <record id="locker_allocation_user_rule" model="ir.rule">
+        <field name="name">Locker Allocation: Own Allocations</field>
+        <field name="model_id" ref="model_locker_allocation"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">['|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])]</field>
+    </record>
+
+    <record id="locker_allocation_admin_rule" model="ir.rule">
+        <field name="name">Locker Allocation: Administrator All</field>
+        <field name="model_id" ref="model_locker_allocation"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_locker_user_rule" model="ir.rule">
+        <field name="name">Locker: Own Allocated Lockers</field>
+        <field name="model_id" ref="model_locker_locker"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('allocation_ids', 'any', [('state', 'in', ['allocated', 'renewal_pending', 'expired']), '|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])])]</field>
+    </record>
+
+    <record id="locker_locker_admin_rule" model="ir.rule">
+        <field name="name">Locker: Administrator All</field>
+        <field name="model_id" ref="model_locker_locker"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_location_user_rule" model="ir.rule">
+        <field name="name">Locker Location: Own Locker Locations</field>
+        <field name="model_id" ref="model_locker_location"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('locker_ids', 'any', [('allocation_ids', 'any', [('state', 'in', ['allocated', 'renewal_pending', 'expired']), '|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])])])]</field>
+    </record>
+
+    <record id="locker_location_admin_rule" model="ir.rule">
+        <field name="name">Locker Location: Administrator All</field>
+        <field name="model_id" ref="model_locker_location"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_site_user_rule" model="ir.rule">
+        <field name="name">Locker Site: Own Locker Sites</field>
+        <field name="model_id" ref="model_locker_site"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('locker_ids', 'any', [('allocation_ids', 'any', [('state', 'in', ['allocated', 'renewal_pending', 'expired']), '|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])])])]</field>
+    </record>
+
+    <record id="locker_site_admin_rule" model="ir.rule">
+        <field name="name">Locker Site: Administrator All</field>
+        <field name="model_id" ref="model_locker_site"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_location_line_user_rule" model="ir.rule">
+        <field name="name">Locker Location Line: Own Locker Sites</field>
+        <field name="model_id" ref="model_locker_location_line"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('site_id.locker_ids', 'any', [('allocation_ids', 'any', [('state', 'in', ['allocated', 'renewal_pending', 'expired']), '|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])])])]</field>
+    </record>
+
+    <record id="locker_location_line_admin_rule" model="ir.rule">
+        <field name="name">Locker Location Line: Administrator All</field>
+        <field name="model_id" ref="model_locker_location_line"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_access_user_rule" model="ir.rule">
+        <field name="name">Locker Access: Own Allocations</field>
+        <field name="model_id" ref="model_locker_access"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('allocation_id', 'any', ['|', ('partner_id', '=', user.partner_id.id), ('authorized_partner_ids', 'in', [user.partner_id.id])])]</field>
+    </record>
+
+    <record id="locker_access_admin_rule" model="ir.rule">
+        <field name="name">Locker Access: Administrator All</field>
+        <field name="model_id" ref="model_locker_access"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="locker_credential_user_rule" model="ir.rule">
+        <field name="name">Locker Credential: Own Credentials</field>
+        <field name="model_id" ref="model_locker_access_credential"/>
+        <field name="groups" eval="[(4, ref('group_locker_user'))]"/>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
+    </record>
+
+    <record id="locker_credential_admin_rule" model="ir.rule">
+        <field name="name">Locker Credential: Administrator All</field>
+        <field name="model_id" ref="model_locker_access_credential"/>
+        <field name="groups" eval="[(4, ref('group_locker_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
 </odoo>

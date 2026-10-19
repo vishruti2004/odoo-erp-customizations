@@ -41,7 +41,7 @@
                     <t t-if="state.mode === 'person_search'">
                         <div class="locker-authentication-card locker-checkin-card">
                             <div class="locker-auth-icon">
-                                <i class="fa fa-user"/>
+                                <i class="fa fa-user" />
                             </div>
                             <h2>Find Person</h2>
                             <p>
@@ -52,12 +52,9 @@
                                    placeholder="Enter Name / Email / Phone"
                                    t-att-value="state.personSearch"
                                    t-on-input="onPersonSearchChange"
-                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; findPerson()"
-                                   autocomplete="off"/>
-                            <button type="button"
-                                    class="btn btn-primary locker-authenticate-button"
-                                    t-on-click="findPerson"
-                                    t-att-disabled="state.loading">
+                                   t-on-keydown="onPersonSearchKeydown"
+                                   autocomplete="off" />
+                            <button type="button" class="btn btn-primary locker-authenticate-button" t-on-click="findPerson" t-att-disabled="state.loading">
                                 <t t-if="state.loading">
                                     Searching...
                                 </t>
@@ -67,7 +64,7 @@
                             </button>
                             <div class="locker-access-info">
                                 <div class="locker-access-info-title">
-                                    <i class="fa fa-shield me-2"/>
+                                    <i class="fa fa-shield me-2" />
                                     Secure Locker Access
                                 </div>
                                 <div class="locker-access-info-text">
@@ -75,22 +72,22 @@
                                 </div>
                                 <div class="locker-access-features">
                                     <span>
-                                        <i class="fa fa-check me-1"/>
+                                        <i class="fa fa-check me-1" />
                                         Identity Verification
                                     </span>
                                     <span>
-                                        <i class="fa fa-check me-1"/>
+                                        <i class="fa fa-check me-1" />
                                         Secure Authentication
                                     </span>
                                     <span>
-                                        <i class="fa fa-check me-1"/>
+                                        <i class="fa fa-check me-1" />
                                         Access Recorded
                                     </span>
                                 </div>
                             </div>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
                         </div>
@@ -98,46 +95,42 @@
                     <t t-elif="state.mode === 'person_selection'">
                         <div class="locker-authentication-card locker-person-selection-card locker-checkin-card">
                             <div class="locker-auth-icon">
-                                <i class="fa fa-users"/>
+                                <i class="fa fa-users" />
                             </div>
                             <h2>Authorized Persons</h2>
                             <div class="locker-person-list">
-                                <t t-foreach="state.persons"
-                                   t-as="person"
-                                   t-key="person.partner_id + '-' + person.allocation_id">
+                                <t t-foreach="state.persons" t-as="person" t-key="person.partner_id + '-' + person.allocation_id">
                                     <button type="button"
                                             class="locker-person-option"
                                             t-on-click="() => selectPerson(person)">
                                         <div class="locker-person-option-icon">
-                                            <i class="fa fa-user"/>
+                                            <i class="fa fa-user" />
                                         </div>
                                         <div class="locker-person-option-info">
                                             <strong>
-                                                <t t-esc="person.partner_name"/>
+                                                <t t-esc="person.partner_name" />
                                             </strong>
                                             <span>
                                                 Locker:
-                                                <t t-esc="person.locker_name"/>
+                                                <t t-esc="person.locker_name" />
                                             </span>
                                             <span>
                                                 Access:
-                                                <t t-esc="person.access_method"/>
+                                                <t t-esc="person.access_method" />
                                             </span>
                                         </div>
                                         <div class="locker-person-option-arrow">
-                                            <i class="fa fa-chevron-right"/>
+                                            <i class="fa fa-chevron-right" />
                                         </div>
                                     </button>
                                 </t>
                             </div>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="backToPersonSearch">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="backToPersonSearch">
                                 Back to Search
                             </button>
                         </div>
@@ -154,19 +147,19 @@
                                 <div class="locker-info-row">
                                     <span>Locker</span>
                                     <strong>
-                                        <t t-esc="state.selectedPerson.locker_name"/>
+                                        <t t-esc="state.selectedPerson.locker_name" />
                                     </strong>
                                 </div>
                                 <div class="locker-info-row">
                                     <span>Locker Profile</span>
                                     <strong>
-                                        <t t-esc="state.selectedPerson.profile_name"/>
+                                        <t t-esc="state.selectedPerson.profile_name" />
                                     </strong>
                                 </div>
                                 <div class="locker-info-row">
                                     <span>Access Method</span>
                                     <strong>
-                                        <t t-esc="state.selectedPerson.access_method"/>
+                                        <t t-esc="state.selectedPerson.access_method" />
                                     </strong>
                                 </div>
                             </div>
@@ -182,10 +175,7 @@
                                            t-on-input="onInputChange"
                                            t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
                                            autocomplete="off"/>
-                                    <button type="button"
-                                            class="btn btn-primary locker-action-button"
-                                            t-on-click="authenticate"
-                                            t-att-disabled="state.loading">
+                                    <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
                                             Authenticating...
                                         </t>
@@ -196,7 +186,7 @@
                                 </t>
                                 <t t-elif="state.selectedPerson.access_method === 'rfid'">
                                     <div class="locker-method-icon">
-                                        <i class="fa fa-credit-card"/>
+                                        <i class="fa fa-credit-card" />
                                     </div>
                                     <h3 class="locker-method-title">
                                         Scan RFID Card
@@ -211,10 +201,7 @@
                                            t-on-input="onInputChange"
                                            t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
                                            autocomplete="off"/>
-                                    <button type="button"
-                                            class="btn btn-primary locker-action-button"
-                                            t-on-click="authenticate"
-                                            t-att-disabled="state.loading">
+                                    <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
                                             Authenticating...
                                         </t>
@@ -231,38 +218,33 @@
                                         Place your QR code inside the scanner
                                     </p>
                                     <div class="locker-qr-scanner">
-                                        <video class="locker-qr-video"
-                                               autoplay="autoplay"
-                                               muted="muted"
-                                               playsinline="playsinline"/>
+                                        <video class="locker-qr-video" autoplay="autoplay" muted="muted" playsinline="playsinline" />
                                         <div class="locker-qr-frame">
-                                            <span class="qr-corner qr-top-left"/>
-                                            <span class="qr-corner qr-top-right"/>
-                                            <span class="qr-corner qr-bottom-left"/>
-                                            <span class="qr-corner qr-bottom-right"/>
-                                            <div class="qr-scan-line"/>
+                                            <span class="qr-corner qr-top-left" />
+                                            <span class="qr-corner qr-top-right" />
+                                            <span class="qr-corner qr-bottom-left" />
+                                            <span class="qr-corner qr-bottom-right" />
+                                            <div class="qr-scan-line" />
                                         </div>
                                         <t t-if="!state.qrScanning">
                                             <div class="locker-qr-overlay">
-                                                <i class="fa fa-qrcode"/>
+                                                <i class="fa fa-qrcode" />
                                                 <span>Starting Camera...</span>
                                             </div>
                                         </t>
                                     </div>
                                     <div class="locker-qr-status">
                                         <t t-if="state.qrScanning">
-                                            <i class="fa fa-camera me-1"/>
+                                            <i class="fa fa-camera me-1" />
                                             Scanning QR code...
                                         </t>
                                         <t t-else="">
-                                            <i class="fa fa-spinner fa-spin me-1"/>
+                                            <i class="fa fa-spinner fa-spin me-1" />
                                             Starting camera...
                                         </t>
                                     </div>
                                     <t t-if="state.loading">
-                                        <button type="button"
-                                                class="btn btn-primary locker-action-button"
-                                                disabled="disabled">
+                                        <button type="button" class="btn btn-primary locker-action-button" disabled="disabled">
                                             Verifying QR...
                                         </button>
                                     </t>
@@ -278,46 +260,38 @@
                                         Look at the camera to verify your identity
                                     </p>
                                     <div class="locker-face-scanner">
-                                        <video class="locker-face-video"
-                                               autoplay="autoplay"
-                                               muted="muted"
-                                               playsinline="playsinline"/>
+                                        <video class="locker-face-video" autoplay="autoplay" muted="muted" playsinline="playsinline" />
                                         <div class="locker-face-frame">
-                                            <div class="locker-face-corner face-top-left"/>
-                                            <div class="locker-face-corner face-top-right"/>
-                                            <div class="locker-face-corner face-bottom-left"/>
-                                            <div class="locker-face-corner face-bottom-right"/>
+                                            <div class="locker-face-corner face-top-left" />
+                                            <div class="locker-face-corner face-top-right" />
+                                            <div class="locker-face-corner face-bottom-left" />
+                                            <div class="locker-face-corner face-bottom-right" />
                                         </div>
                                         <t t-if="!state.faceScanning">
                                             <div class="locker-face-overlay">
-                                                <i class="fa fa-camera"/>
+                                                <i class="fa fa-camera" />
                                                 <span>Starting Camera...</span>
                                             </div>
                                         </t>
                                     </div>
                                     <div class="locker-face-status">
                                         <t t-if="state.faceScanning">
-                                            <i class="fa fa-camera me-1"/>
+                                            <i class="fa fa-camera me-1" />
                                             Looking for your face...
                                         </t>
                                         <t t-else="">
-                                            <i class="fa fa-spinner fa-spin me-1"/>
+                                            <i class="fa fa-spinner fa-spin me-1" />
                                             Starting camera...
                                         </t>
                                     </div>
                                     <t t-if="state.faceVerifying">
-                                        <button type="button"
-                                                class="btn btn-primary locker-action-button"
-                                                disabled="disabled">
+                                        <button type="button" class="btn btn-primary locker-action-button" disabled="disabled">
                                             Verifying Face...
                                         </button>
                                     </t>
                                     <t t-else="">
-                                        <button type="button"
-                                                class="btn btn-primary locker-action-button"
-                                                t-on-click="verifyFace"
-                                                t-att-disabled="state.loading || !state.faceScanning">
-                                            <i class="fa fa-user me-2"/>
+                                        <button type="button" class="btn btn-primary locker-action-button" t-on-click="verifyFace" t-att-disabled="state.loading || !state.faceScanning">
+                                            <i class="fa fa-user me-2" />
                                             Verify Face
                                         </button>
                                     </t>
@@ -331,10 +305,7 @@
                                            t-on-input="onInputChange"
                                            t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
                                            autocomplete="off"/>
-                                    <button type="button"
-                                            class="btn btn-primary locker-action-button"
-                                            t-on-click="authenticate"
-                                            t-att-disabled="state.loading">
+                                    <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
                                             Authenticating...
                                         </t>
@@ -346,12 +317,10 @@
                             </div>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="backToPersonSearch">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="backToPersonSearch">
                                 Back to Person Selection
                             </button>
                         </div>
@@ -359,7 +328,7 @@
                     <t t-elif="state.mode === 'qr_verification'">
                         <div class="locker-result-card locker-qr-auth-card locker-checkin-card">
                             <div class="locker-success-icon">
-                                <i class="fa fa-check-circle"/>
+                                <i class="fa fa-check-circle" />
                             </div>
                             <h2>QR Code Verified</h2>
                             <p>
@@ -371,7 +340,7 @@
                                         t-if="state.qrHasOTP"
                                         t-on-click="chooseOTP"
                                         t-att-disabled="state.loading">
-                                    <i class="fa fa-envelope me-2"/>
+                                    <i class="fa fa-envelope me-2" />
                                     Send OTP
                                 </button>
                                 <t t-if="!state.qrHasOTP">
@@ -382,12 +351,10 @@
                             </div>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="backToPersonSearch">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="backToPersonSearch">
                                 Back to Person Search
                             </button>
                         </div>
@@ -395,7 +362,7 @@
                     <t t-elif="state.mode === 'otp'">
                         <div class="locker-result-card locker-qr-auth-card locker-checkin-card">
                             <div class="locker-auth-icon">
-                                <i class="fa fa-mobile"/>
+                                <i class="fa fa-mobile" />
                             </div>
                             <h2>Verify OTP</h2>
                             <p>
@@ -410,10 +377,7 @@
                                    t-on-input="onOTPChange"
                                    t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; verifyOTP()"
                                    autocomplete="off"/>
-                            <button type="button"
-                                    class="btn btn-primary locker-action-button"
-                                    t-on-click="verifyOTP"
-                                    t-att-disabled="state.loading">
+                            <button type="button" class="btn btn-primary locker-action-button" t-on-click="verifyOTP" t-att-disabled="state.loading">
                                 <t t-if="state.loading">
                                     Verifying OTP...
                                 </t>
@@ -423,12 +387,10 @@
                             </button>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="backToQRAuthentication">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="backToQRAuthentication">
                                 Back to Authentication Options
                             </button>
                         </div>
@@ -436,21 +398,19 @@
                     <t t-elif="state.mode === 'locked'">
                         <div class="locker-result-card locker-qr-auth-card locker-checkin-card">
                             <div class="locker-auth-icon">
-                                <i class="fa fa-lock"/>
+                                <i class="fa fa-lock" />
                             </div>
                             <h2>Access Temporarily Locked</h2>
                             <p>
                                 You have already used the maximum number of OTP attempts.
                             </p>
                             <div class="locker-message danger">
-                                <t t-esc="state.message or 'Please try again after 10 minutes.'"/>
+                                <t t-esc="state.message or 'Please try again after 10 minutes.'" />
                             </div>
                             <p>
                                 Please wait until the lock period ends before trying again.
                             </p>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="backToPersonSearch">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="backToPersonSearch">
                                 Back to Person Search
                             </button>
                         </div>
@@ -458,53 +418,43 @@
                     <t t-elif="state.mode === 'companion_selection'">
                         <div class="locker-result-card locker-companion-card locker-checkin-card">
                             <div class="locker-success-icon locker-companion-icon">
-                                <i class="fa fa-users"/>
+                                <i class="fa fa-users" />
                             </div>
                             <h2>People With You</h2>
                             <p class="locker-companion-description">
                                 How many additional people are entering with you?
                             </p>
                             <div class="locker-companion-counter">
-                                <button type="button"
-                                        class="locker-companion-btn"
-                                        t-on-click="decreaseCompanionCount"
-                                        t-att-disabled="state.companionCount === 0">
-                                    <i class="fa fa-minus"/>
+                                <button type="button" class="locker-companion-btn" t-on-click="decreaseCompanionCount" t-att-disabled="state.companionCount === 0">
+                                    <i class="fa fa-minus" />
                                 </button>
                                 <div class="locker-companion-count">
                                     <strong>
-                                        <t t-esc="state.companionCount"/>
+                                        <t t-esc="state.companionCount" />
                                     </strong>
                                     <span>Additional People</span>
                                 </div>
-                                <button type="button"
-                                        class="locker-companion-btn"
-                                        t-on-click="increaseCompanionCount">
-                                    <i class="fa fa-plus"/>
+                                <button type="button" class="locker-companion-btn" t-on-click="increaseCompanionCount">
+                                    <i class="fa fa-plus" />
                                 </button>
                             </div>
                             <div class="locker-companion-total">
-                                <i class="fa fa-users"/>
+                                <i class="fa fa-users" />
                                 <span>Total People</span>
                                 <strong>
-                                    <t t-esc="state.companionCount + 1"/>
+                                    <t t-esc="state.companionCount + 1" />
                                 </strong>
                             </div>
-                            <button type="button"
-                                    class="btn btn-primary locker-action-button locker-companion-confirm"
-                                    t-on-click="confirmCompanionCount"
-                                    t-att-disabled="state.loading">
-                                <i class="fa fa-check"/>
+                            <button type="button" class="btn btn-primary locker-action-button locker-companion-confirm" t-on-click="confirmCompanionCount" t-att-disabled="state.loading">
+                                <i class="fa fa-check" />
                                 <span>OK</span>
                             </button>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button locker-companion-cancel"
-                                    t-on-click="backToPersonSearch">
+                            <button type="button" class="btn btn-link locker-reset-button locker-companion-cancel" t-on-click="backToPersonSearch">
                                 Cancel
                             </button>
                         </div>
@@ -512,37 +462,37 @@
                     <t t-elif="state.mode === 'result'">
                         <div class="locker-result-card locker-result-compact locker-checkin-card">
                             <div class="locker-success-icon">
-                                <i class="fa fa-check-circle"/>
+                                <i class="fa fa-check-circle" />
                             </div>
                             <div class="locker-authenticated-person">
                                 <span>Authenticated Person</span>
                                 <h2>
-                                    <t t-esc="state.allocation.authenticated_partner_name"/>
+                                    <t t-esc="state.allocation.authenticated_partner_name" />
                                 </h2>
                             </div>
                             <div class="locker-information">
                                 <div class="locker-info-row">
                                     <span>Allocation Partner</span>
                                     <strong>
-                                        <t t-esc="state.allocation.partner_name"/>
+                                        <t t-esc="state.allocation.partner_name" />
                                     </strong>
                                 </div>
                                 <div class="locker-info-row">
                                     <span>Locker</span>
                                     <strong>
-                                        <t t-esc="state.allocation.locker_name"/>
+                                        <t t-esc="state.allocation.locker_name" />
                                     </strong>
                                 </div>
                                 <div class="locker-info-row">
                                     <span>Locker Profile</span>
                                     <strong>
-                                        <t t-esc="state.allocation.profile_name"/>
+                                        <t t-esc="state.allocation.profile_name" />
                                     </strong>
                                 </div>
                                 <div class="locker-info-row">
                                     <span>Access Method</span>
                                     <strong>
-                                        <t t-esc="state.allocation.access_method"/>
+                                        <t t-esc="state.allocation.access_method" />
                                     </strong>
                                 </div>
                             </div>
@@ -552,7 +502,7 @@
                                         t-on-click="checkIn"
                                         t-if="state.allocation.can_check_in"
                                         t-att-disabled="state.loading">
-                                    <i class="fa fa-sign-in me-2"/>
+                                    <i class="fa fa-sign-in me-2" />
                                     <t t-if="state.loading">
                                         Processing...
                                     </t>
@@ -565,7 +515,7 @@
                                         t-on-click="checkOut"
                                         t-if="state.allocation.can_check_out"
                                         t-att-disabled="state.loading">
-                                    <i class="fa fa-sign-out me-2"/>
+                                    <i class="fa fa-sign-out me-2" />
                                     <t t-if="state.loading">
                                         Processing...
                                     </t>
@@ -576,12 +526,10 @@
                             </div>
                             <t t-if="state.message">
                                 <div t-att-class="'locker-message ' + state.messageType">
-                                    <t t-esc="state.message"/>
+                                    <t t-esc="state.message" />
                                 </div>
                             </t>
-                            <button type="button"
-                                    class="btn btn-link locker-reset-button"
-                                    t-on-click="resetScreen">
+                            <button type="button" class="btn btn-link locker-reset-button" t-on-click="resetScreen">
                                 Start New Authentication
                             </button>
                         </div>
@@ -597,7 +545,7 @@
                                 </p>
                             </div>
                             <div class="locker-current-count">
-                                <t t-esc="getFilteredCurrentCheckedIn().length"/>
+                                <t t-esc="getFilteredCurrentCheckedIn().length" />
                             </div>
                         </div>
                         <input type="text"
@@ -605,11 +553,11 @@
                                placeholder="Search person or locker"
                                t-att-value="state.currentCheckedInSearch"
                                t-on-input="onCurrentCheckedInSearchChange"
-                               autocomplete="off"/>
+                               autocomplete="off" />
                         <div class="locker-current-list">
                             <t t-if="state.currentCheckedInLoading">
                                 <div class="locker-current-empty">
-                                    <i class="fa fa-spinner fa-spin"/>
+                                    <i class="fa fa-spinner fa-spin" />
                                     <strong>
                                         Loading...
                                     </strong>
@@ -617,7 +565,7 @@
                             </t>
                             <t t-elif="!getFilteredCurrentCheckedIn().length">
                                 <div class="locker-current-empty">
-                                    <i class="fa fa-check-circle"/>
+                                    <i class="fa fa-check-circle" />
                                     <strong>
                                         No one is currently checked in.
                                     </strong>
@@ -627,56 +575,55 @@
                                 </div>
                             </t>
                             <t t-else="">
-                                <t t-foreach="getFilteredCurrentCheckedIn()"
-                                   t-as="person"
-                                   t-key="person.access_id">
+                                <t t-foreach="getFilteredCurrentCheckedIn()" t-as="person" t-key="person.access_id">
                                     <div class="locker-current-person">
                                         <div class="locker-current-person-main">
                                             <div class="locker-current-person-icon">
-                                                <i class="fa fa-user"/>
+                                                <i class="fa fa-user" />
                                             </div>
                                             <div class="locker-current-person-info">
                                                 <div class="locker-current-person-name">
-                                                    <t t-esc="person.partner_name"/>
+                                                    <t t-esc="person.partner_name" />
                                                     <span class="locker-current-total">
-                                                        (<t t-esc="person.total_people or 1"/>)
+                                                        (
+                                                        <t t-esc="person.total_people or 1" />)
                                                     </span>
                                                 </div>
                                                 <div class="locker-current-person-locker">
-                                                    <i class="fa fa-lock me-1"/>
-                                                    <t t-esc="person.locker_name"/>
+                                                    <i class="fa fa-lock me-1" />
+                                                    <t t-esc="person.locker_name" />
                                                 </div>
                                             </div>
                                             <span class="locker-access-badge">
                                                 <t t-if="person.access_method === 'qr'">
-                                                    <i class="fa fa-qrcode me-1"/>
+                                                    <i class="fa fa-qrcode me-1" />
                                                 </t>
                                                 <t t-elif="person.access_method === 'rfid'">
-                                                    <i class="fa fa-credit-card me-1"/>
+                                                    <i class="fa fa-credit-card me-1" />
                                                 </t>
                                                 <t t-elif="person.access_method === 'biometric'">
-                                                    <i class="fa fa-camera me-1"/>
+                                                    <i class="fa fa-camera me-1" />
                                                 </t>
                                                 <t t-elif="person.access_method === 'pin'">
-                                                    <i class="fa fa-lock me-1"/>
+                                                    <i class="fa fa-lock me-1" />
                                                 </t>
                                                 <t t-elif="person.access_method === 'physical_key'">
-                                                    <i class="fa fa-key me-1"/>
+                                                    <i class="fa fa-key me-1" />
                                                 </t>
                                                 <t t-else="">
-                                                    <i class="fa fa-shield me-1"/>
+                                                    <i class="fa fa-shield me-1" />
                                                 </t>
-                                                <t t-esc="person.access_method_label"/>
+                                                <t t-esc="person.access_method_label" />
                                             </span>
                                             <span class="locker-checkin-time">
-                                                <i class="fa fa-clock-o me-1"/>
-                                                <t t-esc="person.formatted_check_in_time"/>
+                                                <i class="fa fa-clock-o me-1" />
+                                                <t t-esc="person.formatted_check_in_time" />
                                             </span>
                                             <button type="button"
                                                     class="locker-current-checkout-button"
                                                     t-on-click="() => checkOutCurrentPerson(person)"
                                                     t-att-disabled="state.loading">
-                                                <i class="fa fa-sign-out me-1"/>
+                                                <i class="fa fa-sign-out me-1" />
                                                 Check Out
                                             </button>
                                         </div>

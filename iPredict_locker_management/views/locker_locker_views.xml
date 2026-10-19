@@ -7,16 +7,15 @@
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="profile_id"/>
-                <field name="locker_location_id"/>
+                <field name="name" />
+                <field name="profile_id" />
+                <field name="locker_location_id" />
                 <field name="status"
                        widget="badge"
                        decoration-success="status == 'available'"
-                       decoration-danger="status == 'allocated'"/>
-                <field name="company_id"
-                       optional="hide"
-                       groups="base.group_multi_company"/>
+                       decoration-warning="status == 'reserved'"
+                       decoration-danger="status == 'allocated'" />
+                <field name="company_id" optional="hide" groups="base.group_multi_company" />
             </list>
         </field>
     </record>
@@ -32,56 +31,50 @@
                             type="object"
                             string="Locker Allocation"
                             class="btn-primary"
-                            invisible="status != 'available'"/>
+                            groups="iPredict_locker_management.group_locker_admin"
+                            invisible="status != 'available'" />
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_allocations"
-                                type="object"
-                                class="oe_stat_button"
-                                icon="fa-history">
+                        <button name="action_view_allocations" type="object" class="oe_stat_button" icon="fa-list">
+                            <span class="o_stat_text">Allocations</span>
+                        </button>
+                        <button name="action_view_access_history" type="object" class="oe_stat_button" icon="fa-history">
                             <span class="o_stat_text">History</span>
                         </button>
                     </div>
 
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Locker Number"/>
+                            <field name="name" placeholder="Locker Number" />
                         </h1>
                     </div>
 
                     <group>
                         <group>
-                            <field name="profile_id"/>
-                            <field name="locker_location_id"/>
-                            <field name="active" widget="boolean_toggle"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                        </group>
-                        <group>
-                            <field name="status"
-                                   widget="badge"
-                                   readonly="1"
-                                   decoration-success="status == 'available'"
-                                   decoration-danger="status == 'allocated'"/>
+                            <field name="profile_id" />
+                            <field name="locker_location_id" />
+                            <field name="active" widget="boolean_toggle" />
+                            <field name="company_id" groups="base.group_multi_company" />
                         </group>
                     </group>
 
                     <notebook>
                         <page string="Notes">
-                            <field name="note"/>
+                            <field name="note" />
                         </page>
 
                         <page string="3D Configuration">
                             <group>
                                 <group string="Position">
-                                    <field name="pos_x"/>
-                                    <field name="pos_y"/>
-                                    <field name="pos_z"/>
+                                    <field name="pos_x" />
+                                    <field name="pos_y" />
+                                    <field name="pos_z" />
                                 </group>
                                 <group string="Dimension">
-                                    <field name="width"/>
-                                    <field name="height"/>
-                                    <field name="depth"/>
+                                    <field name="width" />
+                                    <field name="height" />
+                                    <field name="depth" />
                                 </group>
                             </group>
                         </page>
@@ -97,26 +90,27 @@
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <!-- <kanban default_group_by="status" class="o_kanban_mobile o_kanban_dashboard"> -->
-            <kanban default_group_by="status"
-        records_draggable="0"
-        groups_draggable="0">
-                <field name="name"/>
-                <field name="profile_id"/>
-                <field name="locker_location_id"/>
-                <field name="status"/>
-                <field name="company_id"/>
+            <kanban default_group_by="status" records_draggable="0" groups_draggable="0">
+                <field name="name" />
+                <field name="profile_id" />
+                <field name="locker_location_id" />
+                <field name="status" />
+                <field name="company_id" />
 
                 <templates>
                     <t t-name="card">
-                        <div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 #{record.status.raw_value == 'allocated' ? 'border border-danger' : 'border border-success'}">
+                        <div t-attf-class="oe_kanban_global_click o_kanban_card shadow-sm rounded p-3 #{record.status.raw_value == 'allocated' ? 'border border-danger' : (record.status.raw_value == 'reserved' ? 'border border-warning' : 'border border-success')}">
                             
                             <!-- Header -->
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <strong class="fs-5 fw-bold text-dark">
-                                    <field name="name"/>
+                                    <field name="name" />
                                 </strong>
                                 <t t-if="record.status.raw_value == 'allocated'">
                                     <span class="badge text-bg-danger">Allocated</span>
+                                </t>
+                                <t t-elif="record.status.raw_value == 'reserved'">
+                                    <span class="badge text-bg-warning">Reserved</span>
                                 </t>
                                 <t t-else="">
                                     <span class="badge text-bg-success">Available</span>
@@ -124,27 +118,27 @@
                             </div>
 
                             <!-- Separator -->
-                            <div class="border-top mb-3"/>
+                            <div class="border-top mb-3" />
 
                             <!-- Locker Profile -->
                             <div class="text-muted small mb-2">
-                                <i class="fa fa-archive me-1" title="Locker Profile"/>
-                                <strong>Profile: </strong>
-                                <field name="profile_id"/>
+                                <i class="fa fa-archive me-1" title="Locker Profile" />
+                                <strong>Profile:</strong>
+                                <field name="profile_id" />
                             </div>
 
                             <!-- Locker Location -->
                             <div class="text-muted small mb-2">
-                                <i class="fa fa-map-marker me-1" title="Locker Location"/>
-                                <strong>Location: </strong>
-                                <field name="locker_location_id"/>
+                                <i class="fa fa-map-marker me-1" title="Locker Location" />
+                                <strong>Location:</strong>
+                                <field name="locker_location_id" />
                             </div>
 
                             <!-- Company -->
                             <div class="text-muted small mb-2" groups="base.group_multi_company">
-                                <i class="fa fa-building me-1" title="Company"/>
-                                <strong>Company: </strong>
-                                <field name="company_id"/>
+                                <i class="fa fa-building me-1" title="Company" />
+                                <strong>Company:</strong>
+                                <field name="company_id" />
                             </div>
 
                         </div>
@@ -160,20 +154,21 @@
         <field name="model">locker.locker</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name" string="Locker"/>
-                <field name="locker_location_id" string="Location"/>
-                <field name="profile_id" string="Locker Profile"/>
-                <field name="status" string="Status"/>
+                <field name="name" string="Locker" />
+                <field name="locker_location_id" string="Location" />
+                <field name="profile_id" string="Locker Profile" />
+                <field name="status" string="Status" />
 
-                <separator/>
-                <filter name="filter_available" string="Available" domain="[('status', '=', 'available')]"/>
-                <filter name="filter_allocated" string="Allocated" domain="[('status', '=', 'allocated')]"/>
+                <separator />
+                <filter name="filter_available" string="Available" domain="[('status', '=', 'available')]" />
+                <filter name="filter_reserved" string="Reserved" domain="[('status', '=', 'reserved')]" />
+                <filter name="filter_allocated" string="Allocated" domain="[('status', '=', 'allocated')]" />
 
-                <separator/>
+                <separator />
                 <group>
-                    <filter name="group_profile" string="Locker Profile" context="{'group_by': 'profile_id'}"/>
-                    <filter name="group_location" string="Location" context="{'group_by': 'locker_location_id'}"/>
-                    <filter name="group_status" string="Status" context="{'group_by': 'status'}"/>
+                    <filter name="group_profile" string="Locker Profile" context="{'group_by': 'profile_id'}" />
+                    <filter name="group_location" string="Location" context="{'group_by': 'locker_location_id'}" />
+                    <filter name="group_status" string="Status" context="{'group_by': 'status'}" />
                 </group>
             </search>
         </field>
@@ -190,7 +185,7 @@
         <field name="name">Lockers</field>
         <field name="res_model">locker.locker</field>
         <field name="view_mode">kanban,list,form</field>
-        <field name="search_view_id" ref="view_locker_search"/>
+        <field name="search_view_id" ref="view_locker_search" />
     </record>
 
 </odoo>

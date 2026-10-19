@@ -11,4 +11,14 @@
         <field name="active">True</field>
     </record>
 
+    <record id="ir_cron_release_reserved_lockers" model="ir.cron">
+        <field name="name">Release Reserved Lockers</field>
+        <field name="model_id" ref="model_locker_allocation"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_release_reserved_lockers()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+    </record>
+
 </odoo>

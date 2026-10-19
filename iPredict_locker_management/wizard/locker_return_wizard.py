@@ -18,6 +18,10 @@ class LockerReturnWizard(models.TransientModel):
     def action_confirm_return(self):
         self.ensure_one()
         allocation = self.allocation_id
+        allocation._check_user_can_return()
+        # A locker user has read-only access on allocations / lockers; the return itself is
+        # allowed because the owner check above passed.
+        allocation = allocation.sudo()
 
         if allocation.state not in ("allocated", "renewal_pending", "expired"):
             raise ValidationError(
@@ -32,8 +36,11 @@ class LockerReturnWizard(models.TransientModel):
             "state": "returned",
         })
 
+        # Returned allocation: its access credentials must not work any more.
+        allocation.credential_ids.sudo().write({"active": False})
+
         if allocation.locker_id:
-            allocation.locker_id.status = "available"
+            allocation.locker_id.sudo().status = "available"
 
         allocation.message_post(
             body=_("Locker returned on %s. Return Reason: %s") % (

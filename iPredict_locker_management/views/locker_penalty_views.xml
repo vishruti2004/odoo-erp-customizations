@@ -7,12 +7,12 @@
         <field name="model">locker.penalty</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="company_id"/>
-                <field name="amount" widget="monetary"/>
-                <field name="currency_id" column_invisible="1"/>
-                <field name="period"/>
-                <field name="start_after_days"/>
+                <field name="name" />
+                <field name="company_id" />
+                <field name="amount" widget="monetary" />
+                <field name="currency_id" column_invisible="1" />
+                <field name="period" />
+                <field name="start_after_days" />
             </list>
         </field>
     </record>
@@ -28,30 +28,27 @@
 
                     <div class="oe_title">
                         <h1>
-                            <field name="name"
-                                   placeholder="Locker Penalty"/>
+                            <field name="name" placeholder="Locker Penalty" />
                         </h1>
                     </div>
 
                     <group>
                         <group>
-                            <field name="company_id"/>
-                            <field name="active"/>
+                            <field name="company_id" />
+                            <field name="active" />
                         </group>
 
                         <group>
-                            <field name="amount"/>
-                            <field name="currency_id"
-                                   invisible="1"/>
-                            <field name="period"/>
-                            <field name="start_after_days"/>
+                            <field name="amount" />
+                            <field name="currency_id" invisible="1" />
+                            <field name="period" />
+                            <field name="start_after_days" />
                         </group>
                     </group>
 
-                    <separator string="Description"/>
+                    <separator string="Description" />
 
-                    <field name="description"
-                           placeholder="Add description..."/>
+                    <field name="description" placeholder="Add description..." />
 
                 </sheet>
             </form>
@@ -66,34 +63,22 @@
         <field name="arch" type="xml">
             <search>
 
-                <field name="name"/>
-                <field name="company_id"/>
-                <field name="period"/>
+                <field name="name" />
+                <field name="company_id" />
+                <field name="period" />
 
-                <separator/>
+                <separator />
 
-                <filter
-                    name="active"
-                    string="Active"
-                    domain="[('active', '=', True)]"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]" />
 
-                <filter
-                    name="inactive"
-                    string="Inactive"
-                    domain="[('active', '=', False)]"/>
+                <filter name="inactive" string="Inactive" domain="[('active', '=', False)]" />
 
-                <separator/>
+                <separator />
 
                 <group>
-                    <filter
-                        name="group_company"
-                        string="Company"
-                        context="{'group_by': 'company_id'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}" />
 
-                    <filter
-                        name="group_period"
-                        string="Period"
-                        context="{'group_by': 'period'}"/>
+                    <filter name="group_period" string="Period" context="{'group_by': 'period'}" />
                 </group>
 
             </search>
@@ -106,8 +91,7 @@
         <field name="name">Locker Penalty</field>
         <field name="res_model">locker.penalty</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id"
-               ref="view_locker_penalty_search"/>
+        <field name="search_view_id" ref="view_locker_penalty_search" />
     </record>
 
 

@@ -8,12 +8,12 @@
         <field name="model">locker.profile</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="access_method"/>
-                <field name="allocation_type"/>
-                <field name="locker_count"/>
-                <field name="active" widget="boolean_toggle"/>
-                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="name" />
+                <field name="access_method" />
+                <field name="allocation_type" />
+                <field name="locker_count" />
+                <field name="active" widget="boolean_toggle" />
+                <field name="company_id" optional="hide" groups="base.group_multi_company" />
             </list>
         </field>
     </record>
@@ -29,14 +29,14 @@
                     <!-- Stat Button -->
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_lockers" type="object" class="oe_stat_button" icon="fa-archive">
-                            <field name="locker_count" widget="statinfo" string="Lockers"/>
+                            <field name="locker_count" widget="statinfo" string="Lockers" />
                         </button>
                     </div>
 
                     <!-- Profile Name -->
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Profile Name"/>
+                            <field name="name" placeholder="Profile Name" />
                         </h1>
                     </div>
 
@@ -44,43 +44,39 @@
                     <group>
                         <!-- Left Side -->
                         <group>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                            <field name="access_method"/>
-                            <field name="allocation_type"/>
-                            <field name="color" widget="color"/>
-                            <field name="active" widget="boolean_toggle"/>
+                            <field name="company_id" groups="base.group_multi_company" />
+                            <field name="access_method" />
+                            <field name="allocation_type" />
+                            <field name="color" widget="color" />
+                            <field name="active" widget="boolean_toggle" />
                         </group>
 
                         <!-- Right Side - Rental / Deposit -->
-                       <group>
-                            <field name="rental_product_id"
-                                string="Rental Product"
-                                required="1"/>
+                        <group>
+                            <field name="rental_product_id" string="Rental Product" required="1" />
 
-                            <field name="deposit_required"
-                                string="Deposit Required"
-                                invisible="allocation_type != 'paid'"/>
+                            <field name="deposit_required" string="Deposit Required" invisible="allocation_type != 'paid'" />
 
-                            <field name="currency_id" invisible="True"/>
+                            <field name="currency_id" invisible="True" />
 
                             <field name="deposit_amount"
-                                string="Deposit Amount"
-                                widget="monetary"
-                                invisible="allocation_type != 'paid' or not deposit_required"
-                                required="allocation_type == 'paid' and deposit_required"/>
+                                   string="Deposit Amount"
+                                   widget="monetary"
+                                   invisible="allocation_type != 'paid' or not deposit_required"
+                                   required="allocation_type == 'paid' and deposit_required" />
                         </group>
                     </group>
 
                     <!-- Additional Details -->
                     <notebook>
                         <page string="Notes">
-                            <field name="note"/>
+                            <field name="note" />
                         </page>
                     </notebook>
                 </sheet>
 
                 <!-- Chatter -->
-                <chatter/>
+                <chatter />
             </form>
         </field>
     </record>
@@ -92,17 +88,17 @@
         <field name="model">locker.profile</field>
         <field name="arch" type="xml">
             <kanban class="o_kanban_mobile o_kanban_dashboard">
-                <field name="name"/>
-                <field name="company_id"/>
-                <field name="access_method"/>
-                <field name="allocation_type"/>
-                <field name="locker_count"/>
-                <field name="active"/>
-                <field name="color"/>
-                <field name="rental_product_id"/>
-                <field name="deposit_required"/>
-                <field name="deposit_amount"/>
-                <field name="currency_id"/>
+                <field name="name" />
+                <field name="company_id" />
+                <field name="access_method" />
+                <field name="allocation_type" />
+                <field name="locker_count" />
+                <field name="active" />
+                <field name="color" />
+                <field name="rental_product_id" />
+                <field name="deposit_required" />
+                <field name="deposit_amount" />
+                <field name="currency_id" />
 
                 <templates>
                     <t t-name="card">
@@ -112,7 +108,7 @@
                                 <!-- Profile Name -->
                                 <div>
                                     <div class="fs-5 fw-bold text-dark">
-                                        <field name="name"/>
+                                        <field name="name" />
                                     </div>
                                 </div>
 
@@ -122,32 +118,38 @@
                                 </button>
                             </div>
 
-                            <div class="border-top mb-3"/>
+                            <div class="border-top mb-3" />
 
                             <!-- Profile Details -->
                             <div class="small mb-2">
                                 <!-- Access Method -->
                                 <div class="mb-2">
                                     <span class="text-muted">
-                                        <i class="fa fa-key me-1"/> Access Method:
+                                        <i class="fa fa-key me-1" /> Access Method:
                                     </span>
-                                    <strong><field name="access_method"/></strong>
+                                    <strong>
+                                        <field name="access_method" />
+                                    </strong>
                                 </div>
 
                                 <!-- Allocation Type -->
                                 <div class="mb-2">
                                     <span class="text-muted">
-                                        <i class="fa fa-credit-card me-1"/> Allocation Type:
+                                        <i class="fa fa-credit-card me-1" /> Allocation Type:
                                     </span>
-                                    <strong><field name="allocation_type"/></strong>
+                                    <strong>
+                                        <field name="allocation_type" />
+                                    </strong>
                                 </div>
 
                                 <!-- Company -->
                                 <div groups="base.group_multi_company">
                                     <span class="text-muted">
-                                        <i class="fa fa-building me-1"/> Company:
+                                        <i class="fa fa-building me-1" /> Company:
                                     </span>
-                                    <strong><field name="company_id"/></strong>
+                                    <strong>
+                                        <field name="company_id" />
+                                    </strong>
                                 </div>
                             </div>
 
@@ -157,13 +159,13 @@
                                     <div>
                                         <div class="text-muted small">Total Lockers</div>
                                         <div class="fs-3 fw-bold">
-                                            <field name="locker_count"/>
+                                            <field name="locker_count" />
                                         </div>
                                     </div>
 
                                     <!-- Profile Color Icon -->
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" t-att-style="'width: 48px; height: 48px; background-color: ' + (record.color.raw_value || '#7c7bad') + '; color: white;'">
-                                        <i class="fa fa-archive fa-lg" title="Lockers"/>
+                                        <i class="fa fa-archive fa-lg" title="Lockers" />
                                     </div>
                                 </div>
                             </div>

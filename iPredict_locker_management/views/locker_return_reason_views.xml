@@ -7,9 +7,9 @@
         <field name="model">locker.return.reason</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name"/>
-                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
-                <field name="active" widget="boolean_toggle"/>
+                <field name="name" />
+                <field name="company_id" optional="hide" groups="base.group_multi_company" />
+                <field name="active" widget="boolean_toggle" />
             </list>
         </field>
     </record>
@@ -22,9 +22,9 @@
             <form>
                 <sheet>
                     <group>
-                        <field name="name"/>
-                        <field name="company_id" groups="base.group_multi_company"/>
-                        <field name="active" widget="boolean_toggle"/>
+                        <field name="name" />
+                        <field name="company_id" groups="base.group_multi_company" />
+                        <field name="active" widget="boolean_toggle" />
                     </group>
                 </sheet>
             </form>

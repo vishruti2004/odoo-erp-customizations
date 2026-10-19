@@ -12,7 +12,6 @@ class Locker3DView extends Component {
         this.notification = useService("notification");
         this.canvasRef = useRef("canvas");
 
-        // All THREE-dependent objects are initially null
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -22,7 +21,6 @@ class Locker3DView extends Component {
         this.lockerMeshes = [];
         this.siteObjects = [];
 
-        // Manual orbit & drag (no THREE here)
         this.isOrbiting = false;
         this.lastX = 0;
         this.lastY = 0;
@@ -36,14 +34,12 @@ class Locker3DView extends Component {
         this.dragStartPos = { x: 0, y: 0 };
         this.hasMoved = false;
 
-        // Bound methods
         this.resizeHandler = this.onWindowResize.bind(this);
         this.boundOnMouseMove = this.onMouseMove.bind(this);
         this.boundOnMouseUp = this.onMouseUp.bind(this);
         this.boundOnMouseDown = this.onMouseDown.bind(this);
         this.boundOnWheel = this.onWheel.bind(this);
 
-        // State
         this.state = useState({
             companies: [],
             lockerLocations: [],
@@ -63,11 +59,12 @@ class Locker3DView extends Component {
             isEditMode: false,
             statusColors: {
                 available: "#198754",
-                allocated: "#dc3545"
-            }
+                allocated: "#dc3545",
+                reserved: "#ffc107"
+            },
+            statusColorsByCompany: {}
         });
 
-        // Keep layout changes in memory until the user saves.
         this.pendingPositionChanges = new Map();
         this.originalPositions = new Map();
         this.cameraInitialized = false;
@@ -110,7 +107,6 @@ class Locker3DView extends Component {
         });
     }
 
-    // ─── THREE.JS LOAD ──────────────────────────────────────────────
     async loadThreeJS() {
         if (window.THREE) return;
         await new Promise((resolve, reject) => {
@@ -123,7 +119,6 @@ class Locker3DView extends Component {
         if (!window.THREE) throw new Error("THREE library failed to load");
     }
 
-    // ─── DATA LOAD ──────────────────────────────────────────────────
     async loadInitialData() {
         try {
             const data = await this.orm.call("locker.locker", "get_3d_data", []);
@@ -135,13 +130,39 @@ class Locker3DView extends Component {
             this.state.allSites = data.sites || [];
             this.state.profilesList = data.profiles || [];
             this.state.isAdmin = data.is_admin || false;
+            this.state.statusColorsByCompany = data.status_colors || {};
             this.state.hasLockers = this.state.lockers.length > 0;
 
-            if (this.state.companies.length)
-                this.state.selectedCompanyId = this.state.companies[0].id;
-            if (this.state.lockerLocations.length)
-                this.state.selectedLockerLocationId = this.state.lockerLocations[0].id;
+            const actionContext = (this.props.action && this.props.action.context) || {};
+            const defaultLocationId = Number(actionContext.default_location_id) || null;
+            const defaultCompanyId = Number(actionContext.default_company_id)
+                || Number(data.current_company_id)
+                || null;
+            const defaultLocation = defaultLocationId
+                ? this.state.lockerLocations.find((loc) => loc.id === defaultLocationId)
+                : null;
 
+            if (defaultLocation) {
+                this.state.selectedLockerLocationId = defaultLocation.id;
+                this.state.selectedCompanyId = defaultLocation.company_id || defaultCompanyId;
+            } else {
+                const defaultCompany = defaultCompanyId
+                    ? this.state.companies.find((company) => company.id === defaultCompanyId)
+                    : null;
+                if (defaultCompany) {
+                    this.state.selectedCompanyId = defaultCompany.id;
+                } else if (this.state.companies.length) {
+                    this.state.selectedCompanyId = this.state.companies[0].id;
+                }
+                const companyLocations = this.state.lockerLocations.filter(
+                    (loc) => !this.state.selectedCompanyId || loc.company_id === this.state.selectedCompanyId
+                );
+                if (companyLocations.length) {
+                    this.state.selectedLockerLocationId = companyLocations[0].id;
+                }
+            }
+
+            this.updateStatusColors();
             this.refreshFilteredSites();
             this.apply3DFilters();
         } catch (error) {
@@ -149,6 +170,28 @@ class Locker3DView extends Component {
         }
     }
 
+
+    get visibleLocations() {
+        return (this.state.lockerLocations || []).filter(
+            (loc) => !this.state.selectedCompanyId || loc.company_id === this.state.selectedCompanyId
+        );
+    }
+
+    getStatusColors(companyId) {
+        const defaults = { available: "#198754", allocated: "#dc3545", reserved: "#ffc107" };
+        const configured = (this.state.statusColorsByCompany || {})[companyId] || {};
+        return {
+            available: configured.available || defaults.available,
+            allocated: configured.allocated || defaults.allocated,
+            reserved: configured.reserved || defaults.reserved,
+        };
+    }
+
+    updateStatusColors() {
+        const companyId = this.state.selectedCompanyId
+            || (this.state.companies.length ? this.state.companies[0].id : null);
+        this.state.statusColors = this.getStatusColors(companyId);
+    }
 
     refreshFilteredSites() {
         let sites = [...this.state.allSites];
@@ -239,7 +282,6 @@ class Locker3DView extends Component {
         return { minX: minX - pad, maxX: maxX + pad, minZ: minZ - pad, maxZ: maxZ + pad, maxHeight: 0 };
     }
 
-    // ─── CLAMP UTILITY (used for initial layout / X-Z containment) ──
     clampLockerToSite(mesh, posX, posZ) {
         const lockerData = mesh.userData.lockerData;
         if (!lockerData) return { x: posX, z: posZ };
@@ -280,8 +322,6 @@ class Locker3DView extends Component {
 
         const siteMinX = site.x - site.width / 2;
         const siteMaxX = site.x + site.width / 2;
-        // Site's Y is its BASE (bottom), not its center - see
-        // drawSingleSite(): mesh.position.set(site.x, site.y + site.height/2, site.z)
         const siteMinY = site.y;
         const siteMaxY = site.y + site.height;
 
@@ -296,7 +336,6 @@ class Locker3DView extends Component {
         return { x: clampedX, y: clampedY };
     }
 
-    // ─── RENDER SCENE ──────────────────────────────────────────────
     async renderScene() {
         const container = this.canvasRef.el;
         if (!container) return;
@@ -383,7 +422,6 @@ class Locker3DView extends Component {
         this.siteObjects = [];
     }
 
-    // ─── DRAW LOCKERS ──────────────────────────────────────────────
     drawLockers() {
             this.lockerMeshes = [];
             if (!this.state.filteredLockers) return;
@@ -424,10 +462,8 @@ class Locker3DView extends Component {
 
     const boxGeo = new THREE.BoxGeometry(w, h, d);
 
-    const isAllocated = locker.status === "allocated";
-const statusColor = isAllocated
-    ? this.state.statusColors.allocated
-    : this.state.statusColors.available;
+    const lockerStatusColors = this.getStatusColors(locker.company_id);
+const statusColor = lockerStatusColors[locker.status] || lockerStatusColors.available;
 const bodyColorHex = this.getProfileColorHex(statusColor);
 const doorColorHex = this.getProfileColorHex(locker.profile_color);
 
@@ -539,8 +575,6 @@ const body = new THREE.Mesh(
 
     }
 
-    // ─── CAMERA FIT ─────────────────────────────────────────────────
-
     fitCameraToScene() {
         if (!this.camera) return;
         const bounds = this.getLockerBounds();
@@ -578,7 +612,6 @@ const body = new THREE.Mesh(
         this.renderer.setSize(w, h);
     }
 
-    // ─── FILTERS ────────────────────────────────────────────────────
     apply3DFilters() {
         try {
             let lockers = [...this.state.lockers];
@@ -596,7 +629,11 @@ const body = new THREE.Mesh(
                 lockers = lockers.filter(l => l.profile_id === this.state.activeProfileFilter);
 
             this.state.filteredLockers = lockers;
-            this.state.hasLockers = lockers.length > 0;
+            this.state.hasLockers = this.state.lockers.some(l =>
+                (!this.state.selectedCompanyId || l.company_id === this.state.selectedCompanyId) &&
+                (!this.state.selectedLockerLocationId || l.locker_location_id === this.state.selectedLockerLocationId)
+            );
+            this.updateStatusColors();
 
             this.refreshFilteredSites();
 
@@ -629,9 +666,10 @@ const body = new THREE.Mesh(
         });
     }
 
-    // ─── UI EVENTS ──────────────────────────────────────────────────
     async onCompanyChange(event) {
         this.state.selectedCompanyId = event.target.value ? Number(event.target.value) : null;
+        const companyLocations = this.visibleLocations;
+        this.state.selectedLockerLocationId = companyLocations.length ? companyLocations[0].id : null;
         await this.reload3DData();
     }
 
@@ -647,6 +685,7 @@ const body = new THREE.Mesh(
             this.state.lockers = data.lockers || [];
             this.state.allSites = data.sites || [];
             this.state.profilesList = data.profiles || [];
+            this.state.statusColorsByCompany = data.status_colors || {};
             this.apply3DFilters();
         } catch (e) { console.error("reload error:", e); }
     }
@@ -691,7 +730,6 @@ const body = new THREE.Mesh(
         console.log("DEBUG: filteredLockers count after filter:", this.state.filteredLockers.length);
     }
 
-    // ─── EDIT MODE TOGGLE (CORRECTED) ──────────────────────────────
     toggleEditMode() {
         if (!this.state.isEditMode) {
             // Enter edit mode: store original positions, clear pending
@@ -705,7 +743,6 @@ const body = new THREE.Mesh(
             });
             this.notification.add("3D edit mode enabled.", { type: "info" });
         } else {
-            // Exiting edit mode: save changes
             this.saveLayout();
         }
     }
@@ -719,11 +756,9 @@ const body = new THREE.Mesh(
         });
     }
 
-    // ─── SAVE LAYOUT (called from Save button) ────────────────────
     async saveLayout() {
         if (!this.pendingPositionChanges.size) {
             this.notification.add("No changes to save.", { type: "info" });
-            // Still exit edit mode
             this.state.isEditMode = false;
             this.originalPositions.clear();
             this.lockerMeshes.forEach(m => this.setObjectOpacity(m, 1));
@@ -733,7 +768,6 @@ const body = new THREE.Mesh(
         try {
             const changes = Array.from(this.pendingPositionChanges.values());
 
-            // Save each change to the ORM
             for (const change of changes) {
                 await this.orm.call("locker.locker", "update_locker_position", [
                     change.id,
@@ -745,7 +779,6 @@ const body = new THREE.Mesh(
                 ]);
             }
 
-            // Update local state.lockers with new positions
             for (const change of changes) {
                 const locker = this.state.lockers.find(l => l.id === change.id);
                 if (locker) {
@@ -757,7 +790,6 @@ const body = new THREE.Mesh(
                 }
             }
 
-            // Update mesh initialPos to new positions
             this.lockerMeshes.forEach(mesh => {
                 const lockerId = mesh.userData.lockerId;
                 const change = this.pendingPositionChanges.get(lockerId);
@@ -778,7 +810,6 @@ const body = new THREE.Mesh(
         }
     }
 
-    // ─── MOUSE EVENTS (Manual Orbit + Drag) ──────────────────────
     getCanvasMousePos(e) {
         if (!this.renderer || !this.renderer.domElement) return { x: 0, y: 0 };
         const rect = this.renderer.domElement.getBoundingClientRect();
@@ -797,7 +828,9 @@ const body = new THREE.Mesh(
         this.hasMoved = false;
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const visible = this.lockerMeshes.filter(m => m.visible);
+        const visible = this.lockerMeshes.filter(
+            m => m.visible && m.userData.lockerData && m.userData.lockerData.is_mine !== false
+        );
         const intersects = this.raycaster.intersectObjects(visible, true);
 
         if (intersects.length) {
@@ -941,7 +974,6 @@ const body = new THREE.Mesh(
         this.hasMoved = false;
     }
 
-    // ─── onDrop – only updates visuals and pending changes (no DB) ──
     async onDrop(draggedLockerMesh) {
         const draggedLockerId = draggedLockerMesh.userData.lockerId;
         const draggedData = draggedLockerMesh.userData.lockerData;
@@ -955,7 +987,6 @@ const body = new THREE.Mesh(
         const dropY = draggedLockerMesh.position.y;
         const dropZ = draggedLockerMesh.position.z;
 
-        // Find overlapping locker (same side only)
         let targetMesh = null;
         let minDist = Infinity;
         const draggedSide = draggedData.side || "side_1";
@@ -980,7 +1011,6 @@ const body = new THREE.Mesh(
             }
         }
 
-        // If overlapping, check size and prepare swap (no DB yet)
         if (targetMesh) {
             const targetData = targetMesh.userData.lockerData;
             const targetW = parseFloat(targetData.w ?? targetData.width) || 1;
@@ -988,12 +1018,10 @@ const body = new THREE.Mesh(
             const targetD = parseFloat(targetData.d ?? targetData.depth) || 1;
 
             if (targetW >= w && targetH >= h && targetD >= d) {
-                // Perform visual swap
                 const targetPos = targetMesh.position.clone();
                 draggedLockerMesh.position.set(targetPos.x, targetPos.y, targetPos.z);
                 targetMesh.position.set(initialPos.x, initialPos.y, initialPos.z);
 
-                // Store pending changes for both
                 const draggedPosX = targetPos.x - w / 2;
                 const draggedPosY = targetPos.y - h / 2;
                 const draggedPosZ = targetPos.z - d / 2;
@@ -1018,19 +1046,16 @@ const body = new THREE.Mesh(
                     site_id: draggedData.site_id
                 });
             } else {
-                // Swap not allowed – revert dragged
                 draggedLockerMesh.position.copy(initialPos);
                 this.notification.add("Cannot swap: target locker is smaller.", { type: "warning" });
             }
             return;
         }
 
-        // No overlap – move to empty spot
         const posX = dropX - w / 2;
         const posY = dropY - h / 2;
         const posZ = dropZ - d / 2;
 
-        // Store pending change for dragged locker (site remains same)
         this.pendingPositionChanges.set(draggedLockerId, {
             id: draggedLockerId,
             pos_x: posX,
@@ -1041,10 +1066,8 @@ const body = new THREE.Mesh(
         });
     }
 
-    // ─── POPUP ──────────────────────────────────────────────────────
     closePopup() { this.state.selectedLocker = null; }
 
-    // ─── COLOR HELPERS ─────────────────────────────────────────────
     getProfileColorHex(colorValue) {
         const ODOO_COLORS = {
             0: 0x8f8f8f, 1: 0xF05365, 2: 0xFABC2A, 3: 0xECE133,
