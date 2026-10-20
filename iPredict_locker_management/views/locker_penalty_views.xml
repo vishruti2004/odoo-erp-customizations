@@ -13,6 +13,9 @@
                 <field name="currency_id" column_invisible="1" />
                 <field name="period" />
                 <field name="start_after_days" />
+                <field name="invoice_interval" />
+                <field name="invoice_interval_unit" />
+                <field name="max_unpaid_invoices" />
             </list>
         </field>
     </record>
@@ -39,10 +42,28 @@
                         </group>
 
                         <group>
+                            <label for="start_after_days" string="Penalty Start After" />
+
+                            <div class="o_row">
+                            <field name="start_after_days" class="oe_inline"/>
+                            <field name="period"  class="oe_inline" />
+
+                            </div>
+                        </group>
+                    </group>
+
+                    <group string="Penalty Invoicing">
+                        <group>
+                            <label for="invoice_interval" string="Invoice Duration" />
+                            <div class="o_row">
+                                <field name="invoice_interval" class="oe_inline" />
+                                <field name="invoice_interval_unit" class="oe_inline" />
+                            </div>
                             <field name="amount" />
                             <field name="currency_id" invisible="1" />
-                            <field name="period" />
-                            <field name="start_after_days" />
+                        </group>
+                        <group>
+                            <field name="max_unpaid_invoices" />
                         </group>
                     </group>
 

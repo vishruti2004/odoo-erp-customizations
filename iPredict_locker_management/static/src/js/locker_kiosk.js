@@ -356,7 +356,7 @@ export class LockerKiosk extends Component {
             this.state.lockedUntil = person.otp_locked_until || null;
             this.state.mode = "locked";
             this.showMessage(
-                "You have already used all 3 authentication attempts. Please try again after 10 minutes.",
+                person.otp_locked_message || "You have used all 3 authentication attempts. Please try again later.",
                 "danger"
             );
             return;
@@ -372,6 +372,29 @@ export class LockerKiosk extends Component {
     onInputChange(ev) {
         this.state.authentication = ev.target.value;
         this.clearMessage();
+    }
+
+    onCredentialKeydown(ev) {
+        if (ev.key !== "Enter") {
+            return;
+        }
+        ev.preventDefault();
+        if (this.state.loading) {
+            return;
+        }
+        this.state.authentication = ev.target.value || "";
+        this.authenticate();
+    }
+
+    onOtpKeydown(ev) {
+        if (ev.key !== "Enter") {
+            return;
+        }
+        ev.preventDefault();
+        if (this.state.loading) {
+            return;
+        }
+        this.verifyOTP();
     }
 
     async authenticate() {
@@ -606,6 +629,13 @@ export class LockerKiosk extends Component {
                 "/locker/access/verify_face",
                 { image: image }
             );
+            console.info("[LOCKER TRACE][UI][FACE] RESPONSE", {
+    success: result?.success,
+    message: result?.message,
+    similarity: result?.similarity,
+    livenessScore: result?.liveness_score,
+    allocation: result?.allocation,
+});
 
             if (!result.success) {
                 if (result.locked) {
@@ -1183,6 +1213,11 @@ export class LockerKiosk extends Component {
 
     // ACCESS ACTION
     async performAccess(action) {
+        console.info("[LOCKER TRACE][UI][ACCESS] FUNCTION CALLED", {
+    action,
+    allocation: this.state.allocation,
+    selectedPerson: this.state.selectedPerson,
+});
         if (!this.state.allocation) {
             return;
         }
@@ -1192,12 +1227,18 @@ export class LockerKiosk extends Component {
 
         try {
             const result = await rpc("/locker/access/action", {
+
                 allocation_id: this.state.allocation.id,
                 action: action,
                 authenticated_partner_id: this.state.allocation.authenticated_partner_id,
                 companion_count: action === "check_in" ? this.state.companionCount : 0,
             });
 
+            console.info("[LOCKER TRACE][UI][ACCESS] RESPONSE", {
+    success: result?.success,
+    message: result?.message,
+    allocation: result?.allocation,
+});
             if (!result.success) {
                 this.showMessage(
                     result.message || "Unable to perform action.",

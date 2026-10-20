@@ -32,6 +32,10 @@
                             <field name="renewal_reminder_days" />
                         </setting>
 
+                        <setting string="Kiosk Authentication Lock Time" help="Seconds a person stays locked after 3 wrong authentication attempts in the kiosk (maximum 300 seconds).">
+                            <field name="locker_auth_lock_seconds" />
+                        </setting>
+
                         <setting string="Enable 3D Locker View" help="Enable 3D view configuration for locker locations.">
                             <field name="enable_3d_locker_view" />
                         </setting>

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -18,8 +19,19 @@ class ResCompany(models.Model):
     default=5,
     help="Number of days before locker expiry when renewal becomes available."
 )
+    locker_auth_lock_seconds = fields.Integer(
+        string="Authentication Lock Time (seconds)",
+        default=60,
+        help="After 3 wrong authentication attempts the person is locked for this many seconds (1 to 300).",
+    )
     enable_3d_locker_view = fields.Boolean(
         string="Enable 3D Locker View",
         default=False,
     )
     
+
+    @api.constrains("locker_auth_lock_seconds")
+    def _check_locker_auth_lock_seconds(self):
+        for company in self:
+            if not 1 <= company.locker_auth_lock_seconds <= 300:
+                raise ValidationError(_("Authentication Lock Time must be between 1 and 300 seconds (5 minutes)."))

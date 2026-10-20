@@ -2,6 +2,7 @@
 
 import base64
 import hashlib
+import logging
 import secrets
 import time
 import cv2
@@ -11,10 +12,8 @@ import onnxruntime as ort
 from odoo import http
 from odoo.http import request
 
-
 # Allocation states in which the person is still allowed to check in / check out.
 ACTIVE_ALLOCATION_STATES = ("allocated", "renewal_pending", "expired")
-
 
 class LockerAccessController(http.Controller):
     _face_app = None
@@ -23,11 +22,45 @@ class LockerAccessController(http.Controller):
     _anti_spoof_output_name = None
     _anti_spoof_model_path = None
     _ANTI_SPOOF_THRESHOLD = 0.50
+    _FACE_MATCH_THRESHOLD = 0.45
+
+    @staticmethod
+    def _patch_insightface_align():
+        try:
+            from insightface.utils import face_align
+            from skimage import transform as trans
+        except Exception:
+            return
+        if getattr(face_align, "_ipredict_patched", False):
+            return
+        if not hasattr(trans.SimilarityTransform, "from_estimate"):
+            return
+        original_estimate_norm = face_align.estimate_norm
+
+        def estimate_norm(lmk, image_size=112, mode="arcface"):
+            assert lmk.shape == (5, 2)
+            assert image_size % 112 == 0 or image_size % 128 == 0
+            if image_size % 112 == 0:
+                ratio = float(image_size) / 112.0
+                diff_x = 0
+            else:
+                ratio = float(image_size) / 128.0
+                diff_x = 8.0 * ratio
+            dst = face_align.arcface_dst * ratio
+            dst[:, 0] += diff_x
+            tform = trans.SimilarityTransform.from_estimate(lmk, dst)
+            if not tform:
+                return original_estimate_norm(lmk, image_size, mode)
+            return tform.params[0:2, :]
+
+        face_align.estimate_norm = estimate_norm
+        face_align._ipredict_patched = True
 
     @classmethod
     def _get_face_app(cls):
         if cls._face_app is None:
             from insightface.app import FaceAnalysis
+            cls._patch_insightface_align()
             cls._face_app = FaceAnalysis(
                 name="buffalo_sc",
                 providers=["CPUExecutionProvider"],
@@ -68,7 +101,6 @@ class LockerAccessController(http.Controller):
 
     @staticmethod
     def _get_face_crop_box(image_width, image_height, x1, y1, x2, y2, scale=2.7):
-        # Returns a `scale` x face-size crop box centered on the face, shrinking the scale if needed so the box fits inside the image (instead of clipping, which de-centers the crop and feeds the anti-spoof model an un-centered / background-heavy image).
         box_w = max(1.0, x2 - x1)
         box_h = max(1.0, y2 - y1)
 
@@ -109,7 +141,6 @@ class LockerAccessController(http.Controller):
 
     @classmethod
     def _check_face_liveness(cls, image_bytes):
-        """Run face anti-spoofing using detection-only + MiniFASNetV2."""
         try:
             image_array = np.frombuffer(
                 image_bytes,
@@ -154,7 +185,6 @@ class LockerAccessController(http.Controller):
 
             x1, y1, x2, y2 = bbox[:4]
 
-            # MiniFASNetV2 2.7_80x80 expects a 2.7x crop around the detected face center, without alignment warp. NOTE: scale is auto-shrunk (never clipped) so the crop always stays centered on the face, even near frame edges or when the face is large relative to the frame.
             image_height, image_width = image.shape[:2]
             crop_x1, crop_y1, crop_x2, crop_y2 = cls._get_face_crop_box(
                 image_width, image_height, x1, y1, x2, y2, scale=2.7,
@@ -199,7 +229,6 @@ class LockerAccessController(http.Controller):
                 interpolation=cv2.INTER_LINEAR,
             )
 
-            # The downloaded MiniFASNetV2 ONNX model expects: BGR, float32, pixel / 255, NCHW.
             input_tensor = face_crop.astype(np.float32)
             input_tensor = np.transpose(
                 input_tensor,
@@ -226,7 +255,6 @@ class LockerAccessController(http.Controller):
             if scores.size != 3 or not np.all(np.isfinite(scores)):
                 return False, 0.0, "Invalid liveness model output."
 
-            # This exported MiniFASNetV2 model returns [print, live, replay]. Class 1 is the LIVE/REAL class. If the output is logits rather than probabilities, softmax it.
             if (
                 np.any(scores < 0.0)
                 or np.any(scores > 1.0)
@@ -253,8 +281,6 @@ class LockerAccessController(http.Controller):
 
         except Exception:
             return False, 0.0, "Face liveness check failed."
-
-    # COMMON HELPERS
 
     def _is_locker_admin(self):
         return request.env.user.has_group("iPredict_locker_management.group_locker_admin")
@@ -387,42 +413,53 @@ class LockerAccessController(http.Controller):
     def _hash_otp(self, otp):
         return hashlib.sha256(str(otp).encode("utf-8")).hexdigest()
 
-    def _get_face_embedding(self, image_bytes):
+    def _get_face_embedding(self, image_bytes, label="image"):
         try:
             image_array = np.frombuffer(image_bytes, dtype=np.uint8)
             image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
             if image is None:
-                return None
+                return None, "invalid_image"
             faces = self._get_face_app().get(image)
             if not faces:
-                return None
+                return None, "no_face"
             if len(faces) != 1:
-                return None
+                return None, "multiple_faces"
             face = faces[0]
             if face.kps is None:
-                return None
-            if not hasattr(face, "embedding"):
-                return None
-            embedding = face.embedding
+                return None, "no_face"
+            embedding = getattr(face, "embedding", None)
             if embedding is None:
-                return None
+                return None, "engine_error"
             norm = np.linalg.norm(embedding)
             if not np.isfinite(norm) or norm == 0:
-                return None
-            return embedding / norm
+                return None, "no_face"
+            return embedding / norm, ""
         except Exception:
-            return None
+            return None, "engine_error"
 
     def _compare_faces(self, reference_bytes, live_bytes):
-        reference_embedding = self._get_face_embedding(reference_bytes)
-        live_embedding = self._get_face_embedding(live_bytes)
-        if reference_embedding is None or live_embedding is None:
-            return False, 0.0
+        reference_embedding, reference_error = self._get_face_embedding(reference_bytes, "profile photo")
+        if reference_embedding is None:
+            return False, 0.0, f"reference_{reference_error}"
+        live_embedding, live_error = self._get_face_embedding(live_bytes, "camera image")
+        if live_embedding is None:
+            return False, 0.0, f"live_{live_error}"
         similarity = float(np.dot(reference_embedding, live_embedding))
-        return similarity >= 0.45, similarity
+        matched = similarity >= self._FACE_MATCH_THRESHOLD
+        return matched, similarity, ""
+
+    _FACE_ERROR_MESSAGES = {
+        "reference_invalid_image": "The profile photo of this person is not a valid image. Please upload it again.",
+        "reference_no_face": "No face could be found in the profile photo of this person. Please upload a clear front-facing photo.",
+        "reference_multiple_faces": "The profile photo contains more than one face. Please upload a photo with only this person.",
+        "reference_engine_error": "The face recognition engine is not working on the server. Please contact the administrator.",
+        "live_invalid_image": "The camera image could not be read. Please try again.",
+        "live_no_face": "No face detected in the camera. Look straight at the camera in good light.",
+        "live_multiple_faces": "More than one face detected. Please keep exactly one face in the camera.",
+        "live_engine_error": "The face recognition engine is not working on the server. Please contact the administrator.",
+    }
 
     def _get_person_method_key(self, partner_id, access_method):
-        # Attempts are isolated by BOTH authentication method and person.
         return f"{str(access_method or 'unknown').strip().lower()}:{int(partner_id)}"
 
     def _get_person_method_auth_state(self, partner_id, access_method):
@@ -449,7 +486,7 @@ class LockerAccessController(http.Controller):
         state = dict(states.get(key) or {})
         current_attempts = max(0, int(state.get("attempts", 0) or 0))
         attempts = min(3, current_attempts + 1)
-        locked_until = time.time() + 60 if attempts >= 3 else 0
+        locked_until = time.time() + self._get_lock_seconds() if attempts >= 3 else 0
         states[key] = {
             "attempts": attempts,
             "locked_until": locked_until,
@@ -477,9 +514,35 @@ class LockerAccessController(http.Controller):
         )
         return state["locked"], state["locked_until"] if state["locked"] else 0
 
+    def _get_lock_seconds(self):
+        try:
+            seconds = int(request.env.company.sudo().locker_auth_lock_seconds or 60)
+        except Exception:
+            seconds = 60
+        return min(300, max(1, seconds))
+
+    @staticmethod
+    def _format_duration(seconds):
+        seconds = max(1, int(seconds))
+        minutes, secs = divmod(seconds, 60)
+        parts = []
+        if minutes:
+            parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+        if secs:
+            parts.append(f"{secs} second{'s' if secs != 1 else ''}")
+        return " ".join(parts)
+
+    def _lock_wait_text(self, locked_until=None, now=None):
+        """'45 seconds' - the time left of a running lock, or the full lock time of a new one."""
+        if locked_until:
+            now = now if now is not None else time.time()
+            remaining = int(locked_until - now)
+            if locked_until - now > remaining:
+                remaining += 1
+            return self._format_duration(max(1, remaining))
+        return self._format_duration(self._get_lock_seconds())
+
     def _get_remaining_minutes(self, locked_until, now=None):
-        # Shared by every "X attempts left / try again in N minutes" lock
-        # message so the same rounding rule is used everywhere.
         now = now if now is not None else time.time()
         remaining_seconds = max(0, int(locked_until - now))
         return max(1, (remaining_seconds + 59) // 60)
@@ -505,7 +568,6 @@ class LockerAccessController(http.Controller):
         ])
         is_admin = self._is_locker_admin()
         if not is_admin:
-            # A locker user can only look for himself.
             partners = partners & request.env.user.partner_id
         if not partners:
             return {"success": False, "message": "No person found."}
@@ -548,6 +610,10 @@ class LockerAccessController(http.Controller):
                     "has_credential": bool(credential),
                     "otp_locked": is_otp_locked,
                     "otp_locked_until": locked_until if is_otp_locked else 0,
+                    "otp_locked_message": (
+                        f"You have used all 3 authentication attempts. Please try again after {self._lock_wait_text(locked_until)}."
+                        if is_otp_locked else ""
+                    ),
                     "auth_attempts": auth_state["attempts"],
                     "auth_attempts_remaining": auth_state["remaining"],
                 })
@@ -564,7 +630,6 @@ class LockerAccessController(http.Controller):
         methods=["POST"],
     )
     def current_checked_in(self):
-        """Return people who are currently checked in and not checked out."""
         Access = request.env["locker.access"]
 
         active_accesses = Access.search(
@@ -594,6 +659,7 @@ class LockerAccessController(http.Controller):
                 "companion_count": access.companion_count,
                 "total_people": access.total_people,
             })
+        
 
         return {
             "success": True,
@@ -629,13 +695,12 @@ class LockerAccessController(http.Controller):
 
         auth_state = self._get_person_method_auth_state(partner.id, "qr")
         if auth_state["locked"]:
-            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"])
             return {
                 "success": False,
                 "locked": True,
                 "locked_until": auth_state["locked_until"],
                 "attempts_remaining": 0,
-                "message": f"You have used all 3 QR attempts. Please try again after {remaining_minutes} minutes.",
+                "message": f"You have used all 3 QR attempts. Please try again after {self._lock_wait_text(auth_state['locked_until'])}.",
             }
 
         def qr_failure(message):
@@ -646,7 +711,7 @@ class LockerAccessController(http.Controller):
                     "locked": True,
                     "locked_until": result["locked_until"],
                     "attempts_remaining": 0,
-                    "message": "QR verification failed. You have used all 3 QR attempts. Please try again after 10 minutes.",
+                    "message": f"QR verification failed. You have used all 3 QR attempts. Please try again after {self._lock_wait_text()}.",
                 }
             return {
                 "success": False,
@@ -722,12 +787,11 @@ class LockerAccessController(http.Controller):
         )
         if face_auth_state["locked"]:
             locked_until = face_auth_state["locked_until"]
-            remaining_minutes = self._get_remaining_minutes(locked_until)
             return {
                 "success": False,
                 "locked": True,
                 "locked_until": locked_until,
-                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+                "message": f"You have already used all 3 attempts. Please try again after {self._lock_wait_text(locked_until)}.",
             }
         self._set_pending_authentication(credential, partner, allocation)
         return {
@@ -754,12 +818,11 @@ class LockerAccessController(http.Controller):
         )
         if face_auth_state["locked"]:
             locked_until = face_auth_state["locked_until"]
-            remaining_minutes = self._get_remaining_minutes(locked_until)
             return {
                 "success": False,
                 "locked": True,
                 "locked_until": locked_until,
-                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+                "message": f"You have already used all 3 attempts. Please try again after {self._lock_wait_text(locked_until)}.",
             }
         if not partner.image_1920:
             return {"success": False, "message": "No profile photo is available for this person."}
@@ -767,7 +830,7 @@ class LockerAccessController(http.Controller):
             if "," in image:
                 image = image.split(",", 1)[1]
             live_bytes = base64.b64decode(image, validate=True)
-            reference_bytes = base64.b64decode(partner.image_1920, validate=True)
+            reference_bytes = base64.b64decode(partner.image_1920)
         except Exception:
             return {"success": False, "message": "Invalid face image."}
         is_live, liveness_score, liveness_message = self._check_face_liveness(
@@ -788,7 +851,7 @@ class LockerAccessController(http.Controller):
                     "message": (
                         "Face liveness verification failed. "
                         "You have used all 3 face attempts. "
-                        "Please try again after 10 minutes."
+                        f"Please try again after {self._lock_wait_text()}."
                     ),
                 }
             return {
@@ -802,15 +865,30 @@ class LockerAccessController(http.Controller):
                 ),
             }
 
-        matched, similarity = self._compare_faces(reference_bytes, live_bytes)
+        matched, similarity, face_error = self._compare_faces(reference_bytes, live_bytes)
         if not matched:
             result = self._record_person_method_failure(partner.id, "face")
+            if face_error:
+                reason = self._FACE_ERROR_MESSAGES.get(face_error, "Face verification failed.")
+                if result["locked"]:
+                    return {
+                        "success": False,
+                        "locked": True,
+                        "locked_until": result["locked_until"],
+                        "message": f"{reason} You have used all 3 attempts. Please try again after {self._lock_wait_text()}.",
+                    }
+                return {
+                    "success": False,
+                    "locked": False,
+                    "attempts_remaining": result["remaining"],
+                    "message": f"{reason} {result['remaining']} attempts remaining.",
+                }
             if result["locked"]:
                 return {
                     "success": False,
                     "locked": True,
                     "locked_until": result["locked_until"],
-                    "message": "Face verification failed. You have used all 3 attempts. Please try again after 10 minutes.",
+                    "message": f"Face verification failed. You have used all 3 attempts. Please try again after {self._lock_wait_text()}.",
                 }
             return {
                 "success": False,
@@ -841,17 +919,15 @@ class LockerAccessController(http.Controller):
         pending = self._get_pending_records()
         if not pending:
             return {"success": False, "message": "QR authentication session expired. Please scan the QR code again."}
-        current_time = time.time()
         partner = pending["partner"]
         credential = pending["credential"]
         auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
         if auth_state["locked"]:
-            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"], current_time)
             return {
                 "success": False,
                 "locked": True,
                 "locked_until": auth_state["locked_until"],
-                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+                "message": f"You have already used all 3 attempts. Please try again after {self._lock_wait_text(auth_state["locked_until"])}.",
             }
         email = (partner.email or "").strip()
         if not email:
@@ -904,12 +980,11 @@ class LockerAccessController(http.Controller):
         credential = pending["credential"]
         auth_state = self._get_person_method_auth_state(partner.id, credential.access_method)
         if auth_state["locked"]:
-            remaining_minutes = self._get_remaining_minutes(auth_state["locked_until"], current_time)
             return {
                 "success": False,
                 "locked": True,
                 "locked_until": auth_state["locked_until"],
-                "message": f"You have already used all 3 attempts. Please try again after {remaining_minutes} minutes.",
+                "message": f"You have already used all 3 attempts. Please try again after {self._lock_wait_text(auth_state["locked_until"])}.",
             }
         if current_time > float(otp_data.get("expires_at", 0)):
             request.session.pop("locker_otp", None)
@@ -922,7 +997,7 @@ class LockerAccessController(http.Controller):
                     "success": False,
                     "locked": True,
                     "locked_until": result["locked_until"],
-                    "message": "You have already used all 3 attempts. Please try again after 10 minutes.",
+                    "message": f"You have used all 3 attempts. Please try again after {self._lock_wait_text()}.",
                 }
             return {
                 "success": False,
@@ -937,7 +1012,7 @@ class LockerAccessController(http.Controller):
                     "success": False,
                     "locked": True,
                     "locked_until": result["locked_until"],
-                    "message": "You have already used all 3 attempts. Please try again after 10 minutes.",
+                    "message": f"You have used all 3 attempts. Please try again after {self._lock_wait_text()}.",
                 }
             return {
                 "success": False,
@@ -1080,10 +1155,6 @@ class LockerAccessController(http.Controller):
         )
 
         if auth_state["locked"]:
-            remaining_seconds = max(
-                0,
-                int(auth_state["locked_until"] - time.time()),
-            )
             return {
                 "success": False,
                 "locked": True,
@@ -1091,7 +1162,7 @@ class LockerAccessController(http.Controller):
                 "attempts_remaining": 0,
                 "message": (
                     "You have used all 3 attempts. "
-                    f"Please try again after {remaining_seconds} seconds."
+                    f"Please try again after {self._lock_wait_text(auth_state['locked_until'])}."
                 ),
             }
 
@@ -1166,7 +1237,7 @@ class LockerAccessController(http.Controller):
                     "message": (
                         f"Invalid {access_method.upper()} credential. "
                         "You have used all 3 attempts. "
-                        "Please try again after 60 seconds."
+                        f"Please try again after {self._lock_wait_text()}."
                     ),
                 }
 
@@ -1246,7 +1317,7 @@ class LockerAccessController(http.Controller):
                 "companion_count": int(companion_count or 0),
 
             })
-            access.action_check_in()
+            access.action_check_in()           
             return {
                 "success": True,
                 "message": "Check In successful.",

@@ -54,10 +54,17 @@
                             type="object"
                             string="Renew"
                             class="btn-primary"
-                            invisible="state not in ('renewal_pending', 'expired') or not renewal_available or (penalty_invoice_id and penalty_payment_state != 'paid')"
+                            invisible="state not in ('renewal_pending', 'expired') or not renewal_available or (penalty_invoice_id and penalty_payment_state != 'paid') or penalty_unpaid_count > 0"
                             groups="iPredict_locker_management.group_locker_admin" />
 
-                    <button name="action_return" type="object" string="Return" invisible="state not in ('allocated', 'renewal_pending', 'expired') or ((penalty_available or penalty_invoice_id) and penalty_payment_state != 'paid')" />
+                    <button name="action_return" type="object" string="Return" invisible="state not in ('allocated', 'renewal_pending', 'expired') or ((penalty_available or penalty_invoice_id) and penalty_payment_state != 'paid') or penalty_unpaid_count > 0" />
+
+                    <button name="action_create_penalty"
+                            type="object"
+                            string="Create Penalty Invoice"
+                            class="btn-secondary"
+                            invisible="state != 'expired' or not penalty_available or penalty_invoice_id"
+                            groups="iPredict_locker_management.group_locker_admin" />
 
                     <button name="action_cancel"
                             type="object"
@@ -96,8 +103,17 @@
                                 class="oe_stat_button"
                                 icon="fa-money"
                                 groups="iPredict_locker_management.group_locker_admin"
-                                invisible="not penalty_invoice_id">
+                                invisible="penalty_invoice_count == 0">
                             <field name="penalty_invoice_count" widget="statinfo" string="Penalty" />
+                        </button>
+
+                        <button name="action_view_deposit_refund"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-credit-card"
+                                groups="iPredict_locker_management.group_locker_admin"
+                                invisible="not deposit_refund_id">
+                            <field name="deposit_refund_count" widget="statinfo" string="Deposit Refund" />
                         </button>
                     </div>
 
@@ -122,6 +138,7 @@
                             <field name="authorized_partner_ids" widget="many2many_tags" readonly="state != 'draft'" />
                             <field name="company_id" readonly="state != 'draft'" />
                             <field name="renewal_available" invisible="1" />
+                            <field name="penalty_unpaid_count" invisible="1" />
                         </group>
 
                         <group>
@@ -131,6 +148,7 @@
                             <field name="allocation_type" readonly="1" />
                             <field name="invoice_id" readonly="1" />
                             <field name="payment_state" readonly="1" />
+                            <field name="deposit_amount_invoiced" readonly="1" invisible="not deposit_amount_invoiced" />
                         </group>
                     </group>
 
@@ -142,6 +160,7 @@
                             <field name="penalty_invoice_id" readonly="1" invisible="not penalty_invoice_id" />
                             <field name="penalty_days" readonly="1" invisible="not penalty_invoice_id" />
                             <field name="penalty_amount" readonly="1" invisible="not penalty_invoice_id" />
+                            <field name="penalty_last_invoice_date" readonly="1" invisible="not penalty_last_invoice_date" />
                         </group>
                     </group>
 

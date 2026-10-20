@@ -353,5 +353,72 @@
                 </div>
             </field>
         </record>
+
+        <!-- Locker Released (penalty not paid) -->
+        <record id="mail_template_locker_released" model="mail.template">
+            <field name="name">Locker Released - Penalty Not Paid</field>
+            <field name="model_id" ref="iPredict_locker_management.model_locker_allocation"/>
+            <field name="subject">Locker Released - {{ object.name }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or object.env.company.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+                <div style="margin:0;padding:0;background-color:#f4f6f9;">
+                    <div style="max-width:650px;margin:30px auto;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                        <div style="background-color:#dc3545;padding:30px;text-align:center;">
+                            <h2 style="color:#ffffff;margin:0;font-size:24px;font-family:Arial,sans-serif;font-weight:600;">Locker Released</h2>
+                            <p style="color:#ffffff;margin-top:8px;font-size:14px;margin-bottom:0;">Your locker has been released because the penalty was not paid</p>
+                        </div>
+                        <div style="padding:30px;font-family:Arial,sans-serif;">
+                            <p style="font-size:16px;color:#333;margin-top:0;">
+                                Dear <strong><t t-out="object.partner_id.name"/></strong>,
+                            </p>
+                            <p style="font-size:14px;color:#555;line-height:1.8;">Your locker has now been released because the penalty invoices were not paid on time. The locker is available for other people and your access to it has been removed.</p>
+                            <div style="margin:25px 0;border:1px solid #eee;border-radius:6px;overflow:hidden;">
+                                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left;">
+                                    <tbody>
+                                        <tr style="border-bottom:1px solid #eee;">
+                                            <td style="padding:12px 15px;color:#777;font-weight:500;width:40%;">Locker Allocation</td>
+                                            <td style="padding:12px 15px;color:#333;font-weight:600;"><t t-out="object.name"/></td>
+                                        </tr>
+                                        <tr style="border-bottom:1px solid #eee;">
+                                            <td style="padding:12px 15px;color:#777;font-weight:500;">Locker</td>
+                                            <td style="padding:12px 15px;color:#333;font-weight:600;"><t t-out="object.locker_id.display_name"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:12px 15px;color:#777;font-weight:500;">Released On</td>
+                                            <td style="padding:12px 15px;color:#333;font-weight:600;"><t t-out="object.return_date"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p style="font-size:14px;color:#333;font-weight:600;margin-bottom:8px;">Unpaid penalty invoices</p>
+                            <div style="margin:0 0 25px 0;border:1px solid #eee;border-radius:6px;overflow:hidden;">
+                                <table style="width:100%;border-collapse:collapse;font-size:14px;text-align:left;">
+                                    <tbody>
+                                        <t t-foreach="object.penalty_invoice_ids" t-as="inv">
+                                            <t t-if="inv.state != 'cancel' and inv.payment_state != 'paid'">
+                                                <tr style="border-bottom:1px solid #eee;">
+                                                    <td style="padding:12px 15px;color:#333;font-weight:600;"><t t-out="inv.name"/></td>
+                                                    <td style="padding:12px 15px;color:#dc3545;font-weight:700;text-align:right;"><t t-out="inv.amount_residual" t-options="{'widget': 'monetary', 'display_currency': inv.currency_id}"/></td>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p style="font-size:14px;color:#555;line-height:1.8;margin-bottom:0;">
+                                These invoices are still due. Please pay them or contact the locker administrator if you have any questions.
+                            </p>
+                        </div>
+                        <div style="background:#f8f9fa;padding:20px;text-align:center;border-top:1px solid #eee;">
+                            <p style="margin:0;font-size:12px;color:#999;font-family:Arial,sans-serif;">This is an automated email generated by Odoo.</p>
+                            <p style="margin-top:6px;font-size:13px;color:#dc3545;font-weight:bold;margin-bottom:0;"><t t-out="object.company_id.name"/></p>
+                        </div>
+                    </div>
+                </div>
+            </field>
+        </record>
+
     </data>
 </odoo>

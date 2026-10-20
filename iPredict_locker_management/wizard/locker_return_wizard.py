@@ -42,6 +42,9 @@ class LockerReturnWizard(models.TransientModel):
         if allocation.locker_id:
             allocation.locker_id.sudo().status = "available"
 
+        # The deposit that was invoiced with the allocation is refunded with a credit note.
+        allocation._create_deposit_refund()
+
         allocation.message_post(
             body=_("Locker returned on %s. Return Reason: %s") % (
                 self.return_date,

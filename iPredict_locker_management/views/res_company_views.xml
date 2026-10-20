@@ -22,6 +22,7 @@
                     <group string="Renewal Configuration">
                         <field name="renewal_reminder_days" />
                         <field name="locker_reservation_hours" />
+                        <field name="locker_auth_lock_seconds" />
                     </group>
 
                 </page>

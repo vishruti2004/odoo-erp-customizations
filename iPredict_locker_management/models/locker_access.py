@@ -3,6 +3,9 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class LockerAccess(models.Model):
     _name = "locker.access"

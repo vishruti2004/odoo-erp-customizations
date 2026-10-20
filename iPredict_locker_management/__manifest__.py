@@ -32,6 +32,14 @@ Features:
         "sms",
     ],
 
+    'external_dependencies': {
+            'python': [
+                'insightface',
+                'opencv-python',
+                'onnxruntime',
+            ],
+        },        
+
     "data": [
         # Security
         "security/security.xml",

@@ -47,7 +47,32 @@ class LockerAllocation(models.Model):
     penalty_available = fields.Boolean(string="Penalty Available", default=False, copy=False, tracking=True)
     penalty_start_date = fields.Date(string="Penalty Start Date", readonly=True, copy=False, tracking=True)
     penalty_invoice_id = fields.Many2one("account.move", string="Penalty Invoice", readonly=True, copy=False, tracking=True)
+    penalty_invoice_ids = fields.Many2many(
+        "account.move",
+        "locker_allocation_penalty_invoice_rel",
+        "allocation_id",
+        "move_id",
+        string="Penalty Invoices",
+        readonly=True,
+        copy=False,
+    )
+    penalty_last_invoice_date = fields.Date(
+        string="Penalty Billed Until",
+        readonly=True,
+        copy=False,
+        help="The penalty has been invoiced up to this date. The next penalty invoice is due one invoice interval after it.",
+    )
     penalty_invoice_count = fields.Integer(string="Penalty Invoice Count", compute="_compute_penalty_invoice_count")
+    penalty_unpaid_count = fields.Integer(string="Unpaid Penalty Invoices", compute="_compute_penalty_unpaid_count")
+    deposit_amount_invoiced = fields.Monetary(
+        string="Deposit Invoiced",
+        readonly=True,
+        copy=False,
+        currency_field="company_currency_id",
+        help="Deposit that was added to the allocation invoice. It is refunded with a credit note when the locker is returned.",
+    )
+    deposit_refund_id = fields.Many2one("account.move", string="Deposit Credit Note", readonly=True, copy=False, tracking=True)
+    deposit_refund_count = fields.Integer(string="Deposit Credit Note Count", compute="_compute_deposit_refund_count")
     penalty_payment_state = fields.Selection(related="penalty_invoice_id.payment_state", string="Penalty Payment Status", readonly=True)
     penalty_id = fields.Many2one(
         "locker.penalty",
@@ -85,10 +110,34 @@ class LockerAllocation(models.Model):
         for rec in self:
             rec.invoice_count = 1 if rec.invoice_id else 0
 
-    @api.depends("penalty_invoice_id")
+    @api.depends("penalty_invoice_id", "penalty_invoice_ids")
     def _compute_penalty_invoice_count(self):
         for rec in self:
-            rec.penalty_invoice_count = 1 if rec.penalty_invoice_id else 0
+            rec.penalty_invoice_count = len(rec._get_penalty_invoices())
+
+    @api.depends(
+        "penalty_invoice_id.payment_state", "penalty_invoice_id.state",
+        "penalty_invoice_ids.payment_state", "penalty_invoice_ids.state",
+    )
+    def _compute_penalty_unpaid_count(self):
+        for rec in self:
+            rec.penalty_unpaid_count = len(rec._get_unpaid_penalty_invoices())
+
+    @api.depends("deposit_refund_id")
+    def _compute_deposit_refund_count(self):
+        for rec in self:
+            rec.deposit_refund_count = 1 if rec.deposit_refund_id else 0
+
+    def _get_penalty_invoices(self):
+        """Every penalty invoice of this allocation (also the ones created before the multi-invoice support)."""
+        self.ensure_one()
+        return (self.penalty_invoice_ids | self.penalty_invoice_id).sudo()
+
+    def _get_unpaid_penalty_invoices(self):
+        self.ensure_one()
+        return self._get_penalty_invoices().filtered(
+            lambda inv: inv.state != "cancel" and inv.payment_state != "paid"
+        )
 
     # CREATE / WRITE
     @api.model_create_multi
@@ -139,7 +188,6 @@ class LockerAllocation(models.Model):
                 locker.status = "reserved"
 
     def _release_locker(self, locker=None):
-        """Put a reserved locker back to available."""
         for rec in self:
             locker_to_release = (locker or rec.locker_id).sudo()
             if locker_to_release.status == "reserved":
@@ -233,7 +281,6 @@ class LockerAllocation(models.Model):
                 elif access_method in ("physical_key", "biometric"):
                     if credential.pin_code or credential.rfid_uid or credential.qr_token or credential.qr_code:
                         credential.action_clear_credential()
-            # Deactivate removed partners
             all_credentials = Credential.search([("allocation_id", "=", allocation.id)])
             for cred in all_credentials:
                 if cred.partner_id.id not in partner_ids:
@@ -248,14 +295,25 @@ class LockerAllocation(models.Model):
         product = self.profile_id.rental_product_id
         if not product:
             raise ValidationError(_("Please configure Rental Product in Locker Profile."))
+        lines = [Command.create({"product_id": product.id, "name": product.display_name, "quantity": 1, "price_unit": product.lst_price})]
+        deposit = self.profile_id.deposit_amount if self.profile_id.deposit_required else 0.0
+        if deposit and deposit > 0:
+            lines.append(Command.create({
+                "product_id": product.id,
+                "name": f"{product.display_name} - Locker Deposit",
+                "quantity": 1,
+                "price_unit": deposit,
+                "tax_ids": [Command.clear()],
+            }))
         invoice = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner_id.id,
             "company_id": self.company_id.id,
             "invoice_origin": self.name,
-            "invoice_line_ids": [Command.create({"product_id": product.id, "name": product.display_name, "quantity": 1, "price_unit": product.lst_price})],
+            "invoice_line_ids": lines,
         })
         self.invoice_id = invoice.id
+        self.deposit_amount_invoiced = deposit if deposit and deposit > 0 else 0.0
         return {"type": "ir.actions.act_window", "res_model": "account.move", "res_id": invoice.id, "view_mode": "form", "target": "current"}
 
     def action_view_invoice(self):
@@ -301,6 +359,10 @@ class LockerAllocation(models.Model):
                 _("Please configure Rental Product in Locker Profile.")
             )
 
+        amount = self._compute_penalty_amount(penalty, today)
+        if amount <= 0:
+            raise ValidationError(_("No penalty has accrued yet."))
+
         invoice = self._create_penalty_invoice(penalty, today)
 
         return {
@@ -311,65 +373,41 @@ class LockerAllocation(models.Model):
             "target": "current",
         }
 
-    def _compute_penalty_amount(self, penalty, today):
-        """Return (penalty_days, penalty_amount) from the penalty start date until today."""
+    def _compute_penalty_amount(self, penalty, today, date_from=None):
         self.ensure_one()
-        penalty_days = (today - self.penalty_start_date).days
-
-        if penalty.period == "day":
-            penalty_amount = penalty.amount * penalty_days
-
-        elif penalty.period == "month":
-            penalty_amount = 0.0
-            current_date = self.penalty_start_date
-
-            for day_index in range(penalty_days):
-                next_month = current_date + relativedelta(months=1)
-                month_start = next_month.replace(day=1)
-                last_day = month_start - relativedelta(days=1)
-                days_in_month = last_day.day
-                penalty_amount += penalty.amount / days_in_month
-                current_date += relativedelta(days=1)
-
-        else:
-            penalty_amount = 0.0
-            current_date = self.penalty_start_date
-
-            for day_index in range(penalty_days):
-                next_year = current_date + relativedelta(years=1)
-                days_in_year = (next_year - current_date).days
-                penalty_amount += penalty.amount / days_in_year
-                current_date += relativedelta(days=1)
-
+        date_from = date_from or self.penalty_start_date
+        penalty_days = (today - date_from).days
+        cycle_days = ((date_from + penalty._get_invoice_interval_delta()) - date_from).days or 1
+        penalty_amount = penalty.amount * penalty_days / cycle_days
         return penalty_days, penalty_amount
 
-    def _get_penalty_line_name(self, penalty, today, penalty_days):
+    def _get_penalty_line_name(self, penalty, today, penalty_days, date_from=None):
+        date_from = date_from or self.penalty_start_date
         product = self.profile_id.rental_product_id
-        period_labels = {
-            "day": _("Day"),
-            "month": _("Month"),
-            "year": _("Year"),
-        }
-        period_label = period_labels.get(penalty.period, _("Penalty"))
+        unit_labels = dict(penalty._fields["invoice_interval_unit"].selection)
+        period_label = f"{penalty.invoice_interval} {unit_labels.get(penalty.invoice_interval_unit, '')}".strip()
         return (
             f"{product.display_name} - Penalty ({period_label})\n"
-            f"{self.penalty_start_date.strftime('%d/%m/%Y')} to "
+            f"{date_from.strftime('%d/%m/%Y')} to "
             f"{today.strftime('%d/%m/%Y')} - {penalty_days} Days"
         ), period_label
 
-    def _create_penalty_invoice(self, penalty, today):
-        """Create the (draft) penalty invoice for the current expired allocation."""
+    def _create_penalty_invoice(self, penalty, today, date_from=None):
+        """Create and post one penalty invoice for the period date_from -> today.
+
+        date_from defaults to the date the penalty has been billed until (or the penalty start date)."""
         self.ensure_one()
         product = self.profile_id.rental_product_id
-        penalty_days, penalty_amount = self._compute_penalty_amount(penalty, today)
-        line_name, period_label = self._get_penalty_line_name(penalty, today, penalty_days)
+        date_from = date_from or self._get_penalty_billed_until()
+        penalty_days, penalty_amount = self._compute_penalty_amount(penalty, today, date_from)
+        line_name, period_label = self._get_penalty_line_name(penalty, today, penalty_days, date_from)
 
         invoice = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner_id.id,
             "company_id": self.company_id.id,
             "invoice_origin": f"{self.name} - Penalty",
-            "invoice_date": today,
+            "invoice_date": fields.Date.context_today(self),
             "invoice_line_ids": [Command.create({
                 "product_id": product.id,
                 "name": line_name,
@@ -384,6 +422,8 @@ class LockerAllocation(models.Model):
             "penalty_days": penalty_days,
             "penalty_amount": penalty_amount,
             "penalty_invoice_id": invoice.id,
+            "penalty_invoice_ids": [Command.link(invoice.id)],
+            "penalty_last_invoice_date": today,
             "penalty_available": False,
         })
 
@@ -417,48 +457,89 @@ class LockerAllocation(models.Model):
                 extra_ctx={"payment_link": rec._get_penalty_payment_link()},
             )
 
-    def _auto_create_penalty(self, penalty, today):
+    def _get_penalty_billed_until(self):
+        """Date up to which the penalty has already been invoiced."""
         self.ensure_one()
+        if self.penalty_last_invoice_date:
+            return self.penalty_last_invoice_date
+        if self.penalty_invoice_id and self.penalty_invoice_id.sudo().invoice_date:
+            return self.penalty_invoice_id.sudo().invoice_date
+        return self.penalty_start_date
+
+    def _auto_process_penalty(self, penalty, today):
+        """Create the penalty invoice of every cycle that is due, or release the locker when
+        too many penalty invoices are still unpaid."""
+        self.ensure_one()
+        if not self.penalty_start_date:
+            return False
         if not self.profile_id.rental_product_id or not penalty.amount or penalty.amount <= 0:
             return False
-        _days, amount = self._compute_penalty_amount(penalty, today)
-        if amount <= 0:
-            # Penalty has not accrued yet (e.g. first day); try again on the next run.
-            return False
-        try:
-            with self.env.cr.savepoint():
-                self._create_penalty_invoice(penalty, today)
-        except Exception:
-            _logger.exception("Unable to create penalty invoice automatically for %s", self.name)
-            return False
-        return True
 
-    def _auto_update_draft_penalty(self, penalty, today):
+        delta = penalty._get_invoice_interval_delta()
+        billed_until = self._get_penalty_billed_until()
+        next_date = billed_until + delta
+        created = False
+        guard = 0
+        while next_date <= today and guard < 60:
+            guard += 1
+            max_unpaid = penalty.max_unpaid_invoices or 0
+            if max_unpaid and len(self._get_unpaid_penalty_invoices()) >= max_unpaid:
+                self._auto_release_unpaid_penalty(today, max_unpaid)
+                return created
+            try:
+                with self.env.cr.savepoint():
+                    self._create_penalty_invoice(penalty, next_date, date_from=billed_until)
+            except Exception:
+                _logger.exception("Unable to create penalty invoice automatically for %s", self.name)
+                return created
+            created = True
+            billed_until = next_date
+            next_date = billed_until + delta
+        return created
+
+    def _auto_release_unpaid_penalty(self, today, max_unpaid):
+        """The penalty stayed unpaid for too long: the locker goes back to Available."""
         self.ensure_one()
-        invoice = self.penalty_invoice_id
-        if not invoice or invoice.state != "draft" or not self.penalty_start_date:
-            return False
-        penalty_days, penalty_amount = self._compute_penalty_amount(penalty, today)
-        if penalty_days == self.penalty_days and penalty_amount == self.penalty_amount:
-            return False
-        line = invoice.invoice_line_ids[:1]
-        if not line:
-            return False
-        try:
-            with self.env.cr.savepoint():
-                line_name, _label = self._get_penalty_line_name(penalty, today, penalty_days)
-                line.write({"price_unit": penalty_amount, "name": line_name})
-                self.write({"penalty_days": penalty_days, "penalty_amount": penalty_amount})
-        except Exception:
-            _logger.exception("Unable to update penalty invoice for %s", self.name)
-            return False
-        return True
+        self.write({
+            "state": "returned",
+            "return_date": today,
+            "renewal_available": False,
+            "penalty_available": False,
+        })
+        self.credential_ids.sudo().write({"active": False})
+        if self.locker_id:
+            # Making the locker available also checks out everybody still checked in.
+            self.locker_id.sudo().status = "available"
+        self._post_history(_("Locker Released - Penalty Not Paid"), [
+            ("Locker", self.locker_id.display_name),
+            ("Partner", self.partner_id.display_name),
+            ("Unpaid Penalty Invoices", ", ".join(self._get_unpaid_penalty_invoices().mapped("name"))),
+            ("Allowed Unpaid Invoices", max_unpaid),
+            ("Released On", today),
+        ])
+        self._send_state_notification("iPredict_locker_management.mail_template_locker_released")
 
     def action_view_penalty_invoice(self):
         self.ensure_one()
-        if not self.penalty_invoice_id:
+        invoices = self._get_penalty_invoices()
+        if not invoices:
             raise ValidationError(_("No penalty invoice found."))
-        return {"type": "ir.actions.act_window", "res_model": "account.move", "view_mode": "form", "res_id": self.penalty_invoice_id.id, "target": "current"}
+        if len(invoices) == 1:
+            return {"type": "ir.actions.act_window", "res_model": "account.move", "view_mode": "form", "res_id": invoices.id, "target": "current"}
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Penalty Invoices"),
+            "res_model": "account.move",
+            "view_mode": "list,form",
+            "domain": [("id", "in", invoices.ids)],
+            "target": "current",
+        }
+
+    def action_view_deposit_refund(self):
+        self.ensure_one()
+        if not self.deposit_refund_id:
+            raise ValidationError(_("No deposit credit note found."))
+        return {"type": "ir.actions.act_window", "res_model": "account.move", "view_mode": "form", "res_id": self.deposit_refund_id.id, "target": "current"}
 
     # ALLOCATE
     def action_allocate(self):
@@ -512,7 +593,7 @@ class LockerAllocation(models.Model):
 
         self._check_user_can_return()
 
-        if self.penalty_invoice_id and self.penalty_invoice_id.sudo().payment_state != "paid":
+        if self._get_unpaid_penalty_invoices():
             raise ValidationError(
                 _("Locker cannot be returned until the penalty invoice is fully paid.")
             )
@@ -537,25 +618,55 @@ class LockerAllocation(models.Model):
         if self.partner_id != self.env.user.partner_id:
             raise ValidationError(_("Only the locker owner can return this locker."))
 
+    def _create_deposit_refund(self):
+        """On return: refund the deposit that was invoiced with the allocation (credit note)."""
+        self.ensure_one()
+        amount = self.deposit_amount_invoiced or 0.0
+        if self.deposit_refund_id or amount <= 0:
+            return False
+        product = self.profile_id.rental_product_id
+        if not product:
+            self.message_post(body=_("Deposit credit note not created: no Rental Product on the Locker Profile."))
+            return False
+        try:
+            with self.env.cr.savepoint():
+                refund = self.env["account.move"].create({
+                    "move_type": "out_refund",
+                    "partner_id": self.partner_id.id,
+                    "company_id": self.company_id.id,
+                    "invoice_origin": f"{self.name} - Deposit Refund",
+                    "invoice_date": fields.Date.context_today(self),
+                    "invoice_line_ids": [Command.create({
+                        "product_id": product.id,
+                        "name": f"{product.display_name} - Locker Deposit Refund",
+                        "quantity": 1,
+                        "price_unit": amount,
+                        "tax_ids": [Command.clear()],
+                    })],
+                })
+                self.deposit_refund_id = refund.id
+        except Exception:
+            _logger.exception("Unable to create the deposit credit note for %s", self.name)
+            self.message_post(body=_("The deposit credit note could not be created automatically. Please create it manually."))
+            return False
+        self._post_history(_("Locker Deposit Credit Note Created"), [
+            ("Locker", self.locker_id.display_name),
+            ("Partner", self.partner_id.display_name),
+            ("Credit Note", refund.name),
+            ("Deposit Refunded", amount),
+        ])
+        return refund
+
     # RENEWAL AUTOMATION + PENALTY CRON
     @api.model
     def _cron_update_renewal_availability(self):
         today = fields.Date.context_today(self)
-
-        _logger.warning(
-            "[LOCKER CRON] STARTED | Date: %s",
-            today,
-        )
 
         allocations = self.search([
             ("state", "in", ("allocated", "renewal_pending", "expired")),
             ("end_date", "!=", False),
         ])
 
-        _logger.warning(
-            "[LOCKER CRON] Allocations found: %s",
-            len(allocations),
-        )
 
         for rec in allocations:
             company = rec.company_id
@@ -574,15 +685,6 @@ class LockerAllocation(models.Model):
                 new_state = "allocated"
                 renewal_available = False
 
-            _logger.warning(
-                "[LOCKER CRON CHECK] Allocation: %s | Old: %s | "
-                "New: %s | End Date: %s | Renewal Date: %s",
-                rec.name,
-                old_state,
-                new_state,
-                rec.end_date,
-                renewal_date,
-            )
 
             if old_state != new_state:
                 _logger.warning(
@@ -603,22 +705,12 @@ class LockerAllocation(models.Model):
                         ("Renewal Reminder Date", renewal_date),
                     ])
 
-                    _logger.warning(
-                        "[LOCKER MAIL] Calling renewal-pending email | "
-                        "Allocation: %s | Email: %s",
-                        rec.name,
-                        rec.partner_id.email,
-                    )
-
+                  
                     rec._send_state_notification(
                         "iPredict_locker_management.mail_template_locker_renewal_pending"
                     )
 
-                    _logger.warning(
-                        "[LOCKER MAIL] Renewal-pending email function completed | %s",
-                        rec.name,
-                    )
-
+        
                 elif new_state == "expired":
                     rec._post_history(_("Locker Expired"), [
                         ("Locker", rec.locker_id.display_name),
@@ -627,21 +719,11 @@ class LockerAllocation(models.Model):
                         ("Expired On", today),
                     ])
 
-                    _logger.warning(
-                        "[LOCKER MAIL] Calling expired email | "
-                        "Allocation: %s | Email: %s",
-                        rec.name,
-                        rec.partner_id.email,
-                    )
 
                     rec._send_state_notification(
                         "iPredict_locker_management.mail_template_locker_expired"
                     )
 
-                    _logger.warning(
-                        "[LOCKER MAIL] Expired email function completed | %s",
-                        rec.name,
-                    )
 
             else:
                 _logger.warning(
@@ -666,20 +748,18 @@ class LockerAllocation(models.Model):
                 rec.penalty_available = False
                 continue
 
-            if rec.penalty_invoice_id:
+            if rec._get_penalty_invoices():
                 rec.penalty_available = False
-                rec._auto_update_draft_penalty(penalty, today)
+                rec._auto_process_penalty(penalty, today)
                 continue
 
-            penalty_start_date = rec.end_date + relativedelta(
-                days=penalty.start_after_days or 0
-            )
+            penalty_start_date = rec.end_date + penalty._get_start_delta()
 
             rec.penalty_start_date = penalty_start_date
             rec.penalty_available = today >= penalty_start_date
 
             if rec.penalty_available:
-                rec._auto_create_penalty(penalty, today)
+                rec._auto_process_penalty(penalty, today)
 
         self._complete_paid_renewals()
         self.search([
@@ -692,39 +772,23 @@ class LockerAllocation(models.Model):
             ("renewal_available", "=", True),
         ]).write({"renewal_available": False})
 
-        _logger.warning("[LOCKER CRON] FINISHED")
 
     def _send_state_notification(self, template_xmlid, extra_ctx=None):
-        _logger.warning(
-            "[LOCKER MAIL] Notification function called | Template: %s | Allocation IDs: %s",
-            template_xmlid,
-            self.ids,
-        )
+      
 
         template = self.env.ref(template_xmlid, raise_if_not_found=False)
 
         if not template:
-            _logger.error("[LOCKER MAIL] TEMPLATE NOT FOUND: %s", template_xmlid)
             return
 
-        _logger.warning("[LOCKER MAIL] Template found: %s", template.display_name)
 
         for rec in self:
             email = (rec.partner_id.email or "").strip()
 
-            _logger.warning(
-                "[LOCKER MAIL] Allocation: %s | State: %s | Partner: %s | Email available: %s",
-                rec.name,
-                rec.state,
-                rec.partner_id.display_name,
-                bool(email),
-            )
+          
 
             if not email:
-                _logger.error(
-                    "[LOCKER MAIL] Email missing for allocation %s",
-                    rec.name,
-                )
+               
                 continue
 
             try:
@@ -743,14 +807,7 @@ class LockerAllocation(models.Model):
                     )
 
                     mail = self.env["mail.mail"].sudo().browse(mail_id).exists()
-                    _logger.warning(
-                        "[LOCKER MAIL] Mail sent | Mail ID: %s | Allocation: %s | State: %s | Mail state: %s %s",
-                        mail_id,
-                        rec.name,
-                        rec.state,
-                        mail.state if mail else "sent-and-deleted",
-                        (mail.failure_reason or "") if mail else "",
-                    )
+                   
 
             except Exception:
                 _logger.exception(
@@ -760,7 +817,6 @@ class LockerAllocation(models.Model):
                 )
     @api.model
     def _cron_release_reserved_lockers(self):
-        """Release lockers whose reservation time is over and fix stale reserved lockers."""
         now = fields.Datetime.now()
         expired = self.search([
             ("state", "=", "draft"),
@@ -786,7 +842,6 @@ class LockerAllocation(models.Model):
         return start_date, start_date + relativedelta(months=1)
 
     def _complete_renewal_from_invoice(self, invoice):
-        """Finish the renewal once its invoice is paid: state -> Allocated, mail the person."""
         self.ensure_one()
      
         if (not invoice or invoice != self.renewal_invoice_id
@@ -802,10 +857,11 @@ class LockerAllocation(models.Model):
             "end_date": end_date,
             "state": "allocated",
             "renewal_available": False,
-            # Reset current penalty status for the new allocation period.
             "penalty_available": False,
             "penalty_start_date": False,
             "penalty_invoice_id": False,
+            "penalty_invoice_ids": [Command.clear()],
+            "penalty_last_invoice_date": False,
         })
         self._sync_access_credentials()
         self._post_history(_("Locker Renewed"), [
@@ -837,7 +893,7 @@ class LockerAllocation(models.Model):
         if self.state not in ("renewal_pending", "expired"):
             raise ValidationError(_("Locker renewal is not available."))
 
-        if self.penalty_invoice_id and self.penalty_invoice_id.payment_state != "paid":
+        if self._get_unpaid_penalty_invoices():
             raise ValidationError(
                 _("Locker cannot be renewed until the penalty invoice is fully paid.")
             )
@@ -857,6 +913,8 @@ class LockerAllocation(models.Model):
                 "penalty_available": False,
                 "penalty_start_date": False,
                 "penalty_invoice_id": False,
+                "penalty_invoice_ids": [Command.clear()],
+                "penalty_last_invoice_date": False,
             })
             self._sync_access_credentials()
             self._post_history(_("Locker Renewed"), [
@@ -882,7 +940,6 @@ class LockerAllocation(models.Model):
             renewal_invoice = self.env["account.move"]
 
         if not renewal_invoice:
-            # Invoice of the same renewal created before the link existed (never an old paid one).
             renewal_invoice = self.env["account.move"].search([
                 ("invoice_origin", "=", renewal_origin),
                 ("move_type", "=", "out_invoice"),
@@ -964,12 +1021,10 @@ class AccountMove(models.Model):
         )
         if not paid_invoices:
             return
-        # First payment of a draft allocation -> Allocated directly.
         self.env["locker.allocation"].sudo().search([
             ("invoice_id", "in", paid_invoices.ids),
             ("state", "=", "draft"),
         ])._allocate_from_paid_invoice()
-        # Only the open renewal invoice of an allocation renews it (matched by link, not by name).
         allocations = self.env["locker.allocation"].sudo().search([
             ("renewal_invoice_id", "in", paid_invoices.ids),
             ("state", "in", ("renewal_pending", "expired")),

@@ -1400,56 +1400,391 @@
 
 
 
+
+/* ============================================================
+   ====== FINAL LAYOUT - FITS THE SCREEN, NO SCROLL BAR ======
+   The kiosk is exactly as tall as the visible area. Header, left card
+   and "Currently Checked In" card share that height; sizes shrink with
+   the screen height (clamp / vh) so nothing is cut and nothing scrolls.
+   The people list keeps working by touch / mouse wheel, without a bar.
+   ============================================================ */
 .locker-kiosk {
-    overflow: hidden !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    min-height: 0 !important;
-}
-
-.locker-kiosk .locker-checkin-layout {
     height: 100% !important;
+    max-height: calc(100vh - var(--o-navbar-height, 46px)) !important;
+    max-height: calc(100dvh - var(--o-navbar-height, 46px)) !important;
     min-height: 0 !important;
-    overflow: hidden !important;
-}
-
-.locker-kiosk .locker-current-column {
-    height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-}
-
-.locker-kiosk .locker-current-card {
-    height: 100% !important;
-    min-height: 0 !important;
+    flex: 1 1 0 !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+    padding: clamp(6px, 1.6vh, 18px) clamp(6px, 2vw, 20px) !important;
 }
 
-/* ✅ ONLY THIS SCROLLS */
-.locker-kiosk .locker-current-card .locker-current-list {
+.locker-kiosk .locker-kiosk-header {
+    flex: 0 0 auto !important;
+    margin: 0 0 clamp(4px, 1.2vh, 14px) !important;
+}
+.locker-kiosk .locker-kiosk-header h1 {
+    font-size: clamp(18px, 3.4vh, 30px) !important;
+    margin: 0 0 2px !important;
+}
+.locker-kiosk .locker-kiosk-header p {
+    font-size: clamp(11px, 1.9vh, 14px) !important;
+}
+
+/* ----- LAYOUT: two columns (desktop) / stacked (tablet & phone) ----- */
+.locker-kiosk .locker-checkin-layout {
+    flex: 1 1 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: 1250px;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    gap: clamp(8px, 1.6vh, 20px) !important;
+    align-items: stretch !important;
+    padding: 0 !important;
+}
+.locker-kiosk .locker-checkin-column,
+.locker-kiosk .locker-checkin-column:first-child,
+.locker-kiosk .locker-current-column {
+    display: flex !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ----- CARDS ----- */
+.locker-kiosk .locker-checkin-card,
+.locker-kiosk .locker-checkin-column:first-child .locker-checkin-card,
+.locker-kiosk .locker-current-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center;
+    justify-content: safe center;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    padding: clamp(8px, 2vh, 28px) clamp(10px, 2vw, 32px) !important;
+    margin: 0 !important;
+}
+.locker-kiosk .locker-checkin-card > * {
+    flex-shrink: 0;
+}
+
+/* ----- compact content ----- */
+.locker-kiosk .locker-auth-icon {
+    width: clamp(34px, 7vh, 60px);
+    height: clamp(34px, 7vh, 60px);
+    margin-bottom: clamp(4px, 1vh, 12px);
+}
+.locker-kiosk .locker-auth-icon i {
+    font-size: clamp(16px, 3.2vh, 28px);
+}
+.locker-kiosk .locker-authentication-card h2,
+.locker-kiosk .locker-person-selection-card h2,
+.locker-kiosk .locker-result-card h2 {
+    font-size: clamp(16px, 2.8vh, 24px);
+    margin-bottom: clamp(2px, .6vh, 6px);
+}
+.locker-kiosk .locker-authentication-card p,
+.locker-kiosk .locker-result-card > p {
+    font-size: clamp(11px, 1.8vh, 14px);
+    margin-bottom: clamp(6px, 1.4vh, 18px);
+}
+.locker-kiosk .locker-person-search-input,
+.locker-kiosk .locker-authentication-input {
+    height: clamp(34px, 6vh, 48px);
+    margin-bottom: clamp(6px, 1.2vh, 12px);
+}
+.locker-kiosk .locker-authenticate-button,
+.locker-kiosk .locker-action-button {
+    height: clamp(34px, 6vh, 48px);
+    flex: 0 0 auto;
+}
+.locker-kiosk .locker-check-button {
+    height: clamp(36px, 6vh, 46px);
+}
+.locker-kiosk .locker-reset-button {
+    margin-top: clamp(4px, 1vh, 10px);
+}
+.locker-kiosk .locker-message {
+    margin-top: clamp(4px, 1vh, 10px);
+    padding: clamp(4px, .8vh, 8px) 10px;
+    font-size: clamp(11px, 1.7vh, 13px);
+}
+.locker-kiosk .locker-information {
+    margin: clamp(4px, 1vh, 10px) 0 clamp(6px, 1.4vh, 14px);
+}
+.locker-kiosk .locker-info-row {
+    min-height: clamp(24px, 4.2vh, 36px);
+    padding: clamp(3px, .8vh, 8px) 14px;
+}
+.locker-kiosk .locker-info-row span,
+.locker-kiosk .locker-info-row strong {
+    font-size: clamp(11px, 1.8vh, 13px);
+}
+.locker-kiosk .locker-success-icon i {
+    font-size: clamp(26px, 6vh, 46px);
+}
+.locker-kiosk .locker-authenticated-person h2 {
+    font-size: clamp(15px, 2.6vh, 22px);
+}
+.locker-kiosk .locker-access-info {
+    margin-top: clamp(8px, 2vh, 24px);
+    padding: clamp(6px, 1.2vh, 15px);
+}
+
+/* person selection list: takes the free space, no scroll bar */
+.locker-kiosk .locker-person-list {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    height: auto !important;
     max-height: none !important;
 }
-
-.locker-kiosk .locker-checkin-column:first-child {
-    overflow: hidden !important;
-}
-.locker-kiosk .locker-checkin-column:first-child .locker-checkin-card {
-    overflow: hidden !important;
+.locker-kiosk .locker-person-option {
+    min-height: clamp(42px, 8vh, 62px);
+    margin-bottom: clamp(4px, 1vh, 10px);
 }
 
-.locker-kiosk .locker-current-person-footer {
-    display: none !important;
+/* credential section (PIN / RFID / QR / Face): scanner takes the free height */
+.locker-kiosk .locker-credential-section {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    margin-top: clamp(4px, 1vh, 12px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center;
+    justify-content: safe center;
 }
-.locker-kiosk .locker-current-person-companions {
-    display: none !important;
+.locker-kiosk .locker-credential-section > * {
+    flex-shrink: 0;
 }
+.locker-kiosk .locker-method-title {
+    font-size: clamp(15px, 2.6vh, 20px);
+    margin-bottom: clamp(2px, .6vh, 6px);
+}
+.locker-kiosk .locker-method-icon {
+    width: clamp(34px, 6vh, 52px);
+    height: clamp(34px, 6vh, 52px);
+    margin-bottom: clamp(4px, 1vh, 10px);
+}
+.locker-kiosk .locker-credential-section > p {
+    font-size: clamp(11px, 1.8vh, 13px);
+    margin-bottom: clamp(4px, 1vh, 14px);
+}
+.locker-kiosk .locker-credential-card .locker-face-scanner,
+.locker-kiosk .locker-credential-card .locker-qr-scanner {
+    flex: 1 1 120px !important;
+    flex-shrink: 1 !important;
+    width: 100% !important;
+    max-width: 420px !important;
+    height: auto !important;
+    min-height: 60px !important;
+    max-height: 300px !important;
+    margin: clamp(4px, 1vh, 12px) auto clamp(4px, 1vh, 10px) !important;
+}
+.locker-kiosk .locker-face-video {
+    height: 100%;
+}
+.locker-kiosk .locker-face-status,
+.locker-kiosk .locker-qr-status {
+    margin: clamp(2px, .6vh, 6px) 0 clamp(4px, 1vh, 12px) !important;
+    font-size: clamp(11px, 1.7vh, 13px) !important;
+}
+
+/* companion card */
+.locker-kiosk .locker-companion-card {
+    min-height: 0 !important;
+}
+.locker-kiosk .locker-companion-icon {
+    width: clamp(34px, 7vh, 64px);
+    height: clamp(34px, 7vh, 64px);
+    margin-bottom: clamp(4px, 1vh, 14px);
+}
+.locker-kiosk .locker-companion-description {
+    margin: clamp(2px, .6vh, 8px) 0 clamp(6px, 2vh, 25px) !important;
+    font-size: clamp(11px, 1.8vh, 14px) !important;
+}
+.locker-kiosk .locker-companion-counter {
+    margin-bottom: clamp(6px, 1.6vh, 20px);
+}
+.locker-kiosk .locker-companion-btn {
+    width: clamp(32px, 6vh, 46px) !important;
+    height: clamp(32px, 6vh, 46px) !important;
+}
+.locker-kiosk .locker-companion-count strong {
+    font-size: clamp(18px, 3.6vh, 28px) !important;
+}
+.locker-kiosk .locker-companion-total {
+    min-height: clamp(28px, 5vh, 44px) !important;
+    margin-bottom: clamp(6px, 1.4vh, 18px) !important;
+}
+.locker-kiosk .locker-companion-confirm {
+    height: clamp(34px, 6vh, 44px) !important;
+}
+
+/* ----- CURRENTLY CHECKED IN (right card) ----- */
+.locker-kiosk .locker-current-card {
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+.locker-kiosk .locker-current-header {
+    flex: 0 0 auto;
+    margin-bottom: clamp(6px, 1.2vh, 16px) !important;
+}
+.locker-kiosk .locker-current-header h2 {
+    font-size: clamp(15px, 2.6vh, 22px) !important;
+}
+.locker-kiosk .locker-current-header p {
+    font-size: clamp(10px, 1.5vh, 12px) !important;
+}
+.locker-kiosk .locker-current-search {
+    flex: 0 0 auto;
+    height: clamp(32px, 5.4vh, 44px) !important;
+    margin-bottom: clamp(6px, 1.2vh, 12px) !important;
+}
+.locker-kiosk .locker-current-card .locker-current-list {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* no scroll bars anywhere on this screen */
+.locker-kiosk,
+.locker-kiosk * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+.locker-kiosk::-webkit-scrollbar,
+.locker-kiosk *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* ----- TABLET / PHONE: cards stacked, left card shrinks, list gets the rest ----- */
+@media (max-width: 900px) {
+    .locker-kiosk .locker-checkin-layout {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .locker-kiosk .locker-checkin-column:first-child {
+        flex: 0 1 auto !important;
+    }
+    .locker-kiosk .locker-checkin-column.locker-current-column {
+        flex: 1 1 0 !important;
+        min-height: clamp(110px, 22vh, 220px) !important;
+    }
+}
+
+/* very short screens: drop the decorative info block */
+@media (max-height: 680px) {
+    .locker-kiosk .locker-access-info,
+    .locker-kiosk .locker-auth-icon {
+        display: none !important;
+    }
+}
+
+.locker-kiosk .locker-current-person-footer,
+.locker-kiosk .locker-current-person-companions,
 .locker-kiosk .locker-pagination {
     display: none !important;
+}
+
+
+/* ============================================================
+   ====== MOBILE / TABLET (<= 900px): PAGE SCROLLS ======
+   Desktop keeps the fixed, scroll-bar free layout above. On a phone the
+   content is taller than the screen, so the kiosk itself scrolls (touch
+   / wheel, thin scroll bar) and nothing is squeezed or hidden.
+   ============================================================ */
+@media (max-width: 900px) {
+    .locker-kiosk {
+        height: 100% !important;
+        max-height: calc(100vh - var(--o-navbar-height, 46px)) !important;
+        max-height: calc(100dvh - var(--o-navbar-height, 46px)) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        padding: 12px 10px 24px !important;
+        scrollbar-width: thin !important;
+        -ms-overflow-style: auto !important;
+    }
+    .locker-kiosk::-webkit-scrollbar {
+        display: block !important;
+        width: 5px !important;
+    }
+    .locker-kiosk::-webkit-scrollbar-thumb {
+        background: rgba(113, 75, 103, 0.35);
+        border-radius: 4px;
+    }
+    .locker-kiosk .locker-kiosk-header {
+        flex: 0 0 auto !important;
+    }
+    .locker-kiosk .locker-kiosk-header h1 {
+        font-size: 22px !important;
+    }
+    .locker-kiosk .locker-kiosk-header p {
+        font-size: 13px !important;
+    }
+    .locker-kiosk .locker-checkin-layout {
+        flex: 0 0 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        gap: 14px !important;
+    }
+    .locker-kiosk .locker-checkin-column,
+    .locker-kiosk .locker-checkin-column:first-child,
+    .locker-kiosk .locker-checkin-column.locker-current-column,
+    .locker-kiosk .locker-current-column {
+        flex: 0 0 auto !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+    .locker-kiosk .locker-checkin-card,
+    .locker-kiosk .locker-checkin-column:first-child .locker-checkin-card,
+    .locker-kiosk .locker-current-card {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 16px 14px !important;
+    }
+    .locker-kiosk .locker-current-card .locker-current-list {
+        flex: 0 0 auto !important;
+        max-height: 340px !important;
+        overflow-y: auto !important;
+    }
+    .locker-kiosk .locker-person-list {
+        max-height: 320px !important;
+        overflow-y: auto !important;
+    }
+    .locker-kiosk .locker-credential-card .locker-face-scanner,
+    .locker-kiosk .locker-credential-card .locker-qr-scanner {
+        flex: 0 0 auto !important;
+        height: 240px !important;
+        max-height: none !important;
+    }
+    .locker-kiosk .locker-auth-icon {
+        display: flex !important;
+    }
+    .locker-kiosk .locker-access-info {
+        display: block !important;
+    }
 }

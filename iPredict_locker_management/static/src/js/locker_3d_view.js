@@ -931,14 +931,14 @@ const body = new THREE.Mesh(
 }
 
         if (this.isOrbiting) {
-            const dx = (e.clientX - this.lastX) * 0.005;
-            const dy = (e.clientY - this.lastY) * 0.005;
+            const dx = (e.clientX - this.lastX) * 0.01;
+            const dy = (e.clientY - this.lastY) * 0.01;
             this.lastX = e.clientX;
             this.lastY = e.clientY;
             const target = this.orbitTarget;
             const radius = this.camera.position.distanceTo(target);
-            const theta = Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z) + dx;
-            let phi = Math.acos((this.camera.position.y - target.y) / radius) + dy;
+            const theta = Math.atan2(this.camera.position.x - target.x, this.camera.position.z - target.z) - dx;
+            let phi = Math.acos((this.camera.position.y - target.y) / radius) - dy;
             phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, phi));
             this.camera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
             this.camera.position.y = target.y + radius * Math.cos(phi);

@@ -11,6 +11,7 @@ class ResConfigSettings(models.TransientModel):
     reserved_locker_color = fields.Char(string="Reserved Locker Color", related="company_id.reserved_locker_color", readonly=False)
     locker_reservation_hours = fields.Integer(string="Locker Reservation Hours", related="company_id.locker_reservation_hours", readonly=False)
     renewal_reminder_days = fields.Integer(string="Renewal Reminder Days", related="company_id.renewal_reminder_days", readonly=False)
+    locker_auth_lock_seconds = fields.Integer(string="Authentication Lock Time (seconds)", related="company_id.locker_auth_lock_seconds", readonly=False)
     enable_3d_locker_view = fields.Boolean(
         string="Enable 3D Locker View",
         related="company_id.enable_3d_locker_view",

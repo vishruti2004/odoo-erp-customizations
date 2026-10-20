@@ -173,7 +173,7 @@
                                            inputmode="numeric"
                                            t-att-value="state.authentication"
                                            t-on-input="onInputChange"
-                                           t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                           t-on-keydown="onCredentialKeydown"
                                            autocomplete="off"/>
                                     <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
@@ -199,7 +199,7 @@
                                            placeholder="Scan RFID Card"
                                            t-att-value="state.authentication"
                                            t-on-input="onInputChange"
-                                           t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                           t-on-keydown="onCredentialKeydown"
                                            autocomplete="off"/>
                                     <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
@@ -303,7 +303,7 @@
                                            placeholder="Scan / Enter Credential"
                                            t-att-value="state.authentication"
                                            t-on-input="onInputChange"
-                                           t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; authenticate()"
+                                           t-on-keydown="onCredentialKeydown"
                                            autocomplete="off"/>
                                     <button type="button" class="btn btn-primary locker-action-button" t-on-click="authenticate" t-att-disabled="state.loading">
                                         <t t-if="state.loading">
@@ -375,7 +375,7 @@
                                    inputmode="numeric"
                                    t-att-value="state.otp"
                                    t-on-input="onOTPChange"
-                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; verifyOTP()"
+                                   t-on-keydown="onOtpKeydown"
                                    autocomplete="off"/>
                             <button type="button" class="btn btn-primary locker-action-button" t-on-click="verifyOTP" t-att-disabled="state.loading">
                                 <t t-if="state.loading">
@@ -405,7 +405,7 @@
                                 You have already used the maximum number of OTP attempts.
                             </p>
                             <div class="locker-message danger">
-                                <t t-esc="state.message or 'Please try again after 10 minutes.'" />
+                                <t t-esc="state.message or 'Please try again later.'" />
                             </div>
                             <p>
                                 Please wait until the lock period ends before trying again.

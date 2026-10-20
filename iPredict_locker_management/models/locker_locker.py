@@ -67,6 +67,24 @@ class LockerLocker(models.Model):
             allocations = rec.allocation_ids.filtered(lambda a: a.state in active_states)
             rec.current_allocation_id = allocations.sorted("id", reverse=True)[:1]
 
+    def write(self, vals):
+        result = super().write(vals)
+        if vals.get("status") == "available":
+            self._auto_check_out_people()
+        return result
+
+    def _auto_check_out_people(self):
+        """Locker became available -> everybody still checked in on it is checked out."""
+        accesses = self.env["locker.access"].sudo().search([
+            ("locker_id", "in", self.ids),
+            ("state", "=", "checked_in"),
+        ])
+        for access in accesses:
+            access.action_check_out()
+            access.message_post(
+                body=_("Automatically checked out because the locker became available.")
+            )
+
     def action_view_allocations(self):
         self.ensure_one()
 
