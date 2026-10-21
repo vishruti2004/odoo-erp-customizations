@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="preparation_display_view_form_kitchen" model="ir.ui.view">
+        <field name="name">preparation.display.form.kitchen</field>
+        <field name="model">pos.prep.display</field>
+        <field name="inherit_id" ref="pos_enterprise.preparation_display_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="kitchen_controls" string="Kitchen Display Controls">
+                    <field name="kitchen_advanced" invisible="1"/>
+                    <div class="alert alert-info" role="alert" invisible="kitchen_advanced">
+                        Enable "Advanced Kitchen" on a linked Point of Sale for these options to apply.
+                    </div>
+                    <group>
+                        <group string="Layout">
+                            <field name="layout_mode"/>
+                            <field name="ticket_density"/>
+                            <field name="card_columns"/>
+                            <field name="default_zoom"/>
+                        </group>
+                        <group string="Information shown">
+                            <field name="show_station"/>
+                            <field name="show_chef"/>
+                            <field name="show_priority"/>
+                            <field name="show_readiness"/>
+                            <field name="show_workload"/>
+                            <field name="change_highlight_minutes"/>
+                        </group>
+                        <group string="Interaction">
+                            <field name="enable_shortcuts"/>
+                            <field name="chef_idle_minutes"/>
+                        </group>
+                    </group>
+                    <field name="station_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

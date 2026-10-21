@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="kitchen_station_view_list" model="ir.ui.view">
+        <field name="name">pos.kitchen.station.list</field>
+        <field name="model">pos.kitchen.station</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="prep_display_id"/>
+                <field name="category_ids" widget="many2many_tags"/>
+                <field name="workload_limit"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="kitchen_station_view_form" model="ir.ui.view">
+        <field name="name">pos.kitchen.station.form</field>
+        <field name="model">pos.kitchen.station</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Grill"/></h1>
+                    </div>
+                    <group>
+                        <group string="Routing">
+                            <field name="code"/>
+                            <field name="prep_display_id"/>
+                            <field name="pos_config_ids" widget="many2many_tags" placeholder="All Points of Sale"
+                                   options="{'no_create': True}"/>
+                            <field name="category_ids" widget="many2many_tags" options="{'no_create': True}" required="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Settings">
+                            <field name="sequence"/>
+                            <field name="color" widget="color"/>
+                            <field name="default_target_minutes"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chefs" name="chefs">
+                            <field name="chef_ids" widget="many2many_tags" options="{'no_quick_create': True}"
+                                   placeholder="Select the employees working on this station"/>
+                        </page>
+                        <page string="Workload" name="workload">
+                            <p class="text-muted">
+                                How much the station can handle at once. Orders beyond the limit (in arrival order)
+                                show "Overflow" on the screen and can be moved with one button to another station
+                                that prepares the same categories.
+                            </p>
+                            <group>
+                                <field name="workload_metric" widget="radio"/>
+                                <field name="workload_limit" string="Max minutes"
+                                       invisible="workload_metric != 'time'"/>
+                                <field name="workload_limit" string="Max items"
+                                       invisible="workload_metric != 'items'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="kitchen_station_view_search" model="ir.ui.view">
+        <field name="name">pos.kitchen.station.search</field>
+        <field name="model">pos.kitchen.station</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="prep_display_id"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="kitchen_station_action" model="ir.actions.act_window">
+        <field name="name">Kitchen Stations</field>
+        <field name="res_model">pos.kitchen.station</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

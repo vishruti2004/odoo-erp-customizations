@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_kitchen_station_user,pos.kitchen.station user,model_pos_kitchen_station,point_of_sale.group_pos_user,1,0,0,0
+access_kitchen_station_manager,pos.kitchen.station manager,model_pos_kitchen_station,point_of_sale.group_pos_manager,1,1,1,1
+access_kitchen_chef_user,pos.kitchen.chef user,model_pos_kitchen_chef,point_of_sale.group_pos_user,1,0,0,0
+access_kitchen_chef_manager,pos.kitchen.chef manager,model_pos_kitchen_chef,point_of_sale.group_pos_manager,1,1,1,1
+access_kitchen_performance_user,pos.kitchen.performance user,model_pos_kitchen_performance,point_of_sale.group_pos_user,1,0,0,0
+access_kitchen_performance_manager,pos.kitchen.performance manager,model_pos_kitchen_performance,point_of_sale.group_pos_manager,1,0,0,1
+access_kitchen_assignment_history_user,pos.kitchen.assignment.history user,model_pos_kitchen_assignment_history,point_of_sale.group_pos_user,1,0,0,0
+access_kitchen_item_history_user,pos.kitchen.item.history user,model_pos_kitchen_item_history,point_of_sale.group_pos_user,1,0,0,0

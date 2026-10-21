@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.KitchenStationDialog">
+        <Dialog title="props.title" size="'md'">
+            <div class="d-flex flex-column gap-2">
+                <button t-foreach="props.stations" t-as="station" t-key="station.id" type="button"
+                        class="btn btn-lg text-start"
+                        t-att-class="state.selected === station.id ? 'btn-primary' : 'btn-outline-secondary'"
+                        t-on-click="() => this.select(station.id)">
+                    <t t-esc="station.name" />
+                </button>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-on-click="onConfirm">Apply</button>
+                <button class="btn btn-secondary btn-lg" t-on-click="props.close">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+
+    <t t-name="pos_kitchen_screen.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//Dropdown//div[hasclass('pos-burger-menu-items')]//DropdownItem" position="before">
+            <DropdownItem t-if="kitchenOverrideAvailable" onSelected="() => this.onKitchenStationClick()">
+                <span>Kitchen station for selected line</span>
+            </DropdownItem>
+        </xpath>
+    </t>
+
+   
+    <t t-name="pos_kitchen_screen.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//tr[hasclass('order-row')]/td[last()]" position="before">
+            <td class="align-middle text-center o_kitchen_priority_cell">
+                <button t-if="kitchenPriorityAvailable"
+                        type="button"
+                        t-att-class="'btn btn-sm o_kitchen_priority_btn o_kitchen_priority_' + (order.kitchen_priority || 'medium')"
+                        t-att-title="'Current priority: ' + this.pos.kitchenPriorityLabel(order)"
+                        t-on-click.stop="() => this.onKitchenPriority(order)">
+                    <i class="fa fa-sliders me-1" />
+                    <span t-esc="this.pos.kitchenPriorityLabel(order)" />
+                    <i class="fa fa-chevron-down ms-1" />
+                </button>
+            </td>
+        </xpath>
+    </t>
+
+</templates>

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="kitchen_performance_view_list" model="ir.ui.view">
+        <field name="name">pos.kitchen.performance.list</field>
+        <field name="model">pos.kitchen.performance</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" decoration-danger="is_delayed">
+                <field name="sent_at"/>
+                <field name="order_name"/>
+                <field name="product_id"/>
+                <field name="qty" sum="Qty"/>
+                <field name="station_id"/>
+                <field name="chef_id" optional="show"/>
+                <field name="prep_seconds" widget="duration_time" optional="show"/>
+                <field name="service_seconds" widget="duration_time" optional="show"/>
+                <field name="target_seconds" widget="duration_time" optional="hide"/>
+                <field name="delay_seconds" widget="duration_time"/>
+                <field name="is_delayed" column_invisible="1"/>
+                <field name="reprep_count" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="kitchen_performance_view_form" model="ir.ui.view">
+        <field name="name">pos.kitchen.performance.form</field>
+        <field name="model">pos.kitchen.performance</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="order_name"/>
+                            <field name="pos_order_id"/>
+                            <field name="product_id"/>
+                            <field name="qty"/>
+                            <field name="cancelled_qty"/>
+                            <field name="priority_at_send"/>
+                        </group>
+                        <group>
+                            <field name="config_id"/>
+                            <field name="session_id"/>
+                            <field name="station_id"/>
+                            <field name="chef_id"/>
+                            <field name="reprep_count"/>
+                        </group>
+                        <group string="Timestamps">
+                            <field name="sent_at"/>
+                            <field name="started_at"/>
+                            <field name="ready_at"/>
+                            <field name="served_at"/>
+                        </group>
+                        <group string="Durations">
+                            <field name="prep_seconds" widget="duration_time"/>
+                            <field name="service_seconds" widget="duration_time"/>
+                            <field name="target_seconds" widget="duration_time"/>
+                            <field name="delay_seconds" widget="duration_time"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="kitchen_performance_view_pivot" model="ir.ui.view">
+        <field name="name">pos.kitchen.performance.pivot</field>
+        <field name="model">pos.kitchen.performance</field>
+        <field name="arch" type="xml">
+            <pivot string="Kitchen Performance" sample="1">
+                <field name="station_id" type="row"/>
+                <field name="prep_seconds" type="measure"/>
+                <field name="service_seconds" type="measure"/>
+                <field name="delay_seconds" type="measure"/>
+                <field name="delayed_count" type="measure"/>
+                <field name="qty" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="kitchen_performance_view_graph" model="ir.ui.view">
+        <field name="name">pos.kitchen.performance.graph</field>
+        <field name="model">pos.kitchen.performance</field>
+        <field name="arch" type="xml">
+            <graph string="Kitchen Performance" type="bar" sample="1">
+                <field name="station_id" type="row"/>
+                <field name="prep_seconds" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="kitchen_performance_view_search" model="ir.ui.view">
+        <field name="name">pos.kitchen.performance.search</field>
+        <field name="model">pos.kitchen.performance</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_name"/>
+                <field name="product_id"/>
+                <field name="station_id"/>
+                <field name="chef_id"/>
+                <filter name="delayed" string="Delayed" domain="[('is_delayed', '=', True)]"/>
+                <filter name="reprepared" string="Re-prepared" domain="[('reprep_count', '&gt;', 0)]"/>
+                <separator/>
+                <filter name="last_7" string="Last 7 days" domain="[('sent_at', '&gt;=', '-7d')]"/>
+                <filter name="last_30" string="Last 30 days" domain="[('sent_at', '&gt;=', '-30d')]"/>
+                <separator/>
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_station" string="Station" context="{'group_by': 'station_id'}"/>
+                    <filter name="group_chef" string="Chef" context="{'group_by': 'chef_id'}"/>
+                    <filter name="group_session" string="Session" context="{'group_by': 'session_id'}"/>
+                    <filter name="group_hour" string="Hour" context="{'group_by': 'sent_hour'}"/>
+                    <filter name="group_day" string="Day" context="{'group_by': 'sent_at:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="kitchen_performance_action" model="ir.actions.act_window">
+        <field name="name">Kitchen Performance</field>
+        <field name="res_model">pos.kitchen.performance</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="context">{'search_default_last_30': 1, 'search_default_group_station': 1}</field>
+    </record>
+
+    <record id="kitchen_item_history_view_list" model="ir.ui.view">
+        <field name="name">pos.kitchen.item.history.list</field>
+        <field name="model">pos.kitchen.item.history</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="changed_at"/>
+                <field name="pos_order_id"/>
+                <field name="product_id"/>
+                <field name="event_type"/>
+                <field name="old_quantity"/>
+                <field name="new_quantity"/>
+                <field name="changed_by_chef_id"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="kitchen_item_history_action" model="ir.actions.act_window">
+        <field name="name">Item Changes</field>
+        <field name="res_model">pos.kitchen.item.history</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="kitchen_assignment_history_view_list" model="ir.ui.view">
+        <field name="name">pos.kitchen.assignment.history.list</field>
+        <field name="model">pos.kitchen.assignment.history</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="changed_at"/>
+                <field name="pos_order_id"/>
+                <field name="product_id"/>
+                <field name="move_type"/>
+                <field name="previous_chef_id"/>
+                <field name="new_chef_id"/>
+                <field name="previous_station_id"/>
+                <field name="new_station_id"/>
+                <field name="changed_by_chef_id"/>
+                <field name="reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="kitchen_assignment_history_action" model="ir.actions.act_window">
+        <field name="name">Assignments</field>
+        <field name="res_model">pos.kitchen.assignment.history</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

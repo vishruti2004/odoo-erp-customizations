@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Multi-company rules -->
+    <record id="rule_kitchen_station_company" model="ir.rule">
+        <field name="name">Kitchen station: multi-company</field>
+        <field name="model_id" ref="model_pos_kitchen_station"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_kitchen_chef_company" model="ir.rule">
+        <field name="name">Kitchen chef: multi-company</field>
+        <field name="model_id" ref="model_pos_kitchen_chef"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+   
+    <record id="rule_kitchen_performance_company" model="ir.rule">
+        <field name="name">Kitchen performance: multi-company</field>
+        <field name="model_id" ref="model_pos_kitchen_performance"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+</odoo>

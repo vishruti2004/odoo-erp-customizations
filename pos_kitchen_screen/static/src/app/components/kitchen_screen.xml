@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!--  Dialogs -->
+    <t t-name="pos_kitchen_screen.SelectDialog">
+        <Dialog title="props.title" size="'md'">
+            <div class="o_kitchen_select d-flex flex-column gap-2">
+                <button t-foreach="props.options" t-as="opt" t-key="opt.id" type="button"
+                        class="btn btn-lg text-start d-flex justify-content-between align-items-center"
+                        t-att-class="state.selected === opt.id ? 'btn-primary' : 'btn-outline-secondary'"
+                        t-att-disabled="opt.disabled"
+                        t-on-click="() => this.select(opt.id)">
+                    <span t-esc="opt.label" />
+                    <small t-if="opt.sub" t-esc="opt.sub" />
+                </button>
+                <textarea t-if="props.withReason"
+                          t-model="state.reason"
+                          class="form-control mt-2"
+                          rows="2"
+                          placeholder="Reason (optional)" />
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary btn-lg" t-att-disabled="state.selected === null or state.busy" t-on-click="onConfirm">Confirm</button>
+                <button class="btn btn-secondary btn-lg" t-on-click="props.close">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+
+    <t t-name="pos_kitchen_screen.ChefDialog">
+        <Dialog title="'Who is cooking?'" size="'md'">
+            <div class="o_kitchen_select d-flex flex-column gap-2">
+                <button t-foreach="props.chefs" t-as="chef" t-key="chef.id" type="button"
+                        class="btn btn-lg text-start d-flex justify-content-between align-items-center"
+                        t-att-class="props.current and props.current.id === chef.id ? 'btn-primary' : 'btn-outline-secondary'"
+                        t-on-click="() => this.pick(chef)">
+                    <span>
+                        <i class="fa fa-user-circle me-2" />
+                        <t t-esc="chef.name" />
+                    </span>
+                </button>
+                <div t-if="!props.chefs.length" class="text-muted">No chef is configured for this screen.</div>
+            </div>
+            <t t-set-slot="footer">
+                <button t-if="props.current" class="btn btn-outline-danger btn-lg" t-on-click="onLogout">Log out</button>
+                <button class="btn btn-secondary btn-lg" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
+    </t>
+
+    <!-- Main screen -->
+    <t t-name="pos_kitchen_screen.PrepDisplay" t-inherit="pos_enterprise.PrepDisplay" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_pdis_main_screen')]" position="attributes">
+            <attribute name="t-att-class">this.kitchenRootClass</attribute>
+            <attribute name="t-att-style">this.kitchenRootStyle</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('top-buttons')]" position="before">
+            <div class="d-flex align-items-center h-100">
+                <t t-if="prepDisplay.kitchenOption('enable_shortcuts')">
+                    <button class="btn btn-light btn-lg h-100 px-3 rounded-0 border-start"
+                    title="Previous ticket (P)"
+                    t-on-click="() => this.prepDisplay.moveFocus(-1)">
+                        <i class="fa fa-chevron-left" />
+                    </button>
+
+                    <button class="btn btn-light btn-lg h-100 px-3 rounded-0"
+                    title="Next ticket (N)"
+                    t-on-click="() => this.prepDisplay.moveFocus(1)">
+                        <i class="fa fa-chevron-right" />
+                    </button>
+
+                    <button class="btn btn-light btn-lg h-100 px-3 rounded-0"
+                    title="Bump focused ticket (B)"
+                    t-on-click="() => this.prepDisplay.bumpFocused()">
+                        <i class="fa fa-check" />
+                    </button>
+
+                </t>
+
+                <button t-if="prepDisplay.kitchenOption('show_chef')"
+                class="btn btn-light btn-lg h-100 px-4 rounded-0 border-start"
+                t-on-click="() => this.prepDisplay.openChefLogin()">
+                    <i class="fa fa-user-circle pe-0 pe-lg-2" aria-hidden="true" />
+                    <span class="d-none d-lg-inline-block" t-esc="kitchenChefLabel" />
+                </button>
+            </div>
+        </xpath>
+
+        <!-- sidebar: chef and station filters -->
+        <xpath expr="//div[hasclass('o_pdis_time')]" position="after">
+            <div t-if="prepDisplay.kitchenOption('show_chef')" class="o_kitchen_filter_chef">
+                <section class="o_pdis_name_quantity d-flex justify-content-between mt-3 pt-2 pb-1 fs-4 fw-bold">
+                    <span class="name category-name">Chef</span>
+                </section>
+                <hr class="mt-1 mb-2 me-n2" />
+                <t t-foreach="[['all', 'All'], ['mine', 'My tickets'], ['unassigned', 'Unassigned']]" t-as="f" t-key="f[0]">
+                    <div class="d-flex justify-content-between m-0 py-2 border-bottom border-light cursor-pointer"
+                         t-att-class="{ 'product-selected bg-info bg-opacity-25 px-2 me-n2': kitchen.chefFilter === f[0] }"
+                         t-on-click="() => this.setChefFilter(f[0])">
+                        <span class="pe-2" t-esc="f[1]" />
+                    </div>
+                </t>
+            </div>
+            <div t-if="showStationFilter" class="o_kitchen_filter_station">
+                <section class="o_pdis_name_quantity d-flex justify-content-between mt-3 pt-2 pb-1 fs-4 fw-bold">
+                    <span class="name category-name">Station</span>
+                </section>
+                <hr class="mt-1 mb-2 me-n2" />
+                <t t-foreach="prepDisplay.ownStations" t-as="station" t-key="station.id">
+                    <div class="d-flex justify-content-between m-0 py-2 border-bottom border-light cursor-pointer"
+                         t-att-class="{ 'product-selected bg-info bg-opacity-25 px-2 me-n2': kitchen.stationFilter.includes(station.id) }"
+                         t-on-click="() => this.toggleStationFilter(station.id)">
+                        <span class="pe-2" t-esc="station.name" />
+                    </div>
+                </t>
+            </div>
+        </xpath>
+
+        <!-- workload bar above the tickets -->
+        <xpath expr="//div[hasclass('o_pdis_orders')]" position="before">
+            <div t-if="prepDisplay.posHasProducts and prepDisplay.kitchenOption('show_workload') and prepDisplay.workloadView.length" class="o_kitchen_workload d-flex gap-3 px-3 py-2 overflow-auto bg-100 border-bottom">
+                <div t-foreach="prepDisplay.workloadView"
+                     t-as="w"
+                     t-key="w.id"
+                     class="o_kitchen_workload_item flex-shrink-0"
+                     t-att-class="{ 'opacity-75': !w.isOwn }">
+                    <div class="d-flex justify-content-between fw-bold small gap-3">
+                        <span>
+                            <i t-if="w.overloaded" class="fa fa-exclamation-triangle text-danger me-1" />
+                            <t t-esc="w.name" />
+                        </span>
+                        <span t-att-class="w.overloaded ? 'text-danger' : 'text-muted'">
+                            <t t-esc="w.value" />
+                            <t t-if="w.limit"> / 
+                                <t t-esc="w.limit" />
+                            </t> 
+                            <t t-esc="w.unit" />
+                        </span>
+                    </div>
+                    <div class="progress o_kitchen_workload_bar">
+                        <div class="progress-bar" role="progressbar"
+                             t-att-class="w.overloaded ? 'bg-danger' : (w.percent >= 80 ? 'bg-warning' : 'bg-success')"
+                             t-attf-style="width: {{ w.limit ? w.percent : 0 }}%"/>
+                    </div>
+                    <button t-if="w.isOwn and w.overloaded" type="button" class="btn btn-sm btn-danger mt-1 w-100"
+                            t-on-click="() => this.prepDisplay.openOverflowMenu(w)">
+                        <i class="fa fa-share me-1" />Overflow: 
+                        <t t-esc="w.overflow_orders" /> waiting. Move
+                    </button>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+    <!--  Ticket card -->
+    <t t-name="pos_kitchen_screen.Order" t-inherit="pos_enterprise.Order" t-inherit-mode="extension">
+        <xpath expr="//section[hasclass('o_pdis_order_card')]" position="attributes">
+            <attribute name="t-att-style">this.kitchenLaneStyle</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_tracking_number')]" position="after">
+            <div t-if="kitchenShowPriority" class="o_kitchen_priority badge rounded-pill" t-att-class="this.order.priority === 'high' ? 'text-bg-danger' : 'text-bg-secondary'">
+                <i class="fa fa-flag me-1" />
+                <t t-esc="kitchenPriorityLabel" />
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_order_card_header')]" position="after">
+            <div t-if="kitchenShowToolbar" class="o_kitchen_toolbar d-flex flex-wrap align-items-center gap-1 px-2 py-1 bg-100 border-top">
+                <span t-if="kitchenIsOverflow" class="badge text-bg-dark">
+                    <i class="fa fa-hourglass-half me-1" />Overflow, waiting
+                </span>
+                <span t-if="kitchenReadiness" class="badge rounded-pill" t-att-class="kitchenReadiness.cls"
+                      t-att-title="kitchenReadiness.stations.map((s) => s.name + ' ' + s.ready + '/' + s.total).join(' · ')">
+                    <i class="fa fa-cutlery me-1" />
+                    <t t-esc="kitchenReadiness.text" />
+                </span>
+                <t t-if="prepDisplay.kitchenOption('show_chef')">
+                    <span t-if="kitchenChefNames" class="badge text-bg-light border">
+                        <i class="fa fa-user me-1" />
+                        <t t-esc="kitchenChefNames" />
+                    </span>
+                    <t t-if="this.prepDisplay.lastStage.id !== this.props.order.stage.id">
+                        <button t-if="kitchenUnassignedCount" class="btn btn-sm btn-outline-primary" type="button" t-on-click.stop="kitchenTake">Take</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" t-on-click.stop="kitchenOpenAssign">
+                            <i class="fa fa-users" />
+                        </button>
+                    </t>
+                </t>
+            </div>
+        </xpath>
+    </t>
+
+    <t t-name="pos_kitchen_screen.Orderline" t-inherit="pos_enterprise.Orderline" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_pdis_orderline_infos')]" position="after">
+            <div t-if="kitchenMetaVisible" class="o_kitchen_line_meta d-flex flex-wrap align-items-center gap-1 ms-4 mb-1">
+                <span t-if="kitchenChangeBadge" class="badge" t-att-class="kitchenChangeBadge.cls" t-esc="kitchenChangeBadge.label" />
+                <span t-if="kitchenReprepCount" class="badge text-bg-danger" title="Re-preparations">
+                    <i class="fa fa-repeat me-1" />
+                    <t t-esc="kitchenReprepCount" />
+                </span>
+                <span t-if="kitchenMovedFrom" class="badge text-bg-dark">
+                    <i class="fa fa-share me-1" />from 
+                    <t t-esc="kitchenMovedFrom" />
+                </span>
+                <span t-if="kitchenStationName" class="badge text-bg-secondary">
+                    <i class="fa fa-fire me-1" />
+                    <t t-esc="kitchenStationName" />
+                </span>
+                <span t-if="kitchenChef" class="badge text-bg-light border o_kitchen_chef_chip" t-on-click.stop="kitchenAssign">
+                    <i class="fa fa-user me-1" />
+                    <t t-esc="kitchenChef.name" />
+                </span>
+                <button t-if="kitchenCanTake" class="btn btn-sm btn-outline-primary" type="button" t-on-click.stop="kitchenTake">Take</button>
+                <button t-if="kitchenCanMove"
+                        class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        title="Move to another station"
+                        t-on-click.stop="kitchenMove">
+                    <i class="fa fa-exchange" />
+                </button>
+                <button t-if="kitchenCanReprep" class="btn btn-sm btn-outline-danger" type="button" t-on-click.stop="kitchenReprep">
+                    <i class="fa fa-repeat me-1" />Re-prepare
+                </button>
+            </div>
+        </xpath>
+    </t>
+</templates>
