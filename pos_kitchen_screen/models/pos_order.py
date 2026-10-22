@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 READINESS = [
     ("no_items", "No kitchen items"), ("in_progress", "In progress"),
@@ -10,8 +10,8 @@ class PosOrder(models.Model):
     _inherit = "pos.order"
 
     kitchen_priority = fields.Selection(
-        [("low", "Low"), ("medium", "Medium"), ("high", "High")], default="medium", required=True,
-        help="Chosen at the Point of Sale. The kitchen screens show high priority orders first.")
+        [("low", "Low"), ("medium", "Medium"), ("high", "High")], default="medium",
+        help="Medium unless the cashier changes it on the Orders screen. The kitchen shows high priority orders first.")
     prep_order_ids = fields.One2many("pos.prep.order", "pos_order_id", string="Preparation Tickets")
     kitchen_readiness = fields.Selection(
         READINESS, compute="_compute_kitchen_readiness", store=True, default="no_items")
@@ -116,10 +116,12 @@ class PosOrder(models.Model):
         after = Line.search(domain)
         new_lines = after - before
         new_lines._kitchen_apply_routing()
+        priority = self.kitchen_priority or "medium"
         self.env["pos.prep.order"].search([
-            ("pos_order_id", "=", self.id), ("priority", "!=", self.kitchen_priority),
-        ])._kitchen_apply_priority(self.kitchen_priority)
+            ("pos_order_id", "=", self.id), ("priority", "!=", priority),
+        ])._kitchen_apply_priority(priority)
         self._kitchen_track_changes(after, new_lines, snapshot, live_qty, had_tickets)
+        self._kitchen_merge_into_open_ticket(before, new_lines)
         self._kitchen_after_state_change(readiness_before)
 
         if result.get("change") and new_lines:
@@ -128,6 +130,49 @@ class PosOrder(models.Model):
             for display in states.stage_id.prep_display_id - native:
                 display._send_load_orders_message(result.get("sound"), result.get("notification"), self.id)
         return result
+
+    def _kitchen_merge_into_open_ticket(self, before, new_lines):
+        """Added items join the ticket the kitchen is already working on, instead of opening a new ticket.
+
+        The same product increases the quantity of its line; a new product is added to the ticket.
+        Tickets that are already ready / served are left alone (the new items get a new ticket).
+        """
+        open_tickets = before.prep_order_id.filtered(lambda t: any(
+            s.stage_id.stage_type in ("todo", "in_progress") for s in t.prep_line_ids.state_ids))
+        if not open_tickets or not new_lines:
+            return
+        ticket = open_tickets.sorted("id")[0]
+        now = fields.Datetime.now()
+        new_tickets = new_lines.prep_order_id
+        touched = self.env["pos.prep.line"]
+        for line in new_lines:
+            if line.pos_order_line_id.combo_line_ids or line.pos_order_line_id.combo_parent_id:
+                continue
+            old = ticket.prep_line_ids.filtered(
+                lambda l: l not in new_lines and l.pos_order_line_uuid == line.pos_order_line_uuid
+                and l.quantity - l.cancelled > 0
+                and any(s.stage_id.stage_type in ("todo", "in_progress") for s in l.state_ids))[:1]
+            if old:
+                before_qty = old.quantity - old.cancelled
+                added = line.quantity
+                self.env["pos.kitchen.item.history"].sudo().search(
+                    [("prep_line_id", "=", line.id)]).write({"prep_line_id": old.id})
+                self.env["pos.kitchen.performance"].sudo().search([("prep_line_id", "=", line.id)]).unlink()
+                line.unlink()
+                old.write({
+                    "quantity": old.quantity + added, "last_change_type": "qty_increased", "last_change_at": now,
+                    "change_text": _("%(added)g added (%(old)g to %(new)g)", added=added, old=before_qty, new=before_qty + added),
+                    "change_pending": True,
+                })
+                old._kitchen_sync_performance()
+                touched |= old
+            else:
+                line.write({"prep_order_id": ticket.id})
+                touched |= line
+        new_tickets.filtered(lambda t: not t.prep_line_ids).unlink()
+        # the screens reload the order so the changed quantity shows on the existing ticket
+        for display in touched.state_ids.stage_id.prep_display_id:
+            display._send_load_orders_message(True, None, self.id)
 
     def _kitchen_track_changes(self, after, new_lines, snapshot, live_qty, had_tickets):
         History = self.env["pos.kitchen.item.history"].sudo()
@@ -149,6 +194,13 @@ class PosOrder(models.Model):
                     events.append((line, "new_item", 0.0, line.quantity))
                 else:
                     events.append((line, "qty_increased", previous, previous + line.quantity))
+        texts = {
+            "qty_decreased": lambda o, n: _("Quantity %(old)g to %(new)g", old=o, new=n),
+            "cancelled": lambda o, n: _("Cancelled"),
+            "note_changed": lambda o, n: _("Note changed"),
+            "qty_increased": lambda o, n: _("%g added", n - o),
+            "new_item": lambda o, n: _("New item"),
+        }
         for line, event, old_qty, new_qty in events:
             History.create({
                 "prep_order_id": line.prep_order_id.id, "prep_line_id": line.id, "pos_order_id": self.id,
@@ -156,7 +208,16 @@ class PosOrder(models.Model):
                 "old_quantity": old_qty, "new_quantity": new_qty,
             })
             if had_tickets or event not in ("new_item",):
-                line.write({"last_change_type": event, "last_change_at": now})
+                text = texts[event](old_qty, new_qty)
+                # the chef must acknowledge a change on an item that is still being prepared
+                pending = event in ("qty_decreased", "cancelled", "note_changed") and bool(line.state_ids) \
+                    and not all(s._kitchen_is_ready() for s in line.state_ids)
+                line.write({"last_change_type": event, "last_change_at": now,
+                            "change_text": text, "change_pending": pending})
+                for display in line.state_ids.stage_id.prep_display_id:
+                    display._notify("ITEM_CHANGED", {
+                        "order": line.prep_order_id.order_name, "product": line.product_id.display_name,
+                        "text": text})
         after._kitchen_sync_performance()
 
 

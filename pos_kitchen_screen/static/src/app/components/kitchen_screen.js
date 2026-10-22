@@ -69,7 +69,7 @@ patch(PrepDisplay.prototype, {
         return `--kitchen-cols: ${d.card_columns || 1}; --kitchen-lanes: ${stages};`;
     },
     get kitchenChefLabel() {
-        return this.kitchen.chef ? this.kitchen.chef.name : _t("Chef");
+        return this.kitchen.chef ? this.kitchen.chef.name : _t("Select chef");
     },
     get showStationFilter() {
         return (
@@ -197,7 +197,7 @@ patch(Order.prototype, {
         const posOrder = this.order.pos_order_id;
         const status = Object.values(posOrder?.kitchen_station_status || {});
         if (status.length < 2) {
-            return null; // single station: nothing to coordinate
+            return null; 
         }
         const ready = status.filter((s) => s.total && s.ready === s.total).length;
         const readiness = posOrder.kitchen_readiness;
@@ -225,14 +225,40 @@ patch(Order.prototype, {
         }
         return [...names].join(", ");
     },
+    get kitchenOrderChanged() {
+        const pd = this.prepDisplay;
+        if (!pd.kitchenAdvanced) {
+            return false;
+        }
+        const minutes = pd.kitchenDisplay.change_highlight_minutes;
+        return this.props.order.states.some((state) => {
+            const line = state.prep_line_id;
+            if (line.change_pending) {
+                return true;
+            }
+            return (
+                ["new_item", "qty_increased"].includes(line.last_change_type) &&
+                line.last_change_at &&
+                this.kitchen.now - line.last_change_at.ts < minutes * 60000
+            );
+        });
+    },
     get kitchenUnassignedCount() {
         return this.props.order.states.filter((s) => !s.prep_line_id.assigned_chef_id).length;
+    },
+    get kitchenCanAssign() {
+        return (
+            this.prepDisplay.kitchenOption("show_chef") &&
+            this.prepDisplay.lastStage.id !== this.props.order.stage.id
+        );
     },
     kitchenOpenAssign() {
         this.prepDisplay.openAssignMenu(this.props.order.states);
     },
     kitchenTake() {
-        this.prepDisplay.takeStates(this.props.order.states.filter((s) => !s.prep_line_id.assigned_chef_id));
+        this.prepDisplay.takeStates(
+            this.props.order.states.filter((s) => !s.prep_line_id.assigned_chef_id)
+        );
     },
 });
 
@@ -246,33 +272,38 @@ patch(Orderline.prototype, {
     get kitchenState() {
         return this.props.orderline.stage_id ? this.props.orderline : null;
     },
-    get kitchenChangeBadge() {
+    get kitchenBeingPrepared() {
+        const state = this.kitchenState;
+        return Boolean(state && ["todo", "in_progress"].includes(state.stage_id.stage_type));
+    },
+    get kitchenChangeText() {
         const pd = this.prepDisplay;
-        if (!pd.kitchenAdvanced) {
+        const line = this.preparation_line;
+        if (!pd.kitchenAdvanced || !line.change_text) {
             return null;
         }
-        const line = this.preparation_line;
-        const type = line.last_change_type;
-        if (!type || type === "none" || !line.last_change_at) {
-            return null;
+        if (line.change_pending) {
+            return { text: line.change_text, cls: "o_kitchen_change_pending" };
         }
         const minutes = pd.kitchenDisplay.change_highlight_minutes;
-        if (minutes > 0 && this.kitchen.now - line.last_change_at.ts > minutes * 60000) {
-            return null;
+        const recent =
+            line.last_change_at && this.kitchen.now - line.last_change_at.ts < minutes * 60000;
+        if (recent && ["new_item", "qty_increased"].includes(line.last_change_type)) {
+            return { text: line.change_text, cls: "o_kitchen_change_info" };
         }
-        const map = {
-            new_item: [_t("NEW"), "text-bg-success"],
-            qty_increased: [`+${line.quantity}`, "text-bg-info"],
-            qty_decreased: [`-${line.cancelled}`, "text-bg-warning"],
-            cancelled: [_t("CANCELLED"), "text-bg-danger"],
-            reprep: [_t("RE-PREP"), "text-bg-danger"],
-            note_changed: [_t("NOTE"), "text-bg-primary"],
-        };
-        const entry = map[type];
-        return entry ? { label: entry[0], cls: entry[1] } : null;
+        return null;
+    },
+    get kitchenCanReprep() {
+        const line = this.preparation_line;
+        return Boolean(
+            this.prepDisplay.kitchenAdvanced &&
+                this.kitchenBeingPrepared &&
+                line.change_pending &&
+                line.last_change_type !== "cancelled"
+        );
     },
     get kitchenStationName() {
-        if (!this.prepDisplay.kitchenOption("show_station")) {
+        if (!this.prepDisplay.kitchenOption("show_station") || this.prepDisplay.ownStations.length < 2) {
             return "";
         }
         return this.preparation_line.station_id?.name || "";
@@ -281,7 +312,10 @@ patch(Orderline.prototype, {
         if (!this.prepDisplay.kitchenOption("show_chef")) {
             return null;
         }
-        return this.preparation_line.assigned_chef_id || null;
+        const chef = this.preparation_line.assigned_chef_id;
+        const lines = this.preparation_line.prep_order_id?.prep_line_ids || [];
+        const cooks = new Set(lines.map((l) => l.assigned_chef_id?.id).filter(Boolean));
+        return chef && cooks.size > 1 ? chef : null;
     },
     get kitchenMovedFrom() {
         return this.prepDisplay.kitchenAdvanced ? this.preparation_line.moved_from || "" : "";
@@ -289,49 +323,25 @@ patch(Orderline.prototype, {
     get kitchenReprepCount() {
         return this.prepDisplay.kitchenAdvanced ? this.preparation_line.reprep_count || 0 : 0;
     },
-    get kitchenMetaVisible() {
-        return (
-            this.prepDisplay.kitchenAdvanced &&
-            (this.kitchenChangeBadge ||
-                this.kitchenMovedFrom ||
-                this.kitchenStationName ||
-                this.kitchenChef ||
-                this.kitchenReprepCount ||
-                this.kitchenCanTake ||
-                this.kitchenCanMove ||
-                this.kitchenCanReprep)
-        );
-    },
-    get kitchenCanTake() {
-        const state = this.kitchenState;
-        return Boolean(
-            state &&
-            this.prepDisplay.kitchenOption("show_chef") &&
-            !this.preparation_line.assigned_chef_id &&
-            state.stage_id.stage_type === "todo" &&
-            state.todo
-        );
-    },
     get kitchenCanMove() {
         const state = this.kitchenState;
         return Boolean(
             state &&
-            this.prepDisplay.kitchenOption("show_workload") &&
-            state.stage_id.stage_type === "todo" &&
-            state.todo &&
-            this.prepDisplay.reassignTargets.length
+                this.prepDisplay.kitchenOption("show_workload") &&
+                state.stage_id.stage_type === "todo" &&
+                state.todo &&
+                this.prepDisplay.reassignTargets.length
         );
     },
-    get kitchenCanReprep() {
-        const state = this.kitchenState;
+    get kitchenMetaVisible() {
         return Boolean(
-            state &&
             this.prepDisplay.kitchenAdvanced &&
-            ["ready", "done"].includes(state.stage_id.stage_type)
+                (this.kitchenMovedFrom ||
+                    this.kitchenStationName ||
+                    this.kitchenChef ||
+                    this.kitchenReprepCount ||
+                    this.kitchenCanMove)
         );
-    },
-    kitchenTake() {
-        this.prepDisplay.takeStates([this.kitchenState]);
     },
     kitchenAssign() {
         this.prepDisplay.openAssignMenu([this.kitchenState]);
@@ -340,6 +350,6 @@ patch(Orderline.prototype, {
         this.prepDisplay.openReassignMenu([this.kitchenState]);
     },
     kitchenReprep() {
-        this.prepDisplay.openRepreparePrompt([this.kitchenState]);
+        this.prepDisplay.openChangeDialog(this.preparation_line);
     },
 });

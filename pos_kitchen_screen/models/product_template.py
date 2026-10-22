@@ -6,8 +6,8 @@ class ProductTemplate(models.Model):
 
     kitchen_prep_target_minutes = fields.Float(
         "Kitchen preparation time (min)",
-        help="Time to prepare one unit. If empty the PoS category time is used, then the measured "
-             "average of the last preparations.")
+        help="Time to prepare one unit. If empty the PoS category time is used, then the "
+             "station default target.")
 
     def _kitchen_prep_minutes(self):
         self.ensure_one()

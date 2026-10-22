@@ -22,7 +22,6 @@ patch(PosStore.prototype, {
             stations: [
                 { id: 0, name: _t("Automatic (product / category)") },
                 ...this.kitchenStations
-                    .sort((a, b) => a.sequence - b.sequence)
                     .map((s) => ({ id: s.id, name: s.name })),
             ],
             current: line.kitchen_station_id?.id || 0,

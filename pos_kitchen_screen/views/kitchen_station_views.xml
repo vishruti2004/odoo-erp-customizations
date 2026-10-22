@@ -5,13 +5,12 @@
         <field name="model">pos.kitchen.station</field>
         <field name="arch" type="xml">
             <list>
-                <field name="sequence" widget="handle"/>
-                <field name="name"/>
-                <field name="code"/>
-                <field name="prep_display_id"/>
-                <field name="category_ids" widget="many2many_tags"/>
-                <field name="workload_limit"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="name" />
+                <field name="code" />
+                <field name="prep_display_id" />
+                <field name="category_ids" widget="many2many_tags" />
+                <field name="workload_limit" />
+                <field name="company_id" groups="base.group_multi_company" />
             </list>
         </field>
     </record>
@@ -22,31 +21,30 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
-                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" invisible="active" />
+                    <field name="active" invisible="1" />
                     <div class="oe_title">
-                        <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Grill"/></h1>
+                        <label for="name" />
+                        <h1>
+                            <field name="name" placeholder="e.g. Grill" />
+                        </h1>
                     </div>
                     <group>
                         <group string="Routing">
-                            <field name="code"/>
-                            <field name="prep_display_id"/>
-                            <field name="pos_config_ids" widget="many2many_tags" placeholder="All Points of Sale"
-                                   options="{'no_create': True}"/>
-                            <field name="category_ids" widget="many2many_tags" options="{'no_create': True}" required="1"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="code" />
+                            <field name="prep_display_id" />
+                            <field name="pos_config_ids" widget="many2many_tags" placeholder="All Points of Sale" options="{'no_create': True}" />
+                            <field name="category_ids" widget="many2many_tags" options="{'no_create': True}" required="1" />
+                            <field name="company_id" groups="base.group_multi_company" />
                         </group>
                         <group string="Settings">
-                            <field name="sequence"/>
-                            <field name="color" widget="color"/>
-                            <field name="default_target_minutes"/>
+                           
+                            <field name="default_target_minutes" />
                         </group>
                     </group>
                     <notebook>
                         <page string="Chefs" name="chefs">
-                            <field name="chef_ids" widget="many2many_tags" options="{'no_quick_create': True}"
-                                   placeholder="Select the employees working on this station"/>
+                            <field name="chef_ids" widget="many2many_tags" options="{'no_quick_create': True}" placeholder="Select the employees working on this station" />
                         </page>
                         <page string="Workload" name="workload">
                             <p class="text-muted">
@@ -55,11 +53,9 @@
                                 that prepares the same categories.
                             </p>
                             <group>
-                                <field name="workload_metric" widget="radio"/>
-                                <field name="workload_limit" string="Max minutes"
-                                       invisible="workload_metric != 'time'"/>
-                                <field name="workload_limit" string="Max items"
-                                       invisible="workload_metric != 'items'"/>
+                                <field name="workload_metric" widget="radio" />
+                                <field name="workload_limit" string="Max minutes" invisible="workload_metric != 'time'" />
+                                <field name="workload_limit" string="Max items" invisible="workload_metric != 'items'" />
                             </group>
                         </page>
                     </notebook>
@@ -68,15 +64,201 @@
         </field>
     </record>
 
+   
+<record id="kitchen_station_view_kanban" model="ir.ui.view">
+    <field name="name">pos.kitchen.station.kanban</field>
+    <field name="model">pos.kitchen.station</field>
+    <field name="arch" type="xml">
+        <kanban class="o_kanban_mobile o_kanban_dashboard">
+            <field name="name"/>
+            <field name="code"/>
+            <field name="prep_display_id"/>
+            <field name="category_ids"/>
+            <field name="chef_ids"/>
+            <field name="workload_metric"/>
+            <field name="workload_limit"/>
+            <field name="default_target_minutes"/>
+            <field name="active"/>
+            <field name="company_id"/>
+
+            <templates>
+                <t t-name="card">
+                    <div class="o_kanban_card shadow-sm rounded-3 p-2 border"
+                         style="border-left: 4px solid #8CC187;">
+
+                        <!-- Station Header -->
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="fw-bold text-dark">
+                                <field name="name"/>
+                            </div>
+                        </div>
+
+                        <div class="border-top mb-2"/>
+
+                        <!-- Preparation Display -->
+                        <div class="d-flex align-items-center gap-2 mb-2 small">
+                            <i class="fa fa-desktop text-primary"
+                               title="Preparation Display"/>
+                            <span class="text-muted">Display:</span>
+                            <strong class="text-truncate">
+                                <field name="prep_display_id"/>
+                            </strong>
+                        </div>
+
+                        <!-- Product Categories -->
+                        <div class="rounded-3 p-2 mb-2"
+                             style="background-color: #F0F9F0; border: 1px solid #D5EAD5;">
+
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fa fa-tags"
+                                   style="color: #39834A;"
+                                   title="Product Categories"/>
+
+                                <span class="fw-semibold small"
+                                      style="color: #286B39;">
+                                    Product Categories
+                                </span>
+
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold ms-auto"
+                                      style="width: 24px; height: 24px; background-color: #D5EED8; color: #286B39; font-size: 11px;">
+                                    <t t-esc="(record.category_ids.raw_value || []).length"/>
+                                </span>
+                            </div>
+
+                            <div t-if="record.category_ids.raw_value and record.category_ids.raw_value.length">
+                                <field name="category_ids"
+                                       widget="many2many_tags"/>
+                            </div>
+
+                            <div t-else="" class="small"
+                                 style="color: #719477;">
+                                No categories assigned
+                            </div>
+                        </div>
+
+                        <!-- Station Statistics -->
+                        <div class="row g-2 mb-2">
+
+                            <!-- Assigned Chefs -->
+                            <div class="col-6">
+                                <div class="rounded-3 p-2 h-100"
+                                     style="background-color: #F0F6FF; border: 1px solid #D8E6FF;">
+
+                                    <div class="d-flex align-items-center gap-1 mb-2">
+                                        <i class="fa fa-users"
+                                           style="color: #4775B8;"
+                                           title="Assigned Chefs"/>
+
+                                        <span class="small"
+                                              style="color: #4775B8;">
+                                            Assigned Chefs
+                                        </span>
+
+                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle fw-bold ms-auto"
+                                              style="width: 26px; height: 26px; background-color: #D4E5FF; color: #2456A6; font-size: 12px;">
+                                            <t t-esc="(record.chef_ids.raw_value || []).length"/>
+                                        </span>
+                                    </div>
+
+                                    <div t-if="record.chef_ids.raw_value and record.chef_ids.raw_value.length">
+                                        <field name="chef_ids"
+                                               widget="many2many_tags"/>
+                                    </div>
+
+                                    <div t-else="" class="text-muted small">
+                                        No chefs assigned
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Default Target -->
+                            <div class="col-6">
+                                <div class="rounded-3 p-2 h-100"
+                                     style="background-color: #FFF8E9; border: 1px solid #F4E3B9;">
+
+                                    <div class="small mb-2"
+                                         style="color: #A66B16;">
+                                        <i class="fa fa-clock-o me-1"
+                                           title="Default Target"/>
+                                        Default Target
+                                    </div>
+
+                                    <div class="fw-bold text-dark">
+                                        <field name="default_target_minutes"/>
+                                        <small class="text-muted ms-1">
+                                            min
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Workload Capacity -->
+                        <div class="rounded-3 p-2"
+                             style="background-color: #F8F7FC; border: 1px solid #E4DDF2;">
+
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <div class="fw-semibold text-dark small">
+                                    <i class="fa fa-tachometer me-1"
+                                       title="Workload Capacity"/>
+                                    Workload Capacity
+                                </div>
+
+                                <span t-if="record.workload_metric.raw_value == 'time'"
+                                      class="badge rounded-pill px-2 py-1"
+                                      style="background-color: #DCEBFF; color: #2456A6;">
+                                    <i class="fa fa-clock-o me-1"
+                                       title="Time Wise"/>
+                                    Time Wise
+                                </span>
+
+                                <span t-if="record.workload_metric.raw_value == 'items'"
+                                      class="badge rounded-pill px-2 py-1"
+                                      style="background-color: #F0DFFF; color: #7138A5;">
+                                    <i class="fa fa-cubes me-1"
+                                       title="Item Wise"/>
+                                    Item Wise
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">
+                                    Station Capacity
+                                </span>
+
+                                <strong class="text-dark">
+                                    <field name="workload_limit"/>
+
+                                    <small class="text-muted ms-1">
+                                        <t t-if="record.workload_metric.raw_value == 'time'">
+                                            minutes
+                                        </t>
+                                        <t t-else="">
+                                            items
+                                        </t>
+                                    </small>
+                                </strong>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </templates>
+        </kanban>
+    </field>
+</record>
+
+
+
     <record id="kitchen_station_view_search" model="ir.ui.view">
         <field name="name">pos.kitchen.station.search</field>
         <field name="model">pos.kitchen.station</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name"/>
-                <field name="code"/>
-                <field name="prep_display_id"/>
-                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <field name="name" />
+                <field name="code" />
+                <field name="prep_display_id" />
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]" />
             </search>
         </field>
     </record>
@@ -84,6 +266,6 @@
     <record id="kitchen_station_action" model="ir.actions.act_window">
         <field name="name">Kitchen Stations</field>
         <field name="res_model">pos.kitchen.station</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">kanban,list,form</field>
     </record>
 </odoo>

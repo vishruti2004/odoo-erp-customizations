@@ -1,6 +1,6 @@
 {
     "name": "Kitchen Screen Enhancement",
-    "version": "19.0.1.0.2",
+    "version": "19.0.1.0.4",
     "category": "Sales/Point of Sale",
     "summary": "Advanced station routing, priority, chef assignment, readiness, "
                "delay analytics, workload balancing and display controls for the Odoo 19 KDS",

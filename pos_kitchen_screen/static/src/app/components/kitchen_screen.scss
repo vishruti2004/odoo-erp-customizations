@@ -1,7 +1,7 @@
 .o_kitchen_active {
     --kitchen-card-min: 290px;
 
-    // ---------------------------------------------------------------- ticket density
+    //  ticket density
     &.o_pdis_density_compact {
         --kitchen-card-min: 230px;
         .o_pdis_order_card {
@@ -40,7 +40,7 @@
         }
     }
 
-    // ---------------------------------------------------------------- layouts
+    //  layouts
     .o_pdis_orders {
         grid-template-columns: repeat(auto-fill, minmax(var(--kitchen-card-min), 1fr));
     }
@@ -66,7 +66,6 @@
         }
     }
 
-    // lanes: one column per stage (only meaningful on the "All" tab, the card sets grid-column)
     &.o_kitchen_layout_lanes {
         .o_pdis_orders {
             grid-template-columns: repeat(var(--kitchen-lanes), minmax(var(--kitchen-card-min), 1fr));
@@ -74,7 +73,6 @@
         }
     }
 
-    // the workload bar sits above the tickets: let the tickets fill what is left
     .o_pdis_main_area {
         display: flex;
         flex-direction: column;
@@ -85,7 +83,7 @@
         }
     }
 
-    // ---------------------------------------------------------------- priority / focus
+    //  priority / focus
     .o_pdis_order_card {
         &.o_kitchen_urgent {
             box-shadow: 0 0 0 3px #dc3545;
@@ -100,14 +98,78 @@
         }
     }
 
-    .o_kitchen_priority {
-        cursor: pointer;
-    }
+    //  cooks
     .o_kitchen_chef_chip {
-        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        max-width: 100%;
+        padding: 0.1rem 0.6rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        background: #fff;
+        font-size: 0.85rem;
+        .o_kitchen_chef_label {
+            color: #714b67;
+        }
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+    .o_kitchen_take {
+        padding: 0.1rem 0.8rem;
+        border: 1px solid #198754;
+        border-radius: 6px;
+        background: transparent;
+        color: #198754;
+        font-size: 0.85rem;
+        font-weight: 600;
+        &:hover {
+            background: #198754;
+            color: #fff;
+        }
     }
 
-    // ---------------------------------------------------------------- workload bar
+    // ribbon: the waiter changed the order
+    .o_kitchen_ribbon {
+        padding: 0.2rem 0.75rem;
+        background: #f0ad00;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+
+    // item changed by the waiter
+    .o_kitchen_change_pending {
+        background: #fff3cd;
+        color: #7a5200;
+        border: 1px solid #ffda6a;
+    }
+    .o_kitchen_change_info {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .o_pdis_sidebar {
+        .btn-info,
+        .btn-secondary,
+        .btn-light {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: transparent;
+            border: 1px solid #adb5bd;
+            color: #495057;
+            &:hover {
+                background: #e9ecef;
+            }
+        }
+    }
+
+    //  workload bar
     .o_kitchen_workload_item {
         min-width: 150px;
     }
@@ -121,4 +183,3 @@
         box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.45);
     }
 }
-

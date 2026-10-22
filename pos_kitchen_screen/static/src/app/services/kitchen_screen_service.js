@@ -6,6 +6,7 @@ import { PrepDisplay } from "@pos_enterprise/app/services/preparation_display_se
 import {
     KitchenSelectDialog,
     KitchenChefDialog,
+    KitchenInfoDialog,
 } from "@pos_kitchen_screen/app/components/kitchen_dialogs";
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
@@ -170,6 +171,22 @@ patch(PrepDisplay.prototype, {
                 this.ringTheBell();
             }
         });
+        this.onNotified("ITEM_CHANGED", (data) => {
+            this.notification.add(`${data.order}: ${data.product} - ${data.text}`, {
+                type: "warning",
+                sticky: true,
+            });
+            this.ringTheBell();
+        });
+        this.onNotified("OVERLOAD_UNRESOLVED", (data) => {
+            this.notification.add(
+                _t("%(station)s is over by %(min)s min and no station can take the work. Inform the supervisor.", {
+                    station: data.station,
+                    min: data.excess,
+                }),
+                { type: "danger", sticky: true }
+            );
+        });
         this.onNotified("WORKLOAD_CHANGED", () => this.refreshWorkload());
         this.onNotified("LOAD_ORDERS", () => this.refreshWorkload());
     },
@@ -240,6 +257,9 @@ patch(PrepDisplay.prototype, {
         );
     },
     openOverflowMenu(entry) {
+        if (entry.metric === "time") {
+            return this.openTimePlan(entry);
+        }
         const targets = this.workloadView.filter(
             (w) => !w.isOwn && entry.alternatives.includes(w.id)
         );
@@ -269,6 +289,59 @@ patch(PrepDisplay.prototype, {
             })),
             withReason: true,
             confirm: (stationId, reason) => this.moveOverflow(entry.id, stationId, reason),
+        });
+    },
+    async openTimePlan(entry) {
+        const plan = await this.kitchenCall("pos.kitchen.station", "plan_overload", [[entry.id]]);
+        if (!plan) {
+            return;
+        }
+        if (!plan.destination) {
+            this.notification.add(
+                _t("%(station)s is over by %(min)s min. %(reason)s Please inform the supervisor.", {
+                    station: entry.name,
+                    min: plan.excess,
+                    reason: plan.reason || "",
+                }),
+                { type: "danger", sticky: true }
+            );
+            return;
+        }
+        this.dialog.add(KitchenInfoDialog, {
+            title: _t("%(station)s is over by %(min)s min", { station: entry.name, min: plan.excess }),
+            intro: _t("These items move to %(dest)s (%(free)s):", {
+                dest: plan.destination.name,
+                free:
+                    plan.destination.free === null
+                        ? _t("no limit")
+                        : _t("%s min free", plan.destination.free),
+            }),
+            rows: plan.lines.map((l) => ({
+                label: `${l.qty}x ${l.product}`,
+                sub: `${l.minutes} min, ${l.order}`,
+            })),
+            summary: plan.exact
+                ? _t("Exact match: %s min moved.", plan.moved_minutes)
+                : _t("%(moved)s of %(excess)s min can be moved.", {
+                      moved: plan.moved_minutes,
+                      excess: plan.excess,
+                  }),
+            confirmLabel: _t("Move these items"),
+            confirm: async () => {
+                const result = await this.kitchenCall("pos.kitchen.station", "resolve_overload", [
+                    [entry.id],
+                    plan.destination.id,
+                    plan.lines.map((l) => l.line_id),
+                    false,
+                    this.actorChefId,
+                ]);
+                if (result) {
+                    this.notification.add(_t("%s item(s) moved.", result.moved.length), {
+                        type: "success",
+                    });
+                }
+                this.refreshWorkload();
+            },
         });
     },
     async moveOverflow(stationId, targetId, reason) {
@@ -325,17 +398,24 @@ patch(PrepDisplay.prototype, {
         }
         this.refreshWorkload();
     },
-    chefOptions() {
+    chefOptions(states) {
+        const categories = new Set(
+            states.flatMap((s) => s.prep_line_id.product_id.pos_categ_ids.map((c) => c.id))
+        );
+        const cooks = this.chefs.filter((chef) => {
+            const allowed = chef.allowed_category_ids || [];
+            return !allowed.length || allowed.some((id) => categories.has(id));
+        });
         return [
             { id: 0, label: _t("Unassigned") },
-            ...this.chefs.map((c) => ({ id: c.id, label: c.name })),
+            ...cooks.map((c) => ({ id: c.id, label: c.name })),
         ];
     },
     openAssignMenu(states) {
         const lineIds = [...new Set(states.map((s) => s.prep_line_id.id))];
         this.dialog.add(KitchenSelectDialog, {
             title: _t("Assign chef"),
-            options: this.chefOptions(),
+            options: this.chefOptions(states),
             current: this.kitchen.chef?.id ?? null,
             confirm: (chefId) => this.assignChef(lineIds, chefId),
         });
@@ -358,30 +438,35 @@ patch(PrepDisplay.prototype, {
     },
 
     //  re-prepare
-    openRepreparePrompt(states) {
-        const lineIds = [...new Set(states.map((s) => s.prep_line_id.id))];
-        this.dialog.add(KitchenSelectDialog, {
-            title: _t("Re-prepare item"),
-            options: [
-                { id: "quality", label: _t("Quality issue") },
-                { id: "wrong", label: _t("Wrong preparation") },
-                { id: "customer", label: _t("Customer request") },
-                { id: "other", label: _t("Other") },
-            ],
-            withReason: true,
-            confirm: (code, reason) =>
-                this.reprepareLines(lineIds, [code, reason].filter(Boolean).join(": ")),
+    async openChangeDialog(line) {
+        const events = await this.orm.searchRead(
+            "pos.kitchen.item.history",
+            [["prep_line_id", "=", line.id]],
+            ["event_type", "old_quantity", "new_quantity", "changed_at"],
+            { order: "id desc", limit: 5 }
+        );
+        const label = (e) =>
+            ({
+                qty_increased: _t("Quantity %(old)s to %(new)s", { old: e.old_quantity, new: e.new_quantity }),
+                qty_decreased: _t("Quantity %(old)s to %(new)s", { old: e.old_quantity, new: e.new_quantity }),
+                cancelled: _t("Cancelled"),
+                note_changed: _t("Note changed"),
+                new_item: _t("New item"),
+                reprep: _t("Re-prepared"),
+            })[e.event_type] || e.event_type;
+        this.dialog.add(KitchenInfoDialog, {
+            title: _t("Order changed: %s", line.product_id.display_name),
+            intro: line.change_text || "",
+            rows: events.map((e) => ({ label: label(e), sub: (e.changed_at || "").slice(11, 16) })),
+            confirmLabel: _t("Re-prepare"),
+            confirmClass: "btn-danger",
+            confirm: () => this.reprepareLines([line.id]),
         });
     },
-    async reprepareLines(lineIds, reason) {
-        await this.kitchenCall("pos.prep.line", "reprepare", [
-            lineIds,
-            reason || false,
-            this.actorChefId,
-        ]);
+    async reprepareLines(lineIds) {
+        await this.kitchenCall("pos.prep.line", "reprepare", [lineIds, false, this.actorChefId]);
     },
 
-    //  filtering & sorting
     checkStateVisibility(state) {
         if (!super.checkStateVisibility(...arguments)) {
             return false;
@@ -426,7 +511,6 @@ patch(PrepDisplay.prototype, {
             .map(({ order }) => order);
     },
 
-    //  keyboard / touch navigation
     moveFocus(delta) {
         const orders = this.filteredOrders;
         if (!orders.length) {

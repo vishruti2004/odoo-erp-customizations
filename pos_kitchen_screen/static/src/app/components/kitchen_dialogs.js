@@ -59,3 +59,26 @@ export class KitchenChefDialog extends Component {
         this.props.close();
     }
 }
+
+export class KitchenInfoDialog extends Component {
+    static template = "pos_kitchen_screen.InfoDialog";
+    static components = { Dialog };
+    static props = {
+        title: String,
+        intro: { type: String, optional: true },
+        rows: Array,
+        summary: { type: String, optional: true },
+        confirmLabel: { type: String, optional: true },
+        confirmClass: { type: String, optional: true },
+        confirm: { type: Function, optional: true },
+        close: Function,
+    };
+
+    async onConfirm() {
+        try {
+            await this.props.confirm();
+        } finally {
+            this.props.close();
+        }
+    }
+}

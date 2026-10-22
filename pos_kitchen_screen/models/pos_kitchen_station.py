@@ -1,15 +1,19 @@
+import logging
 from collections import defaultdict
-from datetime import timedelta
+
+import psycopg2.errors
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class PosKitchenStation(models.Model):
     _name = "pos.kitchen.station"
     _description = "Kitchen Station"
     _inherit = ["pos.load.mixin", "pos.kitchen.access.mixin"]
-    _order = "sequence, id"
+    _order = "id"
 
     name = fields.Char(required=True)
     code = fields.Char(required=True)
@@ -22,13 +26,11 @@ class PosKitchenStation(models.Model):
     category_ids = fields.Many2many(
         "pos.category", string="Categories",
         help="Every product of these categories is prepared here. When two stations share a category, "
-             "the first one (sequence) gets the orders and the other one can take the overflow.")
+             "the first one created gets the orders and the other one can take the overflow.")
     chef_ids = fields.Many2many(
         "pos.kitchen.chef", "pos_kitchen_chef_pos_kitchen_station_rel", "pos_kitchen_station_id",
         "pos_kitchen_chef_id", string="Chefs", help="Employees working on this station.")
-    sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
-    color = fields.Char()
     default_target_minutes = fields.Float(
         "Default target (min)", help="Target used by the delay report when the product and its category have none.")
     workload_metric = fields.Selection(
@@ -91,19 +93,16 @@ class PosKitchenStation(models.Model):
 
     #  workload
     @api.model
-    def _kitchen_avg_minutes(self, product_ids, days=14, min_samples=3):
-        since = fields.Datetime.now() - timedelta(days=days)
-        rows = self.env["pos.kitchen.performance"].sudo()._read_group(
-            [("sent_at", ">=", since), ("ready_at", "!=", False), ("product_id", "in", list(product_ids))],
-            ["product_id"], ["prep_seconds:avg", "__count"])
-        return {product.id: secs / 60.0 for product, secs, count in rows if count >= min_samples and secs}
+    def _kitchen_item_minutes(self, product, station):
+        """Minutes to prepare one unit: product, else its PoS category, else the station default target."""
+        return product.product_tmpl_id._kitchen_prep_minutes() or station.default_target_minutes
 
-    @api.model
-    def _kitchen_item_minutes(self, product, measured):
-        return product.product_tmpl_id._kitchen_prep_minutes() or measured.get(product.id, 0.0)
+    def _kitchen_pending(self):
+        """Pending work of the stations on open sessions, one entry per prep line.
 
-    def _kitchen_workload_data(self):
-       
+        {station_id: [{"line", "state", "order_id", "ticket_date", "ticket_id", "qty", "minutes"}]}
+        minutes = quantity x preparation time (the workload, not the elapsed time). Cancelled quantity is excluded.
+        """
         by_display = defaultdict(lambda: self.browse())
         for station in self:
             by_display[station.prep_display_id.id] |= station
@@ -113,9 +112,7 @@ class PosKitchenStation(models.Model):
             ("todo", "=", True),
             ("prep_line_id.prep_order_id.pos_order_id.session_id.state", "in", ["opened", "closing_control"]),
         ])
-        products = states.prep_line_id.product_id
-        measured = self._kitchen_avg_minutes(products.ids) if products else {}
-        queues = {station.id: {} for station in self}
+        pending = {station.id: [] for station in self}
         for state in states:
             line = state.prep_line_id
             qty = line.quantity - line.cancelled
@@ -126,20 +123,35 @@ class PosKitchenStation(models.Model):
             if not station:
                 continue
             ticket = line.prep_order_id
-            entry = queues[station.id].setdefault(ticket.pos_order_id.id, [ticket.create_date, ticket.id, 0.0, 0.0])
-            entry[0] = min(entry[0], ticket.create_date)
-            entry[2] += qty
-            entry[3] += qty * self._kitchen_item_minutes(line.product_id, measured)
+            pending[station.id].append({
+                "line": line, "state": state, "order_id": ticket.pos_order_id.id,
+                "ticket_date": ticket.create_date, "ticket_id": ticket.id, "qty": qty,
+                "minutes": qty * self._kitchen_item_minutes(line.product_id, station),
+            })
+        return pending
+
+    def _kitchen_workload_data(self):
+        """Queue per station in arrival order (oldest ticket first).
+
+        {station_id: {"orders": [(pos_order_id, items, minutes)], "overflow": [pos_order_id]}}
+        An order is overflow once the cumulative load (items, or minutes) goes beyond the station limit.
+        """
+        pending = self._kitchen_pending()
         result = {}
         for station in self:
-            ordered = sorted(queues[station.id].items(), key=lambda kv: (kv[1][0], kv[1][1]))
+            queue = {}
+            for entry in pending[station.id]:
+                row = queue.setdefault(entry["order_id"], [entry["ticket_date"], entry["ticket_id"], 0.0, 0.0])
+                row[0] = min(row[0], entry["ticket_date"])
+                row[2] += entry["qty"]
+                row[3] += entry["minutes"]
+            ordered = sorted(queue.items(), key=lambda kv: (kv[1][0], kv[1][1]))
             overflow, used = [], 0.0
-            for order_id, entry in ordered:
-                used += entry[3] if station.workload_metric == "time" else entry[2]
+            for order_id, row in ordered:
+                used += row[3] if station.workload_metric == "time" else row[2]
                 if station.workload_limit and used > station.workload_limit:
                     overflow.append(order_id)
-            result[station.id] = {
-                "orders": [(oid, e[2], e[3]) for oid, e in ordered], "overflow": overflow}
+            result[station.id] = {"orders": [(oid, r[2], r[3]) for oid, r in ordered], "overflow": overflow}
         return result
 
     @staticmethod
@@ -149,7 +161,7 @@ class PosKitchenStation(models.Model):
 
     @api.model
     def get_station_workload(self, display_id=False):
-       
+        """RPC: workload per station on open sessions (computed on demand, never stored)."""
         domain = [("active", "=", True)]
         if display_id:
             configs = self.env["pos.prep.display"].browse(int(display_id))._get_pos_config_ids()
@@ -165,11 +177,13 @@ class PosKitchenStation(models.Model):
                 lambda o: o != station and o.category_ids & station.category_ids
                 and (not o.pos_config_ids or not station.pos_config_ids or o.pos_config_ids & station.pos_config_ids))
             result.append({
-                "id": station.id, "name": station.name, "code": station.code, "color": station.color,
+                "id": station.id, "name": station.name, "code": station.code,
                 "display_id": station.prep_display_id.id,
                 "pending_orders": len(queue["orders"]),
                 "metric": station.workload_metric, "value": value, "limit": limit,
+                "ratio": round(value / limit * 100) if limit else 0,
                 "free": max(round(limit - value, 1), 0) if limit else None,
+                "excess": max(round(value - limit, 1), 0) if limit else 0,
                 "overloaded": bool(limit and value > limit),
                 "overflow_orders": len(queue["overflow"]),
                 "overflow_order_ids": queue["overflow"],
@@ -177,8 +191,9 @@ class PosKitchenStation(models.Model):
             })
         return result
 
+    # -- item wise: move the orders queued beyond the limit
     def move_overflow(self, target_station_id, reason=False, actor_chef_id=False):
-       
+        """RPC (called with [[station_id], target_station_id, reason, actor_chef_id]). Item wise stations."""
         self.ensure_one()
         target = self.browse(int(target_station_id)).exists()
         if not target or target == self:
@@ -210,6 +225,142 @@ class PosKitchenStation(models.Model):
         result["remaining"] = len(overflow) - len(chosen)
         return result
 
+    # -- time wise: move the order lines that remove the excess minutes
+    @staticmethod
+    def _kitchen_pick_subset(items, excess, capacity):
+        """Choose items [(key, minutes)] whose total covers `excess` with the least overshoot.
+
+        An exact match is preferred. When the excess cannot be covered, the largest total that fits
+        in `capacity` (None = unlimited) is returned. Whole lines only: quantities are not split.
+        """
+        scale = 10
+        weights = [(key, int(round(minutes * scale))) for key, minutes in items if minutes > 0]
+        total = sum(weight for _key, weight in weights)
+        limit = total if capacity is None else min(int(capacity * scale), total)
+        reachable = {0: ()}
+        for key, weight in weights:
+            for subtotal, chosen in list(reachable.items()):
+                new = subtotal + weight
+                if new <= limit and new not in reachable:
+                    reachable[new] = chosen + (key,)
+        target = int(round(excess * scale))
+        covering = [t for t in reachable if t >= max(target, 1)]
+        best = min(covering) if covering else max(reachable)
+        return list(reachable[best]), best / scale
+
+    def _kitchen_compatible_stations(self):
+        """Other time wise stations of the same company / PoS that prepare one of this station's categories."""
+        self.ensure_one()
+        others = self.search([
+            ("id", "!=", self.id), ("active", "=", True), ("company_id", "=", self.company_id.id),
+            ("workload_metric", "=", "time"),
+        ])
+        return others.filtered(
+            lambda o: o.category_ids & self.category_ids
+            and (not o.pos_config_ids or not self.pos_config_ids or o.pos_config_ids & self.pos_config_ids))
+
+    @staticmethod
+    def _kitchen_movable(entry):
+        """Only items nobody started: first stage, not crossed off, no chef, not a combo parent."""
+        line, state = entry["line"], entry["state"]
+        return (state.stage_id.stage_type == "todo" and state.todo and not line.assigned_chef_id
+                and not line.pos_order_line_id.combo_line_ids and entry["minutes"] > 0)
+
+    def plan_overload(self):
+        """RPC (called with [[station_id]]): preview which order lines would be moved, and where."""
+        self.ensure_one()
+        plan = {"station": self.name, "excess": 0.0, "destination": False, "lines": [],
+                "moved_minutes": 0.0, "exact": False, "reason": False}
+        if self.workload_metric != "time" or not self.workload_limit:
+            plan["reason"] = _("Time wise workload with a limit is not configured on this station.")
+            return plan
+        candidates = self._kitchen_compatible_stations()
+        pending = (self | candidates)._kitchen_pending()
+        load = sum(e["minutes"] for e in pending[self.id])
+        excess = round(max(load - self.workload_limit, 0.0), 1)
+        plan["excess"] = excess
+        if not excess:
+            plan["reason"] = _("The station is within its capacity.")
+            return plan
+        movable = [e for e in pending[self.id] if self._kitchen_movable(e)]
+        if not movable:
+            plan["reason"] = _("No pending item can be moved: they are already started or assigned.")
+            return plan
+        best = None
+        for dest in candidates:
+            free = None
+            if dest.workload_limit:
+                free = dest.workload_limit - sum(e["minutes"] for e in pending[dest.id])
+                if free <= 0:
+                    continue
+            usable = [e for e in movable if dest._kitchen_handles(e["line"].product_id)]
+            capacity = free
+            for _attempt in range(20):
+                keys, moved = self._kitchen_pick_subset(
+                    [(e["line"].id, e["minutes"]) for e in usable], excess, capacity)
+                chosen = [e for e in usable if e["line"].id in keys]
+                # the destination counts the same items with its own preparation times
+                dest_minutes = sum(e["qty"] * self._kitchen_item_minutes(e["line"].product_id, dest) for e in chosen)
+                if free is None or dest_minutes <= free or not chosen:
+                    break
+                capacity = (capacity if capacity is not None else moved) - 0.5
+            if not chosen:
+                continue
+            score = (abs(moved - excess) < 0.05, moved >= excess, -abs(moved - excess), free if free is not None else 1e9)
+            if best is None or score > best[0]:
+                best = (score, dest, chosen, moved, free)
+        if not best:
+            plan["reason"] = _("No compatible station has free capacity.")
+            _logger.warning("Kitchen overload on %s (+%s min): %s", self.name, excess, plan["reason"])
+            self.prep_display_id._notify("OVERLOAD_UNRESOLVED", {"station": self.name, "excess": excess})
+            return plan
+        _score, dest, chosen, moved, free = best
+        plan.update({
+            "destination": {"id": dest.id, "name": dest.name, "free": None if free is None else round(free, 1)},
+            "lines": [{
+                "line_id": e["line"].id, "product": e["line"].product_id.display_name, "qty": e["qty"],
+                "minutes": round(e["minutes"], 1), "order": e["line"].prep_order_id.order_name,
+            } for e in chosen],
+            "moved_minutes": round(moved, 1), "exact": abs(moved - excess) < 0.05,
+        })
+        return plan
+
+    def resolve_overload(self, destination_id, line_ids, reason=False, actor_chef_id=False):
+        """RPC (called with [[station_id], destination_id, line_ids, reason, actor_chef_id]).
+
+        Revalidates everything, locks the rows against concurrent moves and reassigns only the chosen
+        order lines. The order, product, quantity and order status are untouched.
+        """
+        self.ensure_one()
+        dest = self.browse(int(destination_id)).exists()
+        if self.workload_metric != "time" or not dest or dest not in self._kitchen_compatible_stations():
+            raise UserError(_("This station cannot take the work of %s.", self.name))
+        lines = self.env["pos.prep.line"].browse(line_ids).exists()
+        if not lines:
+            raise UserError(_("Nothing to move."))
+        try:
+            with self.env.cr.savepoint():
+                self.env.cr.execute(
+                    "SELECT id FROM pos_prep_state WHERE prep_line_id IN %s FOR UPDATE NOWAIT", (tuple(lines.ids),))
+        except psycopg2.errors.LockNotAvailable:
+            raise UserError(_("These items are being changed by someone else. Try again."))
+        lines.invalidate_recordset()
+        pending = (self | dest)._kitchen_pending()
+        by_line = {e["line"].id: e for e in pending[self.id]}
+        if any(line.id not in by_line or not self._kitchen_movable(by_line[line.id]) for line in lines):
+            raise UserError(_("Some items changed in the meantime. Check the proposal again."))
+        if any(not dest._kitchen_handles(line.product_id) for line in lines):
+            raise UserError(_("%s does not prepare these products.", dest.name))
+        if dest.workload_limit:
+            free = dest.workload_limit - sum(e["minutes"] for e in pending[dest.id])
+            needed = sum(
+                (line.quantity - line.cancelled) * self._kitchen_item_minutes(line.product_id, dest) for line in lines)
+            if needed > free + 0.05:
+                raise UserError(_("%s has no more room for these items.", dest.name))
+        result = lines.reassign(dest.id, reason, actor_chef_id)
+        _logger.info("Kitchen overload: %s line(s) moved from %s to %s", len(result["moved"]), self.name, dest.name)
+        return result
+
     #  KDS loading
     @api.model
     def _load_pos_preparation_data_domain(self, data):
@@ -217,7 +368,7 @@ class PosKitchenStation(models.Model):
 
     @api.model
     def _load_pos_preparation_data_fields(self):
-        return ["id", "name", "code", "sequence", "color", "default_target_minutes", "workload_limit",
+        return ["id", "name", "code","default_target_minutes", "workload_limit",
                 "workload_metric", "display_id_int"]
 
     #  PoS loading
@@ -228,4 +379,4 @@ class PosKitchenStation(models.Model):
 
     @api.model
     def _load_pos_data_fields(self, config):
-        return ["id", "name", "code", "sequence", "color", "display_id_int"]
+        return ["id", "name", "code", "display_id_int"]
