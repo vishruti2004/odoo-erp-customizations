@@ -3,6 +3,8 @@ from collections import defaultdict
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from .pos_kitchen_history import REPREP_REASONS
+
 
 class PosPrepLine(models.Model):
     _name = "pos.prep.line"
@@ -10,11 +12,10 @@ class PosPrepLine(models.Model):
 
     station_id = fields.Many2one("pos.kitchen.station", string="Kitchen Station", ondelete="set null", index=True)
     assigned_chef_id = fields.Many2one("pos.kitchen.chef", string="Assigned Chef", ondelete="set null", index=True)
-    reprep_count = fields.Integer("Re-preparations", default=0)
     last_change_type = fields.Selection([
-        ("none", "None"), ("new_item", "New item"), ("qty_increased", "Quantity increased"),
+        ("none", "None"), ("qty_increased", "Quantity increased"),
         ("qty_decreased", "Quantity decreased"), ("cancelled", "Cancelled"),
-        ("note_changed", "Note changed"), ("reprep", "Re-prepare"),
+        ("reprep", "Re-prepare"),
     ], default="none")
     last_change_at = fields.Datetime()
     change_text = fields.Char(help="What the waiter changed on the item, shown on the ticket.")
@@ -44,7 +45,7 @@ class PosPrepLine(models.Model):
 
     #  routing
     def _kitchen_apply_routing(self):
-       
+        """Keep the states of the routed lines only on the display of their station."""
         State = self.env["pos.prep.state"]
         for line in self:
             station = line.station_id
@@ -61,18 +62,26 @@ class PosPrepLine(models.Model):
     def _kitchen_sync_performance(self):
         Perf = self.env["pos.kitchen.performance"].sudo()
         now = fields.Datetime.now()
+        cleared = self.browse()
         for line in self:
             perf = Perf.search([("prep_line_id", "=", line.id)], limit=1)
             states = line.state_ids
-            if not perf or not states:
+            if not states:
                 continue
             ready = all(s._kitchen_is_ready() for s in states)
+            if ready and line.change_pending:
+                # the item is ready again: the change / re-prepare banner has been dealt with
+                line_changes = {"change_pending": False}
+                if line.last_change_type == "reprep":
+                    line_changes.update(last_change_type="none", change_text=False)
+                line.write(line_changes)
+                cleared |= line
+            if not perf:
+                continue
             done = all(s.stage_id.stage_type == "done" for s in states)
             started = bool(line.assigned_chef_id) or any(
                 s.stage_id.stage_type != "todo" or not s.todo for s in states)
             vals = {}
-            if ready and line.change_pending:
-                line.change_pending = False
             if started and not perf.started_at:
                 vals["started_at"] = now
             if ready and not perf.ready_at:
@@ -92,8 +101,6 @@ class PosPrepLine(models.Model):
                 vals["station_id"] = station.id
             if perf.chef_id != line.assigned_chef_id:
                 vals["chef_id"] = line.assigned_chef_id.id
-            if perf.reprep_count != line.reprep_count:
-                vals["reprep_count"] = line.reprep_count
             if vals:
                 perf.write(vals)
                 line_vals = {}
@@ -103,12 +110,18 @@ class PosPrepLine(models.Model):
                     line_vals["completed_at"] = vals["ready_at"]
                 if line_vals:
                     line.write(line_vals)
+        for display in cleared._kitchen_displays():
+            display._notify("KITCHEN_LINE_CHANGES", [{
+                "id": line.id, "change_pending": line.change_pending,
+                "last_change_type": line.last_change_type, "change_text": line.change_text or "",
+            } for line in cleared])
 
     def _kitchen_displays(self):
         return self.state_ids.stage_id.prep_display_id
 
     def _kitchen_history(self, move_type, **vals):
-        return self.env["pos.kitchen.assignment.history"].sudo().create(dict(vals, move_type=move_type))
+        return self.env["pos.kitchen.assignment.history"].sudo().create(
+            dict(vals, move_type=move_type, order_name=self.prep_order_id.order_name))
 
     def _kitchen_flagged(self):
         lines = self.filtered(lambda l: l.prep_order_id.pos_order_id.config_id.kitchen_advanced)
@@ -123,10 +136,12 @@ class PosPrepLine(models.Model):
         chef = self.env["pos.kitchen.chef"].browse(int(chef_id)).exists() if chef_id else self.env["pos.kitchen.chef"]
         if chef and (not chef.active or chef.company_id not in self.env.companies):
             raise AccessError(_("This chef cannot be assigned."))
+        if chef:
+            chef._kitchen_check_on_shift()
         changed, not_cooked = {}, 0
         for line in lines:
             if chef and not chef._kitchen_can_cook(line.product_id):
-                not_cooked += 1  # the chef does not prepare this category: leave the item as it is
+                not_cooked += 1
                 continue
             config = line.prep_order_id.pos_order_id.config_id
             station = line.station_id or line._kitchen_displays().station_ids[:1]
@@ -153,38 +168,54 @@ class PosPrepLine(models.Model):
             display._notify("CHEF_ASSIGNED", {"assignments": changed})
         return True
 
-    #  re-prepare (6.6)
-    def reprepare(self, reason=False, actor_chef_id=False):
-        """RPC (called with [line_ids, reason, actor_chef_id]).
-
-        Used when the waiter changed an order: the chef starts the item again (and acknowledges the change).
-        Only possible while the item is still being prepared; once ready nothing can change anymore.
-        """
+    #  re-prepare: an item that is ready goes back to the first stage of its screen
+    def kitchen_reprepare(self, reason_type, reason=False, actor_chef_id=False):
+        """RPC (called with [line_ids, reason_type, reason, actor_chef_id])."""
         lines = self._kitchen_flagged()
         actor = self._kitchen_get_actor(actor_chef_id)
-        lines = lines.filtered(lambda l: l.quantity - l.cancelled > 0 and any(
-            s.stage_id.stage_type in ("todo", "in_progress") for s in l.state_ids))
-        if not lines:
-            raise UserError(_("Only items still being prepared can be re-prepared."))
-        lines.state_ids.filtered(lambda s: s.stage_id.stage_type in ("todo", "in_progress")).write({"todo": True})
+        History = self.env["pos.kitchen.item.history"]
+        labels = dict(History._fields["reason_type"]._description_selection(self.env))
+        if reason_type not in labels:
+            raise UserError(_("Please select a reason."))
+        reason = (reason or "").strip()
+        if reason_type == "other" and not reason:
+            raise UserError(_("Please write the reason."))
+        text = reason if reason_type == "other" else labels[reason_type]
+        orders = lines.prep_order_id.pos_order_id
+        before = orders._kitchen_readiness_snapshot()
         now = fields.Datetime.now()
+        moved, skipped = self.browse(), self.browse()
         for line in lines:
-            line.write({"reprep_count": line.reprep_count + 1, "last_change_type": "reprep",
-                        "last_change_at": now, "change_pending": False})
-            self.env["pos.kitchen.item.history"].sudo().create({
-                "prep_order_id": line.prep_order_id.id, "prep_line_id": line.id,
-                "pos_order_id": line.prep_order_id.pos_order_id.id, "product_id": line.product_id.id,
-                "event_type": "reprep", "old_quantity": line.quantity - line.cancelled,
-                "new_quantity": line.quantity - line.cancelled, "changed_by_chef_id": actor.id,
-                "notes": reason,
+            states = line.state_ids
+            if (line.quantity - line.cancelled) <= 0 or not states \
+                    or not all(s.stage_id.stage_type == "ready" for s in states):
+                skipped |= line
+                continue
+            for state in states:
+                first = state.stage_id.prep_display_id.stage_ids[:1]
+                state.write({"stage_id": first.id, "todo": True})
+            line.write({
+                "last_change_type": "reprep", "last_change_at": now, "change_pending": True,
+                "change_text": _("Re-prepare: %s", text),
             })
-        lines._kitchen_sync_performance()
-        for display in lines._kitchen_displays():
-            for order in lines.prep_order_id.pos_order_id:
-                display._send_load_orders_message(False, None, order.id)
-        return True
+            History.sudo().create({
+                "prep_line_id": line.id, "pos_order_id": line.prep_order_id.pos_order_id.id,
+                "order_name": line.prep_order_id.order_name, "product_id": line.product_id.id,
+                "event_type": "reprep", "old_quantity": line.quantity - line.cancelled,
+                "new_quantity": line.quantity - line.cancelled, "reason_type": reason_type, "reason": text,
+                "chef_id": actor.id, "station_id": line.station_id.id,
+            })
+            moved |= line
+        moved._kitchen_sync_performance()
+        orders._kitchen_after_state_change(before)
+        for order in moved.prep_order_id.pos_order_id:
+            order_lines = moved.filtered(lambda l: l.prep_order_id.pos_order_id == order)
+            for display in order_lines._kitchen_displays():
+                display._send_load_orders_message(True, _("Re-prepare: order %s", order.tracking_number or order.name), order.id)
+                display._notify("WORKLOAD_CHANGED", {})
+        return {"moved": moved.ids, "skipped": skipped.ids}
 
-    #  reassign work (6.7)
+    #  move items to another station
     def reassign(self, target_station_id, reason=False, actor_chef_id=False):
         lines = self._kitchen_flagged()
         target = self.env["pos.kitchen.station"].browse(int(target_station_id)).exists()
@@ -239,6 +270,6 @@ class PosPrepLine(models.Model):
             display._notify("WORKLOAD_CHANGED", {})
         if moved:
             for order in notify_orders:
-                t_display._send_load_orders_message(True, _("Moved from %s", ", ".join(source_names) or "-"), order.id)
+                t_display._send_load_orders_message(True, _("Items moved from %s", ", ".join(source_names) or "-"), order.id)
             t_display._notify("WORKLOAD_CHANGED", {})
         return {"moved": moved.ids, "skipped": skipped.ids}

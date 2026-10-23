@@ -2,14 +2,16 @@ from odoo import _, api, models
 from odoo.exceptions import AccessError, UserError
 
 
+class KitchenRuleError(UserError):
+    """A kitchen rule refused the action. The kitchen screen shows it as a notification."""
+
+
 class KitchenAccessMixin(models.AbstractModel):
-    
     _name = "pos.kitchen.access.mixin"
     _description = "Kitchen RPC access helpers"
 
     @api.model
-    def _kitchen_get_actor(self, actor_chef_id, stations=None, strict_station=False):
-        """Validate the acting chef and the caller's rights, return the chef (may be empty)."""
+    def _kitchen_get_actor(self, actor_chef_id):
         Chef = self.env["pos.kitchen.chef"]
         chef = Chef
         if actor_chef_id:
@@ -18,8 +20,6 @@ class KitchenAccessMixin(models.AbstractModel):
                 raise AccessError(_("This chef is not active."))
             if chef.company_id not in self.env.companies:
                 raise AccessError(_("This chef belongs to another company."))
-            if strict_station and stations and chef.station_ids and not (chef.station_ids & stations):
-                raise AccessError(_("Chef %(chef)s is not allowed to work on this station.", chef=chef.name))
         return chef
 
     @api.model

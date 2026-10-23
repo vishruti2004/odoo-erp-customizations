@@ -17,6 +17,15 @@
         </Dialog>
     </t>
 
+    <t t-name="pos_kitchen_screen.ProductScreen" t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
+        <xpath expr="//OrderSummary" position="before">
+            <div t-if="currentOrder?.kitchenLocked" class="o_kitchen_lock_banner d-flex align-items-center gap-2 mx-2 mt-2 px-3 py-2 rounded">
+                <i class="fa fa-lock" />
+                <span>This order is ready in the kitchen and can no longer be changed.</span>
+            </div>
+        </xpath>
+    </t>
+
     <t t-name="pos_kitchen_screen.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
         <xpath expr="//Dropdown//div[hasclass('pos-burger-menu-items')]//DropdownItem" position="before">
             <DropdownItem t-if="kitchenOverrideAvailable" onSelected="() => this.onKitchenStationClick()">

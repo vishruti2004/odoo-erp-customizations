@@ -4,19 +4,36 @@
         <field name="name">pos.kitchen.performance.list</field>
         <field name="model">pos.kitchen.performance</field>
         <field name="arch" type="xml">
-            <list create="0" edit="0" decoration-danger="is_delayed">
-                <field name="sent_at"/>
-                <field name="order_name"/>
-                <field name="product_id"/>
-                <field name="qty" sum="Qty"/>
-                <field name="station_id"/>
-                <field name="chef_id" optional="show"/>
-                <field name="prep_seconds" widget="duration_time" optional="show"/>
-                <field name="service_seconds" widget="duration_time" optional="show"/>
-                <field name="target_seconds" widget="duration_time" optional="hide"/>
-                <field name="delay_seconds" widget="duration_time"/>
-                <field name="is_delayed" column_invisible="1"/>
-                <field name="reprep_count" optional="show"/>
+            <list string="Kitchen Performance"
+                  create="0"
+                  edit="0"
+                  delete="0"
+                  decoration-danger="is_late"
+                  default_order="sent_at desc">
+                <field name="is_late" column_invisible="1" />
+                <field name="sent_at" />
+                <field name="order_name" />
+                <field name="product_id" />
+                <field name="net_qty" sum="Total" />
+                <field name="station_id" />
+                <field name="chef_id" />
+                <field name="prep_minutes" string="Preparation (min)" avg="Average" />
+                <field name="target_minutes" string="Target (min)" avg="Average" />
+                <field name="diff_minutes" string="Difference (min)" avg="Average" />
+                <field name="late_lines" string="Late" sum="Total" />
+                <field name="start_minutes" string="Time to start (min)" optional="hide" avg="Average" />
+                <field name="serve_minutes" string="Wait before serving (min)" optional="hide" avg="Average" />
+                <field name="status"
+                       widget="badge"
+                       decoration-muted="status == 'waiting'"
+                       decoration-info="status == 'preparing'"
+                       decoration-warning="status == 'ready'"
+                       decoration-success="status == 'served'" />
+                <field name="priority_at_send"
+                       widget="badge"
+                       optional="hide"
+                       decoration-danger="priority_at_send == 'high'"
+                       decoration-muted="priority_at_send == 'low'" />
             </list>
         </field>
     </record>
@@ -25,35 +42,46 @@
         <field name="name">pos.kitchen.performance.form</field>
         <field name="model">pos.kitchen.performance</field>
         <field name="arch" type="xml">
-            <form create="0" edit="0">
+            <form string="Kitchen Performance" create="0" edit="0" delete="0">
+                <header>
+                    <field name="status" widget="statusbar" />
+                </header>
                 <sheet>
+                    <widget name="web_ribbon" title="Late" bg_color="text-bg-danger" invisible="not is_late" />
+                    <div class="oe_title">
+                        <h1>
+                            <field name="product_id" readonly="1" />
+                        </h1>
+                        <h3 class="text-muted">Order
+                            <field name="order_name" class="oe_inline" />
+                        </h3>
+                    </div>
                     <group>
-                        <group>
-                            <field name="order_name"/>
-                            <field name="pos_order_id"/>
-                            <field name="product_id"/>
-                            <field name="qty"/>
-                            <field name="cancelled_qty"/>
-                            <field name="priority_at_send"/>
+                        <group string="Who and where">
+                            <field name="station_id" />
+                            <field name="chef_id" />
+                            <field name="net_qty" />
+                            <field name="cancelled_qty" invisible="not cancelled_qty" />
+                            <field name="priority_at_send" />
+                            <field name="pos_order_id" />
+                            <field name="config_id" />
+                            <field name="session_id" />
                         </group>
-                        <group>
-                            <field name="config_id"/>
-                            <field name="session_id"/>
-                            <field name="station_id"/>
-                            <field name="chef_id"/>
-                            <field name="reprep_count"/>
+                        <group string="Times (minutes)">
+                            <field name="target_minutes" string="Target" invisible="not is_measured" />
+                            <field name="prep_minutes" string="Preparation" />
+                            <field name="diff_minutes" string="Difference (negative = faster)" invisible="not is_measured" />
+                            <field name="late_minutes" string="Late by" invisible="not is_late" />
+                            <field name="start_minutes" string="Time to start" />
+                            <field name="serve_minutes" string="Wait before serving" />
+                            <field name="is_measured" invisible="1" />
+                            <field name="is_late" invisible="1" />
                         </group>
-                        <group string="Timestamps">
-                            <field name="sent_at"/>
-                            <field name="started_at"/>
-                            <field name="ready_at"/>
-                            <field name="served_at"/>
-                        </group>
-                        <group string="Durations">
-                            <field name="prep_seconds" widget="duration_time"/>
-                            <field name="service_seconds" widget="duration_time"/>
-                            <field name="target_seconds" widget="duration_time"/>
-                            <field name="delay_seconds" widget="duration_time"/>
+                        <group string="Timeline">
+                            <field name="sent_at" />
+                            <field name="started_at" />
+                            <field name="ready_at" />
+                            <field name="served_at" />
                         </group>
                     </group>
                 </sheet>
@@ -65,13 +93,16 @@
         <field name="name">pos.kitchen.performance.pivot</field>
         <field name="model">pos.kitchen.performance</field>
         <field name="arch" type="xml">
-            <pivot string="Kitchen Performance" sample="1">
-                <field name="station_id" type="row"/>
-                <field name="prep_seconds" type="measure"/>
-                <field name="service_seconds" type="measure"/>
-                <field name="delay_seconds" type="measure"/>
-                <field name="delayed_count" type="measure"/>
-                <field name="qty" type="measure"/>
+            <pivot string="Kitchen Performance" sample="1" disable_linking="0">
+                <field name="station_id" type="row" />
+                <field name="net_qty" type="measure" />
+                <!-- <field name="measured_count" type="measure" /> -->
+                <field name="prep_minutes" type="measure" />
+                <field name="target_minutes" type="measure" />
+                <field name="diff_minutes" type="measure" />
+                <field name="late_lines" type="measure" />
+                <field name="on_time_pct" type="measure" />
+                <field name="untargeted_count" type="measure" />
             </pivot>
         </field>
     </record>
@@ -80,9 +111,9 @@
         <field name="name">pos.kitchen.performance.graph</field>
         <field name="model">pos.kitchen.performance</field>
         <field name="arch" type="xml">
-            <graph string="Kitchen Performance" type="bar" sample="1">
-                <field name="station_id" type="row"/>
-                <field name="prep_seconds" type="measure"/>
+            <graph string="Average preparation time" type="bar" sample="1">
+                <field name="station_id" type="row" />
+                <field name="prep_minutes" type="measure" />
             </graph>
         </field>
     </record>
@@ -91,23 +122,36 @@
         <field name="name">pos.kitchen.performance.search</field>
         <field name="model">pos.kitchen.performance</field>
         <field name="arch" type="xml">
-            <search>
-                <field name="order_name"/>
-                <field name="product_id"/>
-                <field name="station_id"/>
-                <field name="chef_id"/>
-                <filter name="delayed" string="Delayed" domain="[('is_delayed', '=', True)]"/>
-                <filter name="reprepared" string="Re-prepared" domain="[('reprep_count', '&gt;', 0)]"/>
-                <separator/>
-                <filter name="last_7" string="Last 7 days" domain="[('sent_at', '&gt;=', '-7d')]"/>
-                <filter name="last_30" string="Last 30 days" domain="[('sent_at', '&gt;=', '-30d')]"/>
-                <separator/>
-                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}"/>
-                    <filter name="group_station" string="Station" context="{'group_by': 'station_id'}"/>
-                    <filter name="group_chef" string="Chef" context="{'group_by': 'chef_id'}"/>
-                    <filter name="group_session" string="Session" context="{'group_by': 'session_id'}"/>
-                    <filter name="group_hour" string="Hour" context="{'group_by': 'sent_hour'}"/>
-                    <filter name="group_day" string="Day" context="{'group_by': 'sent_at:day'}"/>
+            <search string="Kitchen Performance">
+                <field name="product_id" />
+                <field name="station_id" />
+                <field name="chef_id" />
+                <field name="order_name" />
+                <field name="session_id" />
+                <filter name="prepared" string="Prepared items" domain="[('ready_at', '!=', False)]" help="Items that are ready or served." />
+                <filter name="in_progress" string="Not ready yet" domain="[('ready_at', '=', False), ('net_qty', '>', 0)]" />
+                <separator />
+                <filter name="late" string="Late" domain="[('is_late', '=', True)]" />
+                <filter name="on_time" string="On time" domain="[('is_measured', '=', True), ('is_late', '=', False)]" />
+                <filter name="no_target" string="No target time" domain="[('untargeted_count', '>', 0)]" help="Ready items that have no preparation time: they cannot be compared with a target." />
+                <separator />
+                <filter name="today" string="Today" domain="[('sent_at', '>=', 'today')]" />
+                <filter name="yesterday" string="Yesterday" domain="[('sent_at', '>=', 'today -1d'), ('sent_at', '&lt;', 'today')]" />
+                <filter name="last_7" string="Last 7 days" domain="[('sent_at', '>=', 'today -6d')]" />
+                <filter name="last_30" string="Last 30 days" domain="[('sent_at', '>=', 'today -29d')]" />
+                <filter name="sent_at" string="Date" date="sent_at" />
+                <separator />
+                <filter name="high_priority" string="High priority" domain="[('priority_at_send', '=', 'high')]" />
+                <group>
+                    <filter name="group_station" string="Station" context="{'group_by': 'station_id'}" />
+                    <filter name="group_chef" string="Chef" context="{'group_by': 'chef_id'}" />
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}" />
+                    <filter name="group_status" string="Status" context="{'group_by': 'status'}" />
+                    <filter name="group_priority" string="Priority" context="{'group_by': 'priority_at_send'}" />
+                    <filter name="group_session" string="Session" context="{'group_by': 'session_id'}" />
+                    <filter name="group_day" string="Day" context="{'group_by': 'sent_at:day'}" />
+                    <filter name="group_hour" string="Hour of the day" context="{'group_by': 'hour_of_day'}" />
+                </group>
             </search>
         </field>
     </record>
@@ -116,7 +160,18 @@
         <field name="name">Kitchen Performance</field>
         <field name="res_model">pos.kitchen.performance</field>
         <field name="view_mode">pivot,graph,list,form</field>
-        <field name="context">{'search_default_last_30': 1, 'search_default_group_station': 1}</field>
+        <field name="search_view_id" ref="kitchen_performance_view_search" />
+        <field name="context">{'search_default_prepared': 1, 'search_default_last_30': 1, 'search_default_group_station': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No item prepared yet</p>
+            <p>
+                Every item sent to a kitchen screen is measured here: how long it took to be ready compared
+                with its target time, and how many were late. Times are in minutes and averaged per order
+                line. Only ready items that have a target time are measured, and all the time columns use
+                exactly the same lines. Ready items without a target time are shown in "No target time":
+                set a preparation time on the product, its PoS category or the station to include them.
+            </p>
+        </field>
     </record>
 
     <record id="kitchen_item_history_view_list" model="ir.ui.view">
@@ -124,14 +179,20 @@
         <field name="model">pos.kitchen.item.history</field>
         <field name="arch" type="xml">
             <list create="0" edit="0" delete="0">
-                <field name="changed_at"/>
-                <field name="pos_order_id"/>
-                <field name="product_id"/>
-                <field name="event_type"/>
-                <field name="old_quantity"/>
-                <field name="new_quantity"/>
-                <field name="changed_by_chef_id"/>
-                <field name="notes"/>
+                <field name="changed_at" />
+                <field name="order_name" />
+                <field name="product_id" />
+                <field name="event_type"
+                       widget="badge"
+                       decoration-success="event_type == 'qty_increased'"
+                       decoration-warning="event_type == 'qty_decreased'"
+                       decoration-danger="event_type in ('cancelled', 'reprep')" />
+                <field name="old_quantity" />
+                <field name="new_quantity" />
+                <field name="reason_type" optional="show" />
+                <field name="reason" optional="show" />
+                <field name="station_id" optional="show" />
+                <field name="chef_id" optional="show" />
             </list>
         </field>
     </record>
@@ -147,16 +208,19 @@
         <field name="model">pos.kitchen.assignment.history</field>
         <field name="arch" type="xml">
             <list create="0" edit="0" delete="0">
-                <field name="changed_at"/>
-                <field name="pos_order_id"/>
-                <field name="product_id"/>
-                <field name="move_type"/>
-                <field name="previous_chef_id"/>
-                <field name="new_chef_id"/>
-                <field name="previous_station_id"/>
-                <field name="new_station_id"/>
-                <field name="changed_by_chef_id"/>
-                <field name="reason"/>
+                <field name="changed_at" />
+                <field name="order_name" />
+                <field name="product_id" />
+                <field name="move_type"
+                       widget="badge"
+                       decoration-info="move_type == 'assign'"
+                       decoration-warning="move_type == 'reassign'"
+                       decoration-primary="move_type == 'station_move'" />
+                <field name="previous_chef_id" optional="show" />
+                <field name="new_chef_id" optional="show" />
+                <field name="previous_station_id" optional="show" />
+                <field name="new_station_id" optional="show" />
+                <field name="changed_by_chef_id" string="By" optional="show" />
             </list>
         </field>
     </record>

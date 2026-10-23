@@ -1,78 +1,4 @@
 .o_kitchen_active {
-    --kitchen-card-min: 290px;
-
-    //  ticket density
-    &.o_pdis_density_compact {
-        --kitchen-card-min: 230px;
-        .o_pdis_order_card {
-            font-size: 0.85rem;
-        }
-        .o_preparation_display_orderline {
-            padding-top: 0.2rem !important;
-            padding-bottom: 0.2rem !important;
-        }
-        .o_pdis_order_card_header_bottom {
-            padding: 0.25rem 0.5rem !important;
-        }
-        .o_pdis_orders {
-            gap: 0.5rem !important;
-            padding: 0.5rem !important;
-        }
-        .o_kitchen_toolbar {
-            padding: 0.15rem 0.5rem !important;
-        }
-    }
-
-    &.o_pdis_density_expanded {
-        --kitchen-card-min: 340px;
-        .o_pdis_order_card {
-            font-size: 1.1rem;
-        }
-        .o_preparation_display_orderline {
-            padding-top: 0.75rem !important;
-            padding-bottom: 0.75rem !important;
-        }
-        // larger tap targets
-        .o_kitchen_toolbar .btn,
-        .o_kitchen_line_meta .btn {
-            min-width: 44px;
-            min-height: 44px;
-        }
-    }
-
-    //  layouts
-    .o_pdis_orders {
-        grid-template-columns: repeat(auto-fill, minmax(var(--kitchen-card-min), 1fr));
-    }
-    .o_pdis_order_card {
-        min-width: var(--kitchen-card-min);
-    }
-
-    &.o_kitchen_fixed_columns {
-        .o_pdis_orders {
-            grid-template-columns: repeat(var(--kitchen-cols), minmax(0, 1fr));
-        }
-        .o_pdis_order_card {
-            min-width: 0;
-        }
-    }
-
-    &.o_kitchen_layout_list {
-        .o_pdis_orders {
-            grid-template-columns: minmax(0, 1fr);
-        }
-        .o_pdis_order_card {
-            min-width: 0;
-        }
-    }
-
-    &.o_kitchen_layout_lanes {
-        .o_pdis_orders {
-            grid-template-columns: repeat(var(--kitchen-lanes), minmax(var(--kitchen-card-min), 1fr));
-            grid-auto-flow: row dense;
-        }
-    }
-
     .o_pdis_main_area {
         display: flex;
         flex-direction: column;
@@ -83,18 +9,11 @@
         }
     }
 
-    //  priority / focus
+    //  priority
     .o_pdis_order_card {
         &.o_kitchen_urgent {
             box-shadow: 0 0 0 3px #dc3545;
             animation: o_kitchen_pulse 1.6s ease-in-out infinite;
-        }
-        &.o_kitchen_high {
-            box-shadow: 0 0 0 2px #fd7e14;
-        }
-        &.o_kitchen_focused {
-            outline: 4px solid #0d6efd;
-            outline-offset: 2px;
         }
     }
 
@@ -142,6 +61,15 @@
         letter-spacing: 0.05em;
     }
 
+    .o_kitchen_ribbon_reprep {
+        background: #dc3545;
+    }
+    .o_kitchen_change_reprep {
+        background: #f8d7da;
+        color: #842029;
+        border: 1px solid #f1aeb5;
+    }
+
     // item changed by the waiter
     .o_kitchen_change_pending {
         background: #fff3cd;
@@ -151,22 +79,6 @@
     .o_kitchen_change_info {
         background: #d1e7dd;
         color: #0f5132;
-    }
-
-    .o_pdis_sidebar {
-        .btn-info,
-        .btn-secondary,
-        .btn-light {
-            font-size: 0.85rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 999px;
-            background: transparent;
-            border: 1px solid #adb5bd;
-            color: #495057;
-            &:hover {
-                background: #e9ecef;
-            }
-        }
     }
 
     //  workload bar
