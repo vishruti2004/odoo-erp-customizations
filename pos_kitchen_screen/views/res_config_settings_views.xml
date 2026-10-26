@@ -12,6 +12,11 @@
                              help="Station routing, order priority, chef assignment, table readiness, delay analytics and workload balancing on the preparation displays.">
                         <field name="pos_kitchen_advanced"/>
                     </setting>
+                    <setting id="pos_kitchen_auto_assign_setting" string="Chef and station assignment"
+                             invisible="not pos_kitchen_advanced"
+                             help="Dynamic Automatic: every new item goes to the least loaded station of its category (Item Wise or Time Wise, as set on each station) and to an eligible chef on shift. Manual choices are never overwritten.">
+                        <field name="pos_kitchen_auto_assign" widget="radio"/>
+                    </setting>
                 </block>
             </xpath>
         </field>

@@ -1,18 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_kitchen_root" name="Kitchen" parent="point_of_sale.menu_point_root"
-              sequence="55" groups="point_of_sale.group_pos_manager"/>
-    <menuitem id="menu_kitchen_stations" name="Stations" parent="menu_kitchen_root"
-              action="kitchen_station_action" sequence="10"/>
-    <menuitem id="menu_kitchen_chefs" name="Chefs" parent="menu_kitchen_root"
-              action="kitchen_chef_action" sequence="20"/>
+    <menuitem id="menu_kitchen_root" name="Kitchen" parent="point_of_sale.menu_point_root" sequence="55" />
 
-    <menuitem id="menu_kitchen_item_history" name="Item Changes" parent="menu_kitchen_root"
-              action="kitchen_item_history_action" sequence="40"/>
-    <menuitem id="menu_kitchen_assignments" name="Assignments" parent="menu_kitchen_root"
-              action="kitchen_assignment_history_action" sequence="50"/>
+    <menuitem id="menu_kitchen_stations"
+              name="Stations"
+              parent="menu_kitchen_root"
+              action="kitchen_station_action"
+              sequence="10" />
 
-    <menuitem id="menu_kitchen_performance" name="Kitchen Performance" parent="point_of_sale.menu_point_rep"
-              action="kitchen_performance_action" sequence="7"/>
+    <menuitem id="menu_kitchen_chefs"
+              name="Chefs"
+              parent="menu_kitchen_root"
+              action="kitchen_chef_action"
+              sequence="20" />
+
+    <menuitem id="menu_kitchen_item_history"
+              name="Item Changes"
+              parent="menu_kitchen_root"
+              action="kitchen_item_history_action"
+              sequence="40" />
+              
+    <menuitem id="menu_kitchen_assignments"
+              name="Assignments"
+              parent="menu_kitchen_root"
+              action="kitchen_assignment_history_action"
+              sequence="50" />
+
+    <menuitem id="menu_kitchen_performance"
+              name="Kitchen Performance"
+              parent="point_of_sale.menu_point_rep"
+              action="kitchen_performance_action"
+              sequence="7" />
 </odoo>
-

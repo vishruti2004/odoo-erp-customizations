@@ -37,6 +37,14 @@
             white-space: nowrap;
         }
     }
+    .o_kitchen_chef_auto {
+        border-style: dashed;
+        border-color: #714b67;
+        .o_kitchen_auto_icon {
+            color: #714b67;
+            font-size: 0.75rem;
+        }
+    }
     .o_kitchen_take {
         padding: 0.1rem 0.8rem;
         border: 1px solid #198754;
@@ -94,4 +102,52 @@
     50% {
         box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.45);
     }
+}
+// chef menu of the top bar (rendered outside the screen root): "All chefs" + 4 chefs, then it scrolls
+.o_kitchen_chef_menu {
+    min-width: 230px;
+    max-height: calc(5 * 2.5rem + 1rem);
+    overflow-y: auto;
+    .o_kitchen_chef_item {
+        display: flex;
+        align-items: center;
+        min-height: 2.5rem;
+        padding-left: 0.75rem;
+        &::before {
+            display: none !important; // the check is drawn by .o_kitchen_chef_check, centered
+        }
+        &.o_kitchen_chef_selected {
+            background-color: #f3f4f6;
+        }
+    }
+    .o_kitchen_chef_check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 1.25rem;
+        margin-right: 0.5rem;
+        color: #714b67;
+    }
+}
+
+// the chef box of the header stays white like the rest of the header
+.o_kitchen_chef_toggle,
+.o_kitchen_chef_fixed {
+    background-color: #fff;
+    color: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.o_kitchen_chef_toggle {
+    &:hover,
+    &:focus,
+    &.show,
+    &.active,
+    &[aria-expanded="true"] {
+        background-color: #f8f9fa;
+        border-color: transparent;
+    }
+}
+.o_kitchen_chef_fixed {
+    cursor: default;
 }

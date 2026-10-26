@@ -5,7 +5,6 @@ import { _t } from "@web/core/l10n/translation";
 import { PrepDisplay } from "@pos_enterprise/app/services/preparation_display_service";
 import {
     KitchenSelectDialog,
-    KitchenChefDialog,
     KitchenInfoDialog,
     KitchenReprepareDialog,
 } from "@pos_kitchen_screen/app/components/kitchen_dialogs";
@@ -27,6 +26,9 @@ patch(PrepDisplay.prototype, {
         this.kitchen = reactive({
             chef: null,
             workload: [],
+            chefWorkload: [],
+            // what the logged-in user may see: {manager, chef: {id, name, station_ids}} (null until loaded)
+            access: null,
             chefFilter: "all",
             priorityFilter: "all",
             stationFilter: [],
@@ -35,10 +37,47 @@ patch(PrepDisplay.prototype, {
         await super.setup(...arguments);
         this.overloadAlerts = new Map();
         this.refreshWorkload = debounce(() => this.loadWorkload(), 800);
-        this.restoreChef();
         this.registerKitchenHandlers();
         this.startKitchenTimers();
+        await this.loadKitchenAccess();
         this.loadWorkload();
+    },
+
+    //  access: managers see everything, a chef sees only his stations and his items
+    async loadKitchenAccess() {
+        if (!this.kitchenAdvanced) {
+            this.kitchen.access = { manager: true, chef: false };
+            return;
+        }
+        const access = await this.kitchenCall("pos.kitchen.chef", "get_kitchen_access", [this.id]);
+        this.kitchen.access = access || { manager: false, chef: false };
+        if (!this.kitchen.access.manager) {
+            const chef = this.kitchen.access.chef;
+            if (chef) {
+                this.kitchen.chef = { id: chef.id, name: chef.name };
+            } else {
+                this.notification.add(_t("Your user is not linked to a chef."), {
+                    type: "warning",
+                });
+            }
+            this.kitchen.chefFilter = "all";
+        }
+        this.computeOrderCounts?.();
+    },
+    get kitchenIsManager() {
+        return !this.kitchenAdvanced || Boolean(this.kitchen.access?.manager);
+    },
+    get kitchenRestricted() {
+        return this.kitchenAdvanced && !this.kitchen.access?.manager;
+    },
+    /** Stations of the logged-in chef (restricted users only). */
+    get myStationIds() {
+        return this.kitchen.access?.chef?.station_ids || [];
+    },
+    /** Station records of this screen the user may see. */
+    get visibleStations() {
+        const own = this.ownStations;
+        return this.kitchenRestricted ? own.filter((s) => this.myStationIds.includes(s.id)) : own;
     },
 
     get kitchenDisplay() {
@@ -46,6 +85,9 @@ patch(PrepDisplay.prototype, {
     },
     get kitchenAdvanced() {
         return Boolean(this.kitchenDisplay?.kitchen_advanced);
+    },
+    get kitchenAutoMode() {
+        return (this.kitchenAdvanced && this.kitchenDisplay?.kitchen_auto_assign) || "manual";
     },
     get ownStations() {
         return this.data.models["pos.kitchen.station"].filter(
@@ -63,62 +105,37 @@ patch(PrepDisplay.prototype, {
         return this.kitchen.chef?.id || false;
     },
 
-    restoreChef() {
-        try {
-            const id = parseInt(localStorage.getItem(`kitchen_chef_${this.id}`));
-            const chef = id && this.data.models["pos.kitchen.chef"].get(id);
-            if (chef) {
-                this.kitchen.chef = this.chefSnapshot(chef);
-            }
-        } catch {
-        }
-    },
-    chefSnapshot(chef) {
-        return {
-            id: chef.id,
-            name: chef.name,
-        };
-    },
     async loadChefsOnShift(chefs) {
         const ids = await this.kitchenCall("pos.kitchen.chef", "get_chefs_on_shift", [
             chefs.map((c) => c.id),
         ]);
         return new Set(ids || []);
     },
-    async openChefLogin() {
-        if (!this.kitchenAdvanced) {
-            return;
-        }
-        const onShift = await this.loadChefsOnShift(this.chefs);
-        this.dialog.add(KitchenChefDialog, {
-            chefs: this.chefs
-                .filter((c) => onShift.has(c.id))
-                .map((c) => ({ id: c.id, name: c.name })),
-            current: this.kitchen.chef,
-            login: (chefId) => this.loginChef(chefId),
-            logout: () => this.logoutChef(),
-        });
-    },
     loginChef(chefId) {
         const chef = this.data.models["pos.kitchen.chef"].get(chefId);
-        if (!chef) {
+        if (!chef || this.kitchenRestricted) {
             return;
         }
-        this.kitchen.chef = this.chefSnapshot(chef);
-        try {
-            localStorage.setItem(`kitchen_chef_${this.id}`, chef.id);
-        } catch {
-        }
+        // a selected chef sees only his own items, "All chefs" shows every ticket
+        this.kitchen.chef = { id: chef.id, name: chef.name };
+        this.kitchen.chefFilter = "mine";
     },
     logoutChef() {
+        if (this.kitchenRestricted) {
+            return;
+        }
         this.kitchen.chef = null;
-        try {
-            localStorage.removeItem(`kitchen_chef_${this.id}`);
-        } catch {
-        }
-        if (this.kitchen.chefFilter === "mine") {
-            this.kitchen.chefFilter = "all";
-        }
+        this.kitchen.chefFilter = "all";
+    },
+    /** Chefs of this screen for the top-bar menu (any chef can be looked at, off shift ones are marked). */
+    get chefMenu() {
+        const shift = new Map(this.kitchen.chefWorkload.map((c) => [c.id, c.on_shift]));
+        return this.chefs.map((chef) => ({
+            id: chef.id,
+            name: chef.name,
+            offShift: shift.has(chef.id) && !shift.get(chef.id),
+            selected: this.kitchen.chef?.id === chef.id,
+        }));
     },
     startKitchenTimers() {
         setInterval(() => {
@@ -143,6 +160,9 @@ patch(PrepDisplay.prototype, {
                 const line = models["pos.prep.line"].get(parseInt(lineId));
                 if (line) {
                     line.assigned_chef_id = chefId ? models["pos.kitchen.chef"].get(chefId) : false;
+                    if (data.modes && lineId in data.modes) {
+                        line.chef_assignment = data.modes[lineId];
+                    }
                 }
             }
         });
@@ -174,14 +194,14 @@ patch(PrepDisplay.prototype, {
         });
         this.onNotified("KITCHEN_ORDER_READY", (data) => {
             if (this.kitchenAdvanced) {
-                this.notification.add(_t("Order %s is ready at all stations.", data.name || ""), {
+                this.notification.add(_t("Order %s is ready.", data.name || ""), {
                     type: "success",
                 });
                 this.ringTheBell();
             }
         });
         this.onNotified("ITEM_CHANGED", (data) => {
-            this.notification.add(_t("Order %(order)s updated: %(product)s. %(text)s.", {
+            this.notification.add(_t("Order %(order)s updated: %(product)s (%(text)s)", {
                 order: data.order,
                 product: data.product,
                 text: data.text,
@@ -191,13 +211,29 @@ patch(PrepDisplay.prototype, {
             this.ringTheBell();
         });
         this.onNotified("OVERLOAD_UNRESOLVED", (data) => {
+            if (!this.visibleStations.some((s) => s.id === data.id)) {
+                return;
+            }
             this.showOverloadAlert(`u${data.id}`, 
-                _t("%(station)s is over capacity by %(excess)s %(unit)s and no other station can take the work. Please inform your supervisor.", {
+                _t("%(station)s is over capacity by %(excess)s %(unit)s. No other station is available.", {
                     station: data.station,
                     excess: data.excess,
                     unit: data.unit === "min" ? _t("min") : _t("items"),
                 })
             );
+        });
+        this.onNotified("KITCHEN_ORDER_REMOVED", (data) => {
+            // the whole PoS order was deleted / cancelled: its tickets leave the screen
+            for (const id of data.prep_order_ids) {
+                const ticket = models["pos.prep.order"].get(id);
+                for (const line of ticket?.prep_line_ids || []) {
+                    for (const state of [...(line.state_ids || [])]) {
+                        state.delete();
+                    }
+                }
+            }
+            this.computeOrderCounts();
+            this.refreshWorkload();
         });
         this.onNotified("KITCHEN_WARNING", (data) => {
             this.notification.add(data.message, { type: "warning" });
@@ -211,7 +247,7 @@ patch(PrepDisplay.prototype, {
             return await this.orm.call(model, method, args, {});
         } catch (error) {
             const message =
-                error?.data?.message || error?.message || _t("The action could not be completed.");
+                error?.data?.message || error?.message || _t("Action failed. Please retry.");
             this.notification.add(message, {
                 type: isKitchenRuleError(error) ? "warning" : "danger",
             });
@@ -223,13 +259,35 @@ patch(PrepDisplay.prototype, {
         if (!this.kitchenAdvanced) {
             return;
         }
-        const result = await this.kitchenCall("pos.kitchen.station", "get_station_workload", [
-            this.id,
+        const [result, chefs] = await Promise.all([
+            this.kitchenCall("pos.kitchen.station", "get_station_workload", [this.id]),
+            this.kitchenCall("pos.kitchen.chef", "get_chef_workload", [this.id]),
         ]);
         if (result) {
             this.alertOverflow(result);
             this.kitchen.workload = result;
         }
+        if (chefs) {
+            this.kitchen.chefWorkload = chefs;
+        }
+    },
+    get chefWorkloadView() {
+        const me = this.kitchen.access?.chef?.id;
+        return this.kitchen.chefWorkload
+            .filter((c) => c.on_shift && (!this.kitchenRestricted || c.id === me))
+            .map((c) => {
+                const qty = Number.isInteger(c.items) ? c.items : Math.round(c.items * 10) / 10;
+                return {
+                    ...c,
+                    label: _t("%(minutes)s min · Qty %(qty)s", { minutes: c.minutes, qty }),
+                    title: _t("%(name)s: %(minutes)s min pending · Qty %(qty)s pending", {
+                        name: c.name,
+                        minutes: c.minutes,
+                        qty,
+                    }),
+                    isMe: this.kitchen.chef?.id === c.id,
+                };
+            });
     },
     showOverloadAlert(key, message) {
         this.overloadAlerts.get(key)?.close();
@@ -244,7 +302,7 @@ patch(PrepDisplay.prototype, {
         }
     },
     alertOverflow(current) {
-        const ownIds = this.ownStations.map((s) => s.id);
+        const ownIds = this.visibleStations.map((s) => s.id);
         for (const entry of current) {
             if (!ownIds.includes(entry.id)) {
                 continue;
@@ -258,7 +316,7 @@ patch(PrepDisplay.prototype, {
             if (shown?.signature !== signature) {
                 this.showOverloadAlert(
                     entry.id,
-                    _t("%(station)s is over capacity by %(excess)s %(unit)s. Please move items to another station.", {
+                    _t("%(station)s is over capacity by %(excess)s %(unit)s.", {
                         station: entry.name,
                         excess: entry.excess,
                         unit: entry.metric === "time" ? _t("min") : _t("items"),
@@ -270,9 +328,13 @@ patch(PrepDisplay.prototype, {
     },
     get workloadView() {
         const ownIds = this.ownStations.map((s) => s.id);
-        const own = this.kitchen.workload.filter((w) => ownIds.includes(w.id));
+        const visibleIds = this.visibleStations.map((s) => s.id);
+        const own = this.kitchen.workload.filter((w) => visibleIds.includes(w.id));
         const altIds = new Set(own.flatMap((w) => w.alternatives));
-        const alt = this.kitchen.workload.filter((w) => altIds.has(w.id) && !ownIds.includes(w.id));
+        // a chef sees only his own stations, a manager also the stations that share their categories
+        const alt = this.kitchenRestricted
+            ? []
+            : this.kitchen.workload.filter((w) => altIds.has(w.id) && !ownIds.includes(w.id));
         return [...own, ...alt].map((w) => ({
             ...w,
             percent: w.limit ? Math.min(100, Math.round((w.value / w.limit) * 100)) : 0,
@@ -280,8 +342,22 @@ patch(PrepDisplay.prototype, {
             unit: w.metric === "time" ? _t("min") : _t("items"),
         }));
     },
-    get reassignTargets() {
-        return this.workloadView.filter((w) => !w.isOwn);
+    /** Stations an item can be moved to: every other station that handles its category (managers only). */
+    moveTargetsFor(lines) {
+        if (!this.kitchenIsManager || !lines.length) {
+            return [];
+        }
+        const stations = this.data.models["pos.kitchen.station"];
+        const current = new Set(lines.map((l) => l.station_id?.id).filter(Boolean));
+        return this.kitchen.workload
+            .filter((w) => !current.has(w.id))
+            .filter((w) => {
+                const categories = stations.get(w.id)?.category_ids_int || [];
+                return lines.every((line) =>
+                    line.product_id.pos_categ_ids.some((c) => categories.includes(c.id))
+                );
+            })
+            .map((w) => ({ ...w, unit: w.metric === "time" ? _t("min") : _t("items") }));
     },
     isOverflowOrder(posOrderId) {
         if (!this.kitchenAdvanced || !posOrderId) {
@@ -301,7 +377,7 @@ patch(PrepDisplay.prototype, {
         if (!plan.destination) {
             this.showOverloadAlert(
                 `u${entry.id}`,
-                _t("%(station)s is over capacity by %(excess)s %(unit)s. %(reason)s Please inform your supervisor.", {
+                _t("%(station)s is over capacity by %(excess)s %(unit)s. %(reason)s", {
                     station: entry.name,
                     excess: plan.excess,
                     unit,
@@ -311,12 +387,12 @@ patch(PrepDisplay.prototype, {
             return;
         }
         this.dialog.add(KitchenInfoDialog, {
-            title: _t("%(station)s is over capacity by %(excess)s %(unit)s", {
+            title: _t("%(station)s: +%(excess)s %(unit)s over capacity", {
                 station: entry.name,
                 excess: plan.excess,
                 unit,
             }),
-            intro: _t("The following items will move to %(dest)s (%(free)s):", {
+            intro: _t("Move to %(dest)s (%(free)s):", {
                 dest: plan.destination.name,
                 free:
                     plan.destination.free === null
@@ -328,8 +404,8 @@ patch(PrepDisplay.prototype, {
                 sub: `${l.load} ${unit}, ${_t("order")} ${l.order}`,
             })),
             summary: plan.exact
-                ? _t("This removes the excess exactly (%(moved)s %(unit)s).", { moved: plan.moved, unit })
-                : _t("This moves %(moved)s of the %(excess)s %(unit)s.", {
+                ? _t("Clears the full excess (%(moved)s %(unit)s).", { moved: plan.moved, unit })
+                : _t("Clears %(moved)s of %(excess)s %(unit)s.", {
                       moved: plan.moved,
                       excess: plan.excess,
                       unit,
@@ -359,24 +435,35 @@ patch(PrepDisplay.prototype, {
     },
 
     openReassignMenu(states) {
-        const targets = this.reassignTargets;
+        const lines = [...new Set(states.map((s) => s.prep_line_id))];
+        const targets = this.moveTargetsFor(lines);
         if (!targets.length) {
-            this.notification.add(_t("No other station prepares these products."), { type: "warning" });
+            this.notification.add(_t("No other station handles this category."), { type: "warning" });
             return;
         }
         const lineIds = [...new Set(states.map((s) => s.prep_line_id.id))];
+        const auto =
+            this.kitchenAutoMode === "auto"
+                ? [{ id: "auto", label: _t("Automatic"), sub: _t("Least loaded station") }]
+                : [];
         this.dialog.add(KitchenSelectDialog, {
             title: _t("Move to another station"),
-            options: targets.map((t) => ({
-                id: t.id,
-                label: t.name,
-                sub: t.limit ? `${t.value} / ${t.limit} ${t.unit}` : `${t.value} ${t.unit}`,
-            })),
+            options: [
+                ...auto,
+                ...targets.map((t) => ({
+                    id: t.id,
+                    label: t.name,
+                    sub: t.limit ? `${t.value} / ${t.limit} ${t.unit}` : `${t.value} ${t.unit}`,
+                })),
+            ],
             withReason: true,
             confirm: (stationId, reason) => this.reassignLines(lineIds, stationId, reason),
         });
     },
     async reassignLines(lineIds, stationId, reason) {
+        if (stationId === "auto") {
+            return this.autoAssignLines(lineIds, true);
+        }
         const result = await this.kitchenCall("pos.prep.line", "reassign", [
             lineIds,
             stationId,
@@ -385,7 +472,7 @@ patch(PrepDisplay.prototype, {
         ]);
         if (result?.skipped?.length) {
             this.notification.add(
-                _t("%s item(s) could not be moved because they are already started.", result.skipped.length),
+                _t("%s item(s) already started and not moved.", result.skipped.length),
                 { type: "warning" }
             );
         }
@@ -400,16 +487,33 @@ patch(PrepDisplay.prototype, {
             return !allowed.length || allowed.some((id) => categories.has(id));
         });
         const onShift = await this.loadChefsOnShift(cooks);
+        const load = new Map(this.kitchen.chefWorkload.map((c) => [c.id, c]));
         return [
+            ...(this.kitchenAutoMode === "auto"
+                ? [{ id: "auto", label: _t("Automatic"), sub: _t("Least loaded chef") }]
+                : []),
             { id: 0, label: _t("Unassigned") },
-            ...cooks.filter((c) => onShift.has(c.id)).map((c) => ({ id: c.id, label: c.name })),
+            ...cooks
+                .filter((c) => onShift.has(c.id))
+                .map((c) => ({
+                    id: c.id,
+                    label: c.name,
+                    sub: load.has(c.id)
+                        ? _t("%(minutes)s min pending", { minutes: load.get(c.id).minutes })
+                        : undefined,
+                })),
         ];
     },
     async openAssignMenu(states) {
+        if (this.kitchenRestricted) {
+            // a chef can only take his own items, nobody else is shown
+            const free = states.filter((s) => !s.prep_line_id.assigned_chef_id);
+            return free.length ? this.takeStates(free) : undefined;
+        }
         const lineIds = [...new Set(states.map((s) => s.prep_line_id.id))];
         const options = await this.chefOptions(states);
-        if (options.length === 1) {
-            this.notification.add(_t("No chef of this station is on shift now."), {
+        if (!options.some((o) => typeof o.id === "number" && o.id)) {
+            this.notification.add(_t("No chef on shift for this station."), {
                 type: "warning",
             });
         }
@@ -421,7 +525,34 @@ patch(PrepDisplay.prototype, {
             confirm: (chefId) => this.assignChef(lineIds, chefId),
         });
     },
+    async autoAssignLines(lineIds, rebalanceStation = false) {
+        const result = await this.kitchenCall("pos.prep.line", "kitchen_auto_assign", [
+            lineIds,
+            rebalanceStation,
+            this.actorChefId,
+        ]);
+        if (result) {
+            const moved = result.moved?.length || 0;
+            const assigned = Object.keys(result.assigned || {}).length;
+            if (!moved && !assigned) {
+                this.notification.add(
+                    _t("No better assignment found."),
+                    { type: "info" }
+                );
+            } else {
+                this.notification.add(
+                    _t("%(assigned)s item(s) assigned, %(moved)s moved.", { assigned, moved }),
+                    { type: "success" }
+                );
+            }
+        }
+        this.refreshWorkload();
+        return result;
+    },
     async assignChef(lineIds, chefId, reason) {
+        if (chefId === "auto") {
+            return this.autoAssignLines(lineIds, false);
+        }
         const result = await this.kitchenCall("pos.prep.line", "assign_chef", [
             lineIds,
             chefId || false,
@@ -434,6 +565,7 @@ patch(PrepDisplay.prototype, {
                 const line = this.data.models["pos.prep.line"].get(id);
                 if (line && (!chef || this.chefCooks(chef, line))) {
                     line.assigned_chef_id = chef;
+                    line.chef_assignment = chef ? "manual" : false;
                 }
             }
         }
@@ -445,7 +577,7 @@ patch(PrepDisplay.prototype, {
     },
     takeStates(states) {
         if (!this.kitchen.chef) {
-            this.openChefLogin();
+            this.notification.add(_t("Select a chef first."), { type: "warning" });
             return;
         }
         const lineIds = [...new Set(states.map((s) => s.prep_line_id.id))];
@@ -468,11 +600,11 @@ patch(PrepDisplay.prototype, {
             this.actorChefId,
         ]);
         if (result?.moved?.length) {
-            this.notification.add(_t("Sent back to the kitchen to be prepared again."), {
+            this.notification.add(_t("Item sent back for re-preparation."), {
                 type: "success",
             });
         } else if (result?.skipped?.length) {
-            this.notification.add(_t("This item is no longer ready and cannot be re-prepared."), {
+            this.notification.add(_t("Only ready items can be re-prepared."), {
                 type: "warning",
             });
         }
@@ -488,8 +620,8 @@ patch(PrepDisplay.prototype, {
         ) {
             const missing = counted.filter((s) => !s.prep_line_id.assigned_chef_id);
             if (missing.length) {
-                const names = [...new Set(missing.map((s) => s.product.display_name))];
-                return _t("Assign a chef before marking these items ready: %s", names.join(", "));
+                const names = [...new Set(missing.map((s) => s.prep_line_id.product_id.display_name))];
+                return _t("Assign a chef before marking ready: %s", names.join(", "));
             }
         }
         if (nextStage.stage_type === "done") {
@@ -505,9 +637,9 @@ patch(PrepDisplay.prototype, {
                     !FORWARD_STAGES.includes(s.stage_id.stage_type)
             );
             if (waiting.length) {
-                const names = [...new Set(waiting.map((s) => s.product.display_name))];
+                const names = [...new Set(waiting.map((s) => s.prep_line_id.product_id.display_name))];
                 return _t(
-                    "The order cannot be completed yet, these items are still being prepared: %s",
+                    "Order cannot be completed. Still in preparation: %s",
                     names.join(", ")
                 );
             }
@@ -564,17 +696,28 @@ patch(PrepDisplay.prototype, {
             return true;
         }
         const line = state.prep_line_id;
-        const k = this.kitchen;
-        if (k.chefFilter === "mine" && k.chef && line.assigned_chef_id?.id !== k.chef.id) {
+        const kitchen = this.kitchen;
+        if (this.kitchenRestricted) {
+            // a chef sees his own items and the free items of his stations, nothing of the other chefs
+            const me = kitchen.access?.chef;
+            if (!me) {
+                return false;
+            }
+            const chefId = line.assigned_chef_id?.id;
+            if (chefId ? chefId !== me.id : !this.myStationIds.includes(line.station_id?.id)) {
+                return false;
+            }
+        }
+        if (kitchen.chefFilter === "mine" && kitchen.chef && line.assigned_chef_id?.id !== kitchen.chef.id) {
             return false;
         }
-        if (k.chefFilter === "unassigned" && line.assigned_chef_id) {
+        if (kitchen.chefFilter === "unassigned" && line.assigned_chef_id) {
             return false;
         }
-        if (k.priorityFilter !== "all" && line.prep_order_id.priority !== k.priorityFilter) {
+        if (kitchen.priorityFilter !== "all" && line.prep_order_id.priority !== kitchen.priorityFilter) {
             return false;
         }
-        if (k.stationFilter.length && !k.stationFilter.includes(line.station_id?.id)) {
+        if (kitchen.stationFilter.length && !kitchen.stationFilter.includes(line.station_id?.id)) {
             return false;
         }
         return true;

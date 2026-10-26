@@ -155,7 +155,8 @@ class PosKitchenPerformance(models.Model):
     @api.model
     def _target_seconds_for(self, prep_line, station):
         template = prep_line.product_id.product_tmpl_id
-        minutes = template._kitchen_prep_minutes() or (station.default_target_minutes if station else 0.0)
+        minutes = template._kitchen_prep_minutes() or (
+            station.default_target_minutes if station and station.workload_metric == "time" else 0.0)
         if not minutes:
             display = station.prep_display_id if station else self.env["pos.prep.display"]
             first_stage = display.stage_ids[:1]

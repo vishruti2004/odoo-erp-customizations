@@ -1,9 +1,10 @@
 {
-    "name": "Kitchen Screen Enhancement",
-    "version": "19.0.1.0.7",
+    "name": "POS Restaurant Kitchen Screen",
+    "version": "19.0.1.1.4",
     "category": "Sales/Point of Sale",
     "summary": "Station routing, priority, chef shifts, readiness rules, "
-               "kitchen performance report and workload balancing for the Odoo 19 kitchen display",
+               "kitchen performance report, workload balancing "
+               "and automatic station / chef assignment for the Odoo 19 kitchen display",
     "author": "Custom",
     "depends": ["point_of_sale", "pos_enterprise", "hr"],
     "data": [
@@ -22,6 +23,9 @@
             "pos_kitchen_screen/static/src/app/**/*.js",
             "pos_kitchen_screen/static/src/app/**/*.xml",
             "pos_kitchen_screen/static/src/app/**/*.scss",
+        ],
+        "web.assets_backend": [
+            "pos_kitchen_screen/static/src/backend/kitchen_station_kanban.scss",
         ],
         "point_of_sale._assets_pos": [
             "pos_kitchen_screen/static/src/pos/**/*.js",

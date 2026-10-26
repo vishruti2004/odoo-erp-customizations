@@ -1,5 +1,7 @@
 import { patch } from "@web/core/utils/patch";
 import { useState } from "@odoo/owl";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { PrepDisplay } from "@pos_enterprise/app/components/preparation_display/preparation_display";
 import { Order } from "@pos_enterprise/app/components/order/order";
 import { Orderline } from "@pos_enterprise/app/components/orderline/orderline";
@@ -24,6 +26,7 @@ function viewingPreparation(prepDisplay) {
 }
 
 /* main screen */
+PrepDisplay.components = { ...PrepDisplay.components, Dropdown, DropdownItem };
 patch(PrepDisplay.prototype, {
     setup() {
         super.setup(...arguments);
@@ -34,10 +37,16 @@ patch(PrepDisplay.prototype, {
         return this.prepDisplay.kitchenAdvanced ? "o_kitchen_active" : "";
     },
     get kitchenChefLabel() {
-        return this.kitchen.chef ? this.kitchen.chef.name : _t("Select chef");
+        if (this.prepDisplay.kitchenRestricted && !this.kitchen.access?.chef) {
+            return _t("No chef profile");
+        }
+        return this.kitchen.chef ? this.kitchen.chef.name : _t("All chefs");
+    },
+    get kitchenIsManager() {
+        return this.prepDisplay.kitchenIsManager;
     },
     get showStationFilter() {
-        return this.prepDisplay.kitchenAdvanced && this.prepDisplay.ownStations.length > 1;
+        return this.prepDisplay.kitchenAdvanced && this.prepDisplay.visibleStations.length > 1;
     },
     toggleStationFilter(stationId) {
         const list = this.kitchen.stationFilter;
@@ -49,6 +58,10 @@ patch(PrepDisplay.prototype, {
         }
     },
     setChefFilter(value) {
+        if (value === "all") {
+            this.prepDisplay.logoutChef();
+            return;
+        }
         this.kitchen.chefFilter = value;
     },
     setPriorityFilter(value) {
@@ -173,6 +186,9 @@ patch(Orderline.prototype, {
     get kitchenChef() {
         return this.prepDisplay.kitchenAdvanced ? this.preparation_line.assigned_chef_id || null : null;
     },
+    get kitchenChefAuto() {
+        return Boolean(this.kitchenChef && this.preparation_line.chef_assignment === "auto");
+    },
     get kitchenCanAssign() {
         const state = this.kitchenState;
         return Boolean(
@@ -187,10 +203,14 @@ patch(Orderline.prototype, {
         return Boolean(
             state &&
                 this.prepDisplay.kitchenAdvanced &&
+                this.prepDisplay.kitchenIsManager &&
                 state.stage_id.stage_type === "todo" &&
                 state.todo &&
-                this.prepDisplay.reassignTargets.length
+                this.prepDisplay.moveTargetsFor([this.preparation_line]).length
         );
+    },
+    get kitchenIsManager() {
+        return this.prepDisplay.kitchenIsManager;
     },
     get kitchenCanReprepare() {
         const state = this.kitchenState;

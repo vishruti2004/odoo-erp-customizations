@@ -64,3 +64,42 @@
         user-select: none;
     }
 }
+
+.o_kitchen_priority_control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    &.o_kitchen_priority_high {
+        color: #be123c;
+        font-weight: 600;
+    }
+}
+
+.o_kitchen_prio_dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #3b82f6;
+}
+
+.o_kitchen_priority_high .o_kitchen_prio_dot {
+    background: #e11d48;
+}
+
+.o_kitchen_priority_low .o_kitchen_prio_dot {
+    background: #9ca3af;
+}
+
+.o_kitchen_priority_menu {
+    min-width: 210px;
+    .o_kitchen_priority_item {
+        display: flex;
+        align-items: center;
+        padding: 8px 14px;
+        &.active {
+            background: #f3f4f6;
+        }
+    }
+}

@@ -1,0 +1,737 @@
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>POS Kitchen Display in Odoo 19</title>
+    <meta name="title" content="POS Kitchen Display in Odoo 19">
+    <meta name="description" content="Kitchen configuration, workload management, order priority, live order updates, automatic chef assignment, filters and reports in Odoo 19.">
+    <meta name="keywords" content="Odoo 19, POS Kitchen Display, Kitchen Workload, Chef Assignment, Order Priority">
+    <meta name="author" content="iPredict IT Solutions Pvt. Ltd.">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+
+<!-- HEADER AND INTRODUCTION -->
+<section class="oe_container" style="margin-top:40px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:8px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:26px;font-weight:600;">
+            POS Kitchen Display
+        </h2>
+    </div>
+
+    <div style="padding:30px 10px;">
+
+        <div style="margin-bottom:30px;padding:22px 25px;background:#FFF9E6;border-left:6px solid #F0A800;border-radius:7px;">
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:21px;font-weight:600;">
+                Introduction
+            </h3>
+            <p style="margin:0;color:#555555;font-size:15px;line-height:1.8;">
+                The POS Kitchen Display streamlines kitchen operations by connecting
+                Point of Sale orders with an organized food preparation workflow.
+                It enables kitchen teams to manage orders across preparation stations,
+                assign chefs, monitor workloads, and prioritize orders according to
+                operational requirements. Real-time order updates help staff respond
+                to item-level changes during preparation, while preparation-state
+                controls ensure that orders marked as ready remain unchanged.
+                By centralizing order tracking, workload coordination, and kitchen
+                activity monitoring, the system improves team coordination and
+                supports a more structured and efficient kitchen workflow.
+            </p>
+        </div>
+
+        <!-- KEY FEATURES -->
+       
+        <div style="margin-bottom:30px;padding:25px;background:#FFFDF5;border:1px solid #F0A800;border-radius:8px;">
+
+            <h3 style="margin:0 0 20px;color:#D99100;font-size:21px;font-weight:600;text-align:center;">
+                Key Features
+            </h3>
+
+            <div style="display:flex;flex-direction:column;gap:14px;">
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">1. Kitchen Configuration</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Configure kitchen settings, preparation displays, POS sessions,
+                        product categories, and kitchen stations to organize order
+                        preparation according to operational requirements.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">2. Preparation Display and Kitchen Stations</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Create multiple preparation displays for different POS sessions
+                        and categories. Associate kitchen stations with the relevant
+                        displays to organize preparation areas and kitchen tickets.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">3. Workload Metrics</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Monitor kitchen workload using Item Wise and Time Wise metrics.
+                        Review item-based demand and estimated preparation duration
+                        to understand workload distribution across kitchen stations.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">4. Automatic Chef Assignment</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Configure chef details and schedule-based assignment.
+                        Support order-wise and item-wise assignment, while allowing
+                        administrators to select chefs and review their assigned orders.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">5. Order Priority and Filters</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Set order priorities, identify high-priority tickets on the
+                        kitchen display, and use available filters to locate relevant
+                        orders and manage preparation tasks efficiently.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">6. Live Kitchen Order Tracking and Preparation Workflow</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Track item preparation states, move items between Preparation
+                        and Ready when permitted, update item quantities, and cancel
+                        items according to preparation-state rules. Prevent an order
+                        from being completed until all applicable items are Ready.
+                    </p>
+                </div>
+
+                <div style="padding:15px 18px;background:#ffffff;border-left:5px solid #F0A800;border-radius:6px;">
+                    <strong style="color:#D99100;font-size:16px;">7. Kitchen Reports</strong>
+                    <p style="margin:7px 0 0;color:#555555;font-size:14px;line-height:1.7;">
+                        Review available kitchen operational data through List,
+                        Pivot, and Graph views. Inspect detailed records, analyze
+                        summarized information, and visualize the metrics provided
+                        by the reporting interface.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- 1. KITCHEN CONFIGURATION -->
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            1. Kitchen Configuration
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:16px;line-height:1.8;color:#555555;margin:0 0 20px;">
+            Open <strong>Point of Sale → Configuration</strong> and configure
+            the kitchen settings available in the module. Set up the required
+            kitchen stations, associate product categories, define chef
+            records, and select the workload mode and station capacity.
+        </p>
+
+        <div style="padding:18px 22px;background:#FFF8D9;border-left:5px solid #F0A800;border-radius:6px;margin-bottom:25px;">
+            <p style="margin:0;color:#555555;font-size:15px;line-height:1.9;">
+                <strong style="color:#D99100;">Configuration Flow:</strong>
+                Open POS Configuration → Configure Kitchen Stations →
+                Assign Categories and Chefs → Set Workload Mode and Capacity →
+                Save → Test in the Kitchen Display.
+            </p>
+        </div>
+
+        <!-- Configuration screenshots -->
+        <div style="display:flex;flex-wrap:wrap;gap:15px;margin:25px 0;align-items:flex-start;">
+
+            <div style="flex:1 1 calc(50% - 15px);min-width:280px;">
+                <img src="01_kitchen_configuration.png"
+                     alt="Kitchen configuration overview"
+                     style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+                <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                    Kitchen configuration overview
+                </p>
+            </div>
+
+            <div style="flex:1 1 calc(50% - 15px);min-width:280px;">
+                <img src="02_kitchen_station_configuration.png"
+                     alt="Kitchen station and workload configuration"
+                     style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+                <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                    Station and workload settings
+                </p>
+            </div>
+
+        </div>
+
+        <div style="padding:20px 22px;background:#FFF9E6;border-left:5px solid #F0A800;border-radius:6px;margin-top:25px;">
+            <h3 style="margin:0 0 10px;color:#D99100;font-size:19px;font-weight:600;">
+                Configuration Details
+            </h3>
+            <p style="margin:0;color:#555555;font-size:15px;line-height:1.8;">
+                Use meaningful station capacities and preparation-time values
+                when testing Time Wise workload. Confirm the preparation-time
+                source and capacity unit used by the installed module.
+            </p>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- 2. PREPARATION DISPLAY, STATIONS AND WORKLOAD -->
+
+
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            2. Preparation Display and Kitchen Stations
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:15px;line-height:1.8;color:#555555;margin:0 0 25px;">
+            Preparation Displays and Kitchen Stations help organize kitchen
+            operations according to POS sessions and product categories.
+            Multiple preparation displays can be created as required, with
+            each display configured for the relevant session and categories.
+            Kitchen Stations can be associated with the appropriate display
+            to manage order preparation in an organized manner.
+        </p>
+
+        <!-- Preparation Display -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                2.1 Preparation Display
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                The Preparation Display provides an overview of configured
+                kitchen displays, including order preparation statuses,
+                in-progress orders, and average preparation time. Separate
+                displays can be maintained for different POS sessions and
+                selected product categories.
+            </p>
+
+            <img src="01_preparation_display.png"
+                 alt="Preparation Display overview"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+        </div>
+
+        <!-- Kitchen Stations -->
+
+        <div style="margin-bottom:10px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                2.2 Kitchen Stations
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Kitchen Stations represent individual preparation areas
+                such as Bread, Pastries, or other kitchen sections. Each
+                station can be configured with its relevant categories and
+                associated with the appropriate Preparation Display, helping
+                kitchen staff manage orders according to their assigned
+                preparation areas.
+            </p>
+
+            <img src="02_kitchen_stations.png"
+                 alt="Kitchen Station configuration"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+        </div>
+
+    </div>
+</section>
+
+
+
+<!-- 3. Workload Metrics -->
+
+
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            3. Workload Metrics
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:15px;line-height:1.8;color:#555555;margin:0 0 25px;">
+            Workload Metrics provide two approaches to monitoring kitchen
+            preparation demand: <b>Item Wise and Time Wise</b>. Item Wise focuses
+            on the number of items assigned to kitchen stations, while
+            Time Wise focuses on estimated preparation time. These metrics
+            help kitchen managers understand station workloads and
+            coordinate preparation more effectively.
+        </p>
+
+        <!-- Item Wise Workload -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                3.1 Item Wise Workload
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Item Wise Workload measures station demand based on the
+                number of items assigned for preparation and displays
+                the resulting workload distribution across kitchen stations.
+            </p>
+
+            <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+
+                <div style="flex:1 1 45%;min-width:280px;">
+                    <img src="03_item_wise_workload_settings.png"
+                         alt="Item Wise Workload settings"
+                         style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+                    <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                        Item Wise Workload Settings
+                    </p>
+                </div>
+
+                <div style="flex:1 1 45%;min-width:280px;">
+                    <img src="04_item_wise_workload_result.png"
+                         alt="Item Wise Workload result"
+                         style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+                    <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                        Item Wise Workload Result
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Time Wise Workload -->
+
+        <div style="margin-bottom:10px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                3.2 Time Wise Workload
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Time Wise Workload evaluates kitchen demand using estimated
+                preparation duration. It helps compare the expected
+                preparation time required at different stations.
+            </p>
+
+            <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+
+                <div style="flex:1 1 45%;min-width:280px;">
+                    <img src="05_time_wise_workload_settings.png"
+                         alt="Time Wise Workload settings"
+                         style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+                    <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                        Time Wise Workload Settings
+                    </p>
+                </div>
+
+                <div style="flex:1 1 45%;min-width:280px;">
+                    <img src="06_time_wise_workload_result.png"
+                         alt="Time Wise Workload result"
+                         style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+                    <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                        Time Wise Workload Result
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- 4. AUTOMATIC CHEF ASSIGNMENT -->
+
+
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            4. Automatic Chef Assignment
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:15px;line-height:1.8;color:#555555;margin:0 0 25px;">
+            Automatic Chef Assignment manages kitchen responsibilities
+            through chef configuration and schedule-based assignment.
+            Orders can be assigned order-wise or item-wise, helping
+            distribute preparation tasks among chefs. Administrators
+            can access all chefs and their assigned orders through the
+            chef selection dropdown.
+        </p>
+
+        <!-- Chef Configuration -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                4.1 Chef Details and Configuration
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Configure chef details and the relevant assignment settings
+                to manage kitchen staff. Chef configuration supports
+                organized task allocation according to the kitchen's
+                preparation requirements and configured schedules.
+            </p>
+
+            <img src="07_chef_configuration.png"
+                 alt="Chef details and configuration"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Chef Details and Configuration
+            </p>
+
+        </div>
+
+        <!-- Automatic Assignment -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                4.2 Schedule-Based Automatic Assignment
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Chefs are assigned automatically according to the configured
+                schedule and assignment method. The system supports
+                <strong>Order-Wise Assignment</strong>, where an entire
+                order is assigned to a chef, and <strong>Item-Wise
+                Assignment</strong>, where individual order items are
+                assigned to the relevant chefs. This helps distribute
+                preparation responsibilities according to the configured
+                assignment rules.
+            </p>
+
+            <img src="08_chef_login_screen.png"
+                 alt="Schedule-based automatic chef assignment"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Automatic Chef Assignment and Assigned Orders
+            </p>
+
+        </div>
+
+        <!-- Chef Dropdown -->
+
+        <div style="margin-bottom:10px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                4.3 Administrator Chef Selection
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Administrators can view all available chefs in the dropdown
+                on the kitchen screen. By selecting a specific chef,
+                the administrator can view the orders assigned to that
+                chef. This provides a convenient way to monitor individual
+                workloads while retaining an overview of kitchen operations.
+            </p>
+
+            <img src="09_chef_dropdown_view.png"
+                 alt="Administrator selecting a chef to view assigned orders"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Chef Dropdown and Individual Assigned Orders
+            </p>
+
+        </div>
+
+    </div>
+</section>
+
+
+<!-- 5. LIVE KITCHEN ORDER TRACKING AND PREPARATION WORKFLOW -->
+
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            5. Live Kitchen Order Tracking and Preparation Workflow
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:15px;line-height:1.8;color:#555555;margin:0 0 25px;">
+            Live Kitchen Order Tracking keeps kitchen tickets synchronized
+            with the preparation workflow. Kitchen staff can start preparation,
+            update item quantities, and cancel items when permitted. Preparation
+            state rules ensure that an order cannot be marked as completed
+            until all its items have reached the Ready state.
+        </p>
+
+        <!-- 5.1 Live Preparation Tracking -->
+        
+      
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                5.1 Item Preparation Workflow
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Kitchen staff can move an item between Ready and Preparation
+                states using the available Preparation action. When an item is
+                in the Ready state, the Preparation button allows staff to
+                initiate the process of moving it back to Preparation.
+            </p>
+
+            <div style="margin-bottom:25px;">
+
+                <h4 style="margin:0 0 10px;color:#444444;font-size:17px;font-weight:600;">
+                    Preparation Button in Ready State
+                </h4>
+
+                <p style="margin:0 0 15px;color:#555555;font-size:15px;line-height:1.8;">
+                    When an item reaches the Ready state, the Preparation button
+                    becomes available to move the item back into preparation.
+                </p>
+
+                <img src="13_preparation_button_ready_state.png"
+                    alt="Preparation button displayed for an item in Ready state"
+                    style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            </div>
+
+            <div style="margin-bottom:25px;">
+
+                <h4 style="margin:0 0 10px;color:#444444;font-size:17px;font-weight:600;">
+                    Preparation Reason Selection
+                </h4>
+
+                <p style="margin:0 0 15px;color:#555555;font-size:15px;line-height:1.8;">
+                    When the Preparation action is selected, the user can choose
+                    an appropriate reason from the available options or manually
+                    enter a reason when required.
+                </p>
+
+                <img src="14_preparation_reason_selection.png"
+                    alt="Preparation reason selection with manual entry"
+                    style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            </div>
+
+            <div style="margin-bottom:10px;">
+
+                <h4 style="margin:0 0 10px;color:#444444;font-size:17px;font-weight:600;">
+                    Item Returned to Preparation
+                </h4>
+
+                <p style="margin:0 0 15px;color:#555555;font-size:15px;line-height:1.8;">
+                    After the reason is selected or entered and the action is
+                    confirmed, the item moves back to the Preparation state
+                    so that kitchen staff can continue working on it.
+                </p>
+
+                <img src="15_item_back_to_preparation.png"
+                    alt="Kitchen item returned to Preparation state"
+                    style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            </div>
+
+        </div>
+
+        <!-- 5.2 Cancel Item -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                5.2 Item Cancellation
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Items can be cancelled while cancellation is permitted by
+                the preparation-state rules. The kitchen display reflects
+                the cancellation according to the configured order workflow.
+            </p>
+
+            <img src="17_cancel_kitchen_item.png"
+                 alt="Cancel an item from the kitchen order"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Cancel Kitchen Item
+            </p>
+
+        </div>
+
+    </div>
+</section>
+
+
+<!-- 7. KITCHEN REPORTS -->
+
+<section class="oe_container" style="margin-top:35px;">
+
+    <div style="background:#F0A800;padding:18px 25px;border-radius:7px;">
+        <h2 style="color:#ffffff;text-align:center;margin:0;font-size:25px;font-weight:600;">
+            7. Kitchen Reports
+        </h2>
+    </div>
+
+    <div style="padding:30px 25px;">
+
+        <p style="font-size:15px;line-height:1.8;color:#555555;margin:0 0 25px;">
+            Kitchen Reports provide a consolidated view of recorded kitchen
+            operations, helping administrators review order details,
+            preparation activities, chef assignments, and performance-related
+            information available in the system. Reports can be accessed
+            through List, Pivot, and Graph views to inspect detailed records,
+            compare summarized data, and visualize operational trends.
+        </p>
+
+        <!-- List View -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                7.1 List View
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                List View displays kitchen report records in a structured
+                format, making it easy to review individual entries and
+                inspect available order, item, chef, station, and preparation
+                details.
+            </p>
+
+            <img src="19_kitchen_report_list_view.png"
+                 alt="Kitchen report in List View"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Kitchen Report — List View
+            </p>
+
+        </div>
+
+        <!-- Pivot View -->
+
+        <div style="margin-bottom:30px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                7.2 Pivot View
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Pivot View summarizes available kitchen data into a
+                cross-tabulated report. It helps administrators group,
+                compare, and analyze operational metrics across available
+                dimensions such as orders, chefs, stations, and preparation
+                information.
+            </p>
+
+            <img src="20_kitchen_report_pivot_view.png"
+                 alt="Kitchen report in Pivot View"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Kitchen Report — Pivot View
+            </p>
+
+        </div>
+
+        <!-- Graph View -->
+
+        <div style="margin-bottom:10px;">
+
+            <h3 style="margin:0 0 12px;color:#D99100;font-size:20px;font-weight:600;">
+                7.3 Graph View
+            </h3>
+
+            <p style="margin:0 0 18px;color:#555555;font-size:15px;line-height:1.8;">
+                Graph View presents report data visually, helping
+                administrators identify patterns, compare available
+                metrics, and understand kitchen activity through charts
+                supported by the reporting interface.
+            </p>
+
+            <img src="21_kitchen_report_graph_view.png"
+                 alt="Kitchen report in Graph View"
+                 style="width:100%;height:auto;display:block;border:1px solid #E5D7A3;border-radius:6px;">
+
+            <p style="margin:8px 0 0;color:#666666;font-size:13px;text-align:center;">
+                Kitchen Report — Graph View
+            </p>
+
+        </div>
+
+    </div>
+</section>
+
+
+<!-- FOOTER: original contact structure and links retained -->
+<section class="oe_container lead" id="ipredict_contactus">
+    <h2 class="text-center" style="color:#C3851F;margin:0 0 8px;font-size:28px;font-weight:700;">
+        Technical Help<span style="color:#000000">, Queries &amp; Support</span>
+    </h2>
+    <p style="text-align:center;color:#60708a;font-size:14px;margin:0 0 15px;">
+        For any assistance related to this module, customization or Odoo development.
+    </p>
+    <div class="row">
+        <div class="col-6 text-center">
+            <img class="oe_picture d-block mx-auto my-3" src="logo.png" style="max-width:60% !important;" />
+            <div class="mt-3">
+                <a class="btn btn-sm me-2" target="new" href="https://www.facebook.com/ipredictitsolutions" title="Facebook" style="color:#3B5998 !important;">
+                    <i class="fa fa-facebook-square" style="font-size:30px;"></i>
+                </a>
+                <a class="btn btn-sm me-2" target="new" href="https://twitter.com/iPredict_It" title="Twitter" style="color:#55ACEE !important;">
+                    <i class="fa fa-twitter-square" style="font-size:30px;"></i>
+                </a>
+                <a class="btn btn-sm me-2" target="new" href="https://www.linkedin.com/company/ipredict-it-solutions" title="LinkedIn" style="color:#007bb5 !important;">
+                    <i class="fa fa-linkedin-square" style="font-size:30px;"></i>
+                </a>
+                <a class="btn btn-sm" target="new" rel="publisher" href="https://www.instagram.com/ipredict_it_solutions" title="Instagram" style="color:#DB4437 !important;">
+                    <i class="fa fa-instagram" style="font-size:30px;"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-6 mt-4">
+            <a class="btn btn-sm mt-3 ms-4 position-relative overflow-hidden" style="color:white;background-color:#EBA129;border:1px solid #EBA129;" rel="nofollow" href="http://ipredictitsolutions.com/" target="_blank">
+                <i class="fa fa-globe"></i> Website
+            </a>
+            <br/>
+            <a class="btn btn-sm mt-2 ms-4 position-relative overflow-hidden" style="color:white;background-color:#E09A25;border:1px solid #E09A25;" rel="nofollow" href="http://ipredictitsolutions.com/contactus" target="_blank">
+                <i class="fa fa-check-square"></i> Request Customization
+            </a>
+            <br/>
+            <a class="btn btn-sm mt-2 ms-4 position-relative overflow-hidden" style="color:white;background-color:#D08E22;border:1px solid #D08E22;" rel="nofollow" href="mailto:ipredictitsolutions@gmail.com">
+                <i class="fa fa-envelope"></i> Support/Help! Send Mail
+            </a>
+            <br/>
+            <a class="btn btn-sm mt-2 ms-4 position-relative overflow-hidden" style="color:white;background-color:#6264A7;border:1px solid #6264A7;" rel="nofollow" href="https://teams.microsoft.com/l/chat/0/0?users=ipredictitsolutions@gmail.com">
+                <i class="fa fa-users"></i> Chat on Teams
+            </a>
+        </div>
+    </div>
+</section>

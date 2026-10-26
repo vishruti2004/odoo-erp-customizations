@@ -24,7 +24,8 @@ class PosKitchenAssignmentHistory(models.Model):
     previous_station_id = fields.Many2one("pos.kitchen.station", string="From station", ondelete="set null")
     new_station_id = fields.Many2one("pos.kitchen.station", string="To station", ondelete="set null")
     move_type = fields.Selection(
-        [("assign", "Chef assigned"), ("reassign", "Chef changed"), ("station_move", "Moved to another station")],
+        [("assign", "Chef assigned"), ("reassign", "Chef changed"), ("station_move", "Moved to another station"),
+         ("auto_assign", "Assigned automatically")],
         string="Change", required=True)
     changed_by_chef_id = fields.Many2one("pos.kitchen.chef", string="Done by", ondelete="set null")
     changed_at = fields.Datetime("Date", default=fields.Datetime.now)

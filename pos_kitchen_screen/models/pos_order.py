@@ -1,5 +1,9 @@
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 READINESS = [
     ("no_items", "No kitchen items"), ("in_progress", "In progress"),
@@ -56,6 +60,29 @@ class PosOrder(models.Model):
                 order.kitchen_readiness = "partial_ready"
             else:
                 order.kitchen_readiness = "in_progress"
+
+    #  deleted / cancelled orders leave the kitchen screens
+    def _kitchen_hide_from_displays(self):
+        """Tell the kitchen screens that these whole PoS orders are gone (deleted or cancelled)."""
+        for order in self:
+            tickets = order.prep_order_ids
+            if not tickets:
+                continue
+            payload = {"order_id": order.id, "prep_order_ids": tickets.ids}
+            for display in tickets._kitchen_displays():
+                display._notify("KITCHEN_ORDER_REMOVED", payload)
+                display._notify("WORKLOAD_CHANGED", {})
+
+    def write(self, vals):
+        cancelled = self.browse()
+        if vals.get("state") == "cancel":
+            cancelled = self.filtered(lambda o: o.state != "cancel")
+        cancelled._kitchen_hide_from_displays()
+        return super().write(vals)
+
+    def unlink(self):
+        self._kitchen_hide_from_displays()
+        return super().unlink()
 
     def set_kitchen_priority(self, priority):
         if priority not in ("low", "medium", "high"):
@@ -132,7 +159,9 @@ class PosOrder(models.Model):
         ])._kitchen_apply_priority(priority)
         self._kitchen_check_changeable(after, new_lines, snapshot, readiness_before)
         self._kitchen_track_changes(after, new_lines, snapshot, live_qty)
-        self._kitchen_merge_into_open_ticket(before, new_lines)
+        touched = self._kitchen_merge_into_open_ticket(before, new_lines)
+        if self.config_id._kitchen_auto():
+            self._kitchen_run_auto_assign(new_lines.exists() | touched)
         self._kitchen_after_state_change(readiness_before)
 
         if result.get("change") and new_lines:
@@ -146,7 +175,7 @@ class PosOrder(models.Model):
         open_tickets = before.prep_order_id.filtered(lambda t: any(
             s.stage_id.stage_type in ("todo", "in_progress") for s in t.prep_line_ids.state_ids))
         if not open_tickets or not new_lines:
-            return
+            return self.env["pos.prep.line"]
         ticket = open_tickets.sorted("id")[0]
         now = fields.Datetime.now()
         new_tickets = new_lines.prep_order_id
@@ -178,6 +207,28 @@ class PosOrder(models.Model):
         new_tickets.filtered(lambda t: not t.prep_line_ids).unlink()
         for display in touched.state_ids.stage_id.prep_display_id:
             display._send_load_orders_message(True, None, self.id)
+        return touched
+
+    def _kitchen_run_auto_assign(self, lines):
+        """Dynamic Automatic Assignment of the new items, once they have their station and their states.
+        Lines that already have a chef (an item merged into a line in progress, a manual choice) keep it.
+        A failure never blocks the order: it is logged and shown on the kitchen screens."""
+        lines = lines.filtered(lambda l: l.exists())
+        if not lines:
+            return
+        try:
+            with self.env.cr.savepoint():
+                lines._kitchen_auto_assign()
+                # Dynamic Automatic: an overloaded station sends its excess to a compatible station
+                stations = lines.exists().station_id
+                (stations | stations.mapped(lambda s: s._kitchen_compatible_stations()))\
+                    ._kitchen_auto_resolve_overload(notify_unresolved=True)
+        except Exception:
+            _logger.exception("Kitchen auto-assignment failed for order %s", self.name)
+            for display in lines._kitchen_displays():
+                display._notify("KITCHEN_WARNING", {"message": _(
+                    "Automatic assignment failed for order %s. Please assign manually.",
+                    self.tracking_number or self.name)})
 
     def _kitchen_check_changeable(self, after, new_lines, snapshot, readiness_before):
         def is_ready(line):
@@ -193,7 +244,7 @@ class PosOrder(models.Model):
         )
         if blocked:
             raise UserError(_(
-                "Order %s is already ready in the kitchen and can no longer be changed.",
+                "Order %s is ready in the kitchen and cannot be changed.",
                 self.tracking_number or self.display_name))
 
     def _kitchen_track_changes(self, after, new_lines, snapshot, live_qty):

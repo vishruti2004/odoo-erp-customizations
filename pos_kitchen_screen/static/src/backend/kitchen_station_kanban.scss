@@ -1,0 +1,70 @@
+// Kitchen station kanban: 4 tags per box, the full list on hover / focus of the "+" icon
+.o_kitchen_station_kanban {
+    .o_kanban_record {
+        overflow: visible !important;
+    }
+    .o_kanban_record:hover,
+    .o_kanban_record:focus-within {
+        z-index: 5;
+    }
+    .o_ks_box {
+        min-width: 0;
+    }
+    .o_ks_count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 11px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .o_ks_tag {
+        max-width: 100%;
+        background-color: #fff;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        font-weight: 500;
+    }
+    .o_ks_more {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        outline: none;
+        .o_ks_more_list {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            z-index: 10;
+            min-width: 180px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 6px 0;
+            text-align: left;
+        }
+        &:hover .o_ks_more_list,
+        &:focus .o_ks_more_list,
+        &:focus-within .o_ks_more_list {
+            display: flex;
+            flex-direction: column;
+        }
+        .o_ks_more_head {
+            padding: 2px 12px 4px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 2px;
+        }
+        .o_ks_more_item {
+            padding: 4px 12px;
+            font-size: 0.85rem;
+            color: #374151;
+            white-space: nowrap;
+            &:hover {
+                background: #f3f4f6;
+            }
+        }
+    }
+}

@@ -48,28 +48,6 @@ export class KitchenSelectDialog extends Component {
     }
 }
 
-export class KitchenChefDialog extends Component {
-    static template = "pos_kitchen_screen.ChefDialog";
-    static components = { Dialog };
-    static props = {
-        chefs: Array,
-        current: { optional: true },
-        login: Function,
-        logout: Function,
-        close: Function,
-    };
-
-    pick(chef) {
-        this.props.login(chef.id);
-        this.props.close();
-    }
-
-    onLogout() {
-        this.props.logout();
-        this.props.close();
-    }
-}
-
 export class KitchenInfoDialog extends Component {
     static template = "pos_kitchen_screen.InfoDialog";
     static components = { Dialog };

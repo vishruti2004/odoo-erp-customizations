@@ -94,7 +94,7 @@ patch(ProductScreen.prototype, {
     displayAllControlPopup() {
         if (this.currentOrder?.kitchenLocked) {
             this.notification.add(
-                _t("This order is ready in the kitchen and can no longer be changed."),
+                _t("Order is ready in the kitchen and cannot be changed."),
                 { type: "warning" }
             );
             return;

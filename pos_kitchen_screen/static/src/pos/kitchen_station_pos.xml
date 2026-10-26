@@ -17,11 +17,34 @@
         </Dialog>
     </t>
 
+    <t t-name="pos_kitchen_screen.KitchenPriorityDropdown">
+        <span class="o_kitchen_priority_dropdown d-inline-flex" t-on-click.stop="() => {}">
+            <Dropdown position="'bottom-end'" menuClass="'o_kitchen_priority_menu'">
+                <button type="button"
+                        t-att-class="(props.buttonClass || 'btn btn-sm') + ' o_kitchen_priority_' + priority"
+                        t-att-title="'Kitchen priority: ' + current.label">
+                    <span class="o_kitchen_prio_dot me-2" />
+                    <span t-esc="label" />
+                    <i class="fa fa-angle-down ms-2" />
+                </button>
+                <t t-set-slot="content">
+                    <DropdownItem t-foreach="options" t-as="opt" t-key="opt.id"
+                                  class="'o_kitchen_priority_item o_kitchen_priority_' + opt.id + (opt.id === priority ? ' active' : '')"
+                                  onSelected="() => this.select(opt.id)">
+                        <span class="o_kitchen_prio_dot me-2" />
+                        <span class="fw-semibold" t-esc="opt.label" />
+                        <i t-if="opt.id === priority" class="fa fa-check ms-auto ps-3" />
+                    </DropdownItem>
+                </t>
+            </Dropdown>
+        </span>
+    </t>
+
     <t t-name="pos_kitchen_screen.ProductScreen" t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
         <xpath expr="//OrderSummary" position="before">
             <div t-if="currentOrder?.kitchenLocked" class="o_kitchen_lock_banner d-flex align-items-center gap-2 mx-2 mt-2 px-3 py-2 rounded">
                 <i class="fa fa-lock" />
-                <span>This order is ready in the kitchen and can no longer be changed.</span>
+                <span>Order is ready in the kitchen and cannot be changed.</span>
             </div>
         </xpath>
     </t>
@@ -35,18 +58,23 @@
     </t>
 
    
+    <t t-name="pos_kitchen_screen.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('more-btn')]" position="before">
+            <KitchenPriorityDropdown t-if="kitchenPriorityAvailable and !props.showRemainingButtons and !pos.getOrder()?.isRefund"
+                                     order="pos.getOrder()"
+                                     buttonClass="buttonClass + ' o_kitchen_priority_control'"
+                                     withPrefix="true"
+                                     onSelect="(priority) => this.onKitchenPriority(priority)" />
+        </xpath>
+    </t>
+
     <t t-name="pos_kitchen_screen.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
         <xpath expr="//tr[hasclass('order-row')]/td[last()]" position="before">
             <td class="align-middle text-center o_kitchen_priority_cell">
-                <button t-if="kitchenPriorityAvailable"
-                        type="button"
-                        t-att-class="'btn btn-sm o_kitchen_priority_btn o_kitchen_priority_' + (order.kitchen_priority || 'medium')"
-                        t-att-title="'Current priority: ' + this.pos.kitchenPriorityLabel(order)"
-                        t-on-click.stop="() => this.onKitchenPriority(order)">
-                    <i class="fa fa-sliders me-1" />
-                    <span t-esc="this.pos.kitchenPriorityLabel(order)" />
-                    <i class="fa fa-chevron-down ms-1" />
-                </button>
+                <KitchenPriorityDropdown t-if="kitchenPriorityAvailable"
+                                         order="order"
+                                         buttonClass="'btn btn-sm o_kitchen_priority_btn'"
+                                         onSelect="(priority) => this.onKitchenPriority(order, priority)" />
             </td>
         </xpath>
     </t>

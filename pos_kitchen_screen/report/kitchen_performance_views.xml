@@ -215,7 +215,8 @@
                        widget="badge"
                        decoration-info="move_type == 'assign'"
                        decoration-warning="move_type == 'reassign'"
-                       decoration-primary="move_type == 'station_move'" />
+                       decoration-primary="move_type == 'station_move'"
+                       decoration-success="move_type == 'auto_assign'" />
                 <field name="previous_chef_id" optional="show" />
                 <field name="new_chef_id" optional="show" />
                 <field name="previous_station_id" optional="show" />

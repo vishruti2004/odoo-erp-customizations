@@ -8,7 +8,7 @@ from .kitchen_mixin import KitchenRuleError
 class PosKitchenChef(models.Model):
     _name = "pos.kitchen.chef"
     _description = "Kitchen Chef"
-    _inherit = ["pos.load.mixin"]
+    _inherit = ["pos.load.mixin", "pos.kitchen.access.mixin"]
     _order = "name, id"
 
     employee_id = fields.Many2one(
@@ -102,7 +102,7 @@ class PosKitchenChef(models.Model):
         off = self.filtered(lambda c: c.id not in self._kitchen_on_shift())
         if off:
             raise KitchenRuleError(_(
-                "%s is not on shift now. Only the chefs working at this time can take items.",
+                "%s is not on shift.",
                 ", ".join(off.mapped("name"))))
 
     @api.model
@@ -111,6 +111,52 @@ class PosKitchenChef(models.Model):
         if chef_ids:
             domain.append(("id", "in", [int(i) for i in chef_ids]))
         return sorted(self.search(domain)._kitchen_on_shift())
+
+    @api.model
+    def get_kitchen_access(self, display_id=False):
+        """RPC: what the logged-in user may see on the kitchen screen.
+        Managers: everything. Other users: only their own chef, their stations and their items."""
+        manager = self._kitchen_is_manager()
+        chef = self._kitchen_user_chef()
+        return {
+            "manager": manager,
+            "chef": {"id": chef.id, "name": chef.name, "station_ids": chef.station_ids.ids} if chef else False,
+        }
+
+    #  workload
+    def _kitchen_pending_load(self):
+        """{chef id: {"minutes", "items"}}: what the chefs still have to prepare on open sessions
+        (preparation minutes of the pending assigned items, every station). Computed on demand."""
+        Station = self.env["pos.kitchen.station"]
+        load = {chef.id: {"minutes": 0.0, "items": 0.0} for chef in self}
+        if not self:
+            return load
+        states = self.env["pos.prep.state"].sudo().search(
+            Station._kitchen_pending_state_domain() + [("prep_line_id.assigned_chef_id", "in", self.ids)])
+        for line in states.prep_line_id:
+            qty = line.quantity - line.cancelled
+            if qty <= 0 or line.pos_order_line_id.combo_line_ids or line.assigned_chef_id.id not in load:
+                continue
+            station = line.station_id or line._kitchen_displays().station_ids[:1]
+            entry = load[line.assigned_chef_id.id]
+            entry["minutes"] += qty * Station._kitchen_item_minutes(line.product_id, station)
+            entry["items"] += qty
+        return load
+
+    @api.model
+    def get_chef_workload(self, display_id=False):
+        """RPC: pending minutes / items of the chefs of the stations of a display, and who is on shift."""
+        stations = self.env["pos.kitchen.station"].search([("active", "=", True)])
+        if display_id:
+            stations = stations.filtered(lambda s: s.prep_display_id.id == int(display_id))
+        chefs = stations.chef_ids.filtered("active")
+        load = chefs._kitchen_pending_load()
+        on_shift = chefs._kitchen_on_shift()
+        return [{
+            "id": chef.id, "name": chef.name, "on_shift": chef.id in on_shift,
+            "minutes": round(load[chef.id]["minutes"], 1), "items": load[chef.id]["items"],
+            "station_ids": (chef.station_ids & stations).ids,
+        } for chef in chefs.sorted(lambda c: (c.id not in on_shift, -load[c.id]["minutes"], c.name or ""))]
 
     @api.model
     def _load_pos_preparation_data_domain(self, data):
