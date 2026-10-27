@@ -3,7 +3,6 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-_logger = logging.getLogger(__name__)
 
 READINESS = [
     ("no_items", "No kitchen items"), ("in_progress", "In progress"),
@@ -27,7 +26,6 @@ class PosOrder(models.Model):
         return super()._load_pos_preparation_data_fields() + [
             "kitchen_readiness", "kitchen_station_status", "kitchen_ready_at"]
 
-    #  readiness
     @api.depends(
         "prep_order_ids.prep_line_ids.quantity",
         "prep_order_ids.prep_line_ids.cancelled",
@@ -38,7 +36,7 @@ class PosOrder(models.Model):
     def _compute_kitchen_readiness(self):
         for order in self:
             lines = order.prep_order_ids.prep_line_ids.filtered(
-                lambda l: l.quantity - l.cancelled > 0 and l.state_ids)
+                lambda line: line.quantity - line.cancelled > 0 and line.state_ids)
             states = lines.state_ids
             per_display = {}
             for state in states:
@@ -51,8 +49,8 @@ class PosOrder(models.Model):
             if not states:
                 order.kitchen_readiness = "no_items"
                 continue
-            ready = sum(1 for s in states if s._kitchen_is_ready())
-            if all(s.stage_id.stage_type == "done" for s in states):
+            ready = sum(1 for state in states if state._kitchen_is_ready())
+            if all(state.stage_id.stage_type == "done" for state in states):
                 order.kitchen_readiness = "served"
             elif ready == len(states):
                 order.kitchen_readiness = "ready"
@@ -61,28 +59,16 @@ class PosOrder(models.Model):
             else:
                 order.kitchen_readiness = "in_progress"
 
-    #  deleted / cancelled orders leave the kitchen screens
-    def _kitchen_hide_from_displays(self):
-        """Tell the kitchen screens that these whole PoS orders are gone (deleted or cancelled)."""
-        for order in self:
-            tickets = order.prep_order_ids
-            if not tickets:
-                continue
-            payload = {"order_id": order.id, "prep_order_ids": tickets.ids}
-            for display in tickets._kitchen_displays():
-                display._notify("KITCHEN_ORDER_REMOVED", payload)
-                display._notify("WORKLOAD_CHANGED", {})
-
     def write(self, vals):
         cancelled = self.browse()
         if vals.get("state") == "cancel":
-            cancelled = self.filtered(lambda o: o.state != "cancel")
-        cancelled._kitchen_hide_from_displays()
-        return super().write(vals)
-
-    def unlink(self):
-        self._kitchen_hide_from_displays()
-        return super().unlink()
+            cancelled = self.filtered(lambda order: order.state != "cancel" and order.prep_order_ids)
+        result = super().write(vals)
+        for order in cancelled:
+            for display in order.prep_order_ids._kitchen_displays():
+                display._notify("POS_ORDER_DELETED", {"pos_order_ids": order.ids})
+                display._notify("WORKLOAD_CHANGED", {})
+        return result
 
     def set_kitchen_priority(self, priority):
         if priority not in ("low", "medium", "high"):
@@ -95,16 +81,15 @@ class PosOrder(models.Model):
 
     @api.model
     def get_kitchen_locked_ids(self, order_ids):
-        """RPC: the orders (among `order_ids`) that are ready in the kitchen and cannot be changed anymore."""
-        orders = self.browse([i for i in order_ids if isinstance(i, int)]).exists()
+        orders = self.browse([order_id for order_id in order_ids if isinstance(order_id, int)]).exists()
         return orders.filtered(
-            lambda o: o.config_id.kitchen_advanced and o.kitchen_readiness in ("ready", "served")).ids
+            lambda order: order.config_id.kitchen_advanced and order.kitchen_readiness in ("ready", "served")).ids
 
     def _kitchen_readiness_snapshot(self):
         return {order.id: order.kitchen_readiness for order in self}
 
     def _kitchen_after_state_change(self, before):
-        for order in self.filtered(lambda o: o.config_id.kitchen_advanced):
+        for order in self.filtered(lambda order: order.config_id.kitchen_advanced):
             old = before.get(order.id)
             new = order.kitchen_readiness
             if old == new:
@@ -131,7 +116,6 @@ class PosOrder(models.Model):
                 if new == "ready" and old != "ready":
                     display._notify("KITCHEN_ORDER_READY", payload)
 
-    #  native hook
     def _process_preparation_changes(self, options):
         self.ensure_one()
         if not self.config_id.kitchen_advanced:
@@ -141,7 +125,7 @@ class PosOrder(models.Model):
         domain = [("prep_order_id.pos_order_id", "=", self.id)]
         before = Line.search(domain)
         snapshot = {
-            l.id: {"qty": l.quantity, "cancelled": l.cancelled} for l in before}
+            line.id: {"qty": line.quantity, "cancelled": line.cancelled} for line in before}
         live_qty = {}
         for line in before:
             live_qty[line.pos_order_line_uuid] = live_qty.get(line.pos_order_line_uuid, 0.0) \
@@ -158,7 +142,9 @@ class PosOrder(models.Model):
             ("pos_order_id", "=", self.id), ("priority", "!=", priority),
         ])._kitchen_apply_priority(priority)
         self._kitchen_check_changeable(after, new_lines, snapshot, readiness_before)
-        self._kitchen_track_changes(after, new_lines, snapshot, live_qty)
+        order_cancelled = bool(options.get("cancelled")) or not any(
+            line.quantity - line.cancelled > 0 for line in after)
+        self._kitchen_track_changes(after, new_lines, snapshot, live_qty, notify=not order_cancelled)
         touched = self._kitchen_merge_into_open_ticket(before, new_lines)
         if self.config_id._kitchen_auto():
             self._kitchen_run_auto_assign(new_lines.exists() | touched)
@@ -172,8 +158,8 @@ class PosOrder(models.Model):
         return result
 
     def _kitchen_merge_into_open_ticket(self, before, new_lines):
-        open_tickets = before.prep_order_id.filtered(lambda t: any(
-            s.stage_id.stage_type in ("todo", "in_progress") for s in t.prep_line_ids.state_ids))
+        open_tickets = before.prep_order_id.filtered(lambda ticket: any(
+            state.stage_id.stage_type in ("todo", "in_progress") for state in ticket.prep_line_ids.state_ids))
         if not open_tickets or not new_lines:
             return self.env["pos.prep.line"]
         ticket = open_tickets.sorted("id")[0]
@@ -184,9 +170,9 @@ class PosOrder(models.Model):
             if line.pos_order_line_id.combo_line_ids or line.pos_order_line_id.combo_parent_id:
                 continue
             old = ticket.prep_line_ids.filtered(
-                lambda l: l not in new_lines and l.pos_order_line_uuid == line.pos_order_line_uuid
-                and l.quantity - l.cancelled > 0
-                and any(s.stage_id.stage_type in ("todo", "in_progress") for s in l.state_ids))[:1]
+                lambda existing: existing not in new_lines and existing.pos_order_line_uuid == line.pos_order_line_uuid
+                and existing.quantity - existing.cancelled > 0
+                and any(state.stage_id.stage_type in ("todo", "in_progress") for state in existing.state_ids))[:1]
             if old:
                 before_qty = old.quantity - old.cancelled
                 added = line.quantity
@@ -204,27 +190,22 @@ class PosOrder(models.Model):
             else:
                 line.write({"prep_order_id": ticket.id})
                 touched |= line
-        new_tickets.filtered(lambda t: not t.prep_line_ids).unlink()
+        new_tickets.filtered(lambda ticket: not ticket.prep_line_ids).unlink()
         for display in touched.state_ids.stage_id.prep_display_id:
             display._send_load_orders_message(True, None, self.id)
         return touched
 
     def _kitchen_run_auto_assign(self, lines):
-        """Dynamic Automatic Assignment of the new items, once they have their station and their states.
-        Lines that already have a chef (an item merged into a line in progress, a manual choice) keep it.
-        A failure never blocks the order: it is logged and shown on the kitchen screens."""
-        lines = lines.filtered(lambda l: l.exists())
+        lines = lines.filtered(lambda line: line.exists())
         if not lines:
             return
         try:
             with self.env.cr.savepoint():
                 lines._kitchen_auto_assign()
-                # Dynamic Automatic: an overloaded station sends its excess to a compatible station
                 stations = lines.exists().station_id
-                (stations | stations.mapped(lambda s: s._kitchen_compatible_stations()))\
+                (stations | stations.mapped(lambda station: station._kitchen_compatible_stations()))\
                     ._kitchen_auto_resolve_overload(notify_unresolved=True)
         except Exception:
-            _logger.exception("Kitchen auto-assignment failed for order %s", self.name)
             for display in lines._kitchen_displays():
                 display._notify("KITCHEN_WARNING", {"message": _(
                     "Automatic assignment failed for order %s. Please assign manually.",
@@ -232,22 +213,22 @@ class PosOrder(models.Model):
 
     def _kitchen_check_changeable(self, after, new_lines, snapshot, readiness_before):
         def is_ready(line):
-            return bool(line.state_ids) and all(s._kitchen_is_ready() for s in line.state_ids)
+            return bool(line.state_ids) and all(state._kitchen_is_ready() for state in line.state_ids)
 
-        ready_uuids = {l.pos_order_line_uuid for l in after if l not in new_lines and is_ready(l)}
-        cancelled = [l for l in after if l.id in snapshot and l.cancelled > snapshot[l.id]["cancelled"]]
+        ready_uuids = {line.pos_order_line_uuid for line in after if line not in new_lines and is_ready(line)}
+        cancelled = [line for line in after if line.id in snapshot and line.cancelled > snapshot[line.id]["cancelled"]]
         fully_ready = readiness_before.get(self.id) in ("ready", "served")
         blocked = (
             (fully_ready and (new_lines or cancelled))
-            or any(is_ready(l) for l in cancelled)
-            or any(l.pos_order_line_uuid in ready_uuids for l in new_lines)
+            or any(is_ready(line) for line in cancelled)
+            or any(line.pos_order_line_uuid in ready_uuids for line in new_lines)
         )
         if blocked:
             raise UserError(_(
                 "Order %s is ready in the kitchen and cannot be changed.",
                 self.tracking_number or self.display_name))
 
-    def _kitchen_track_changes(self, after, new_lines, snapshot, live_qty):
+    def _kitchen_track_changes(self, after, new_lines, snapshot, live_qty, notify=True):
         History = self.env["pos.kitchen.item.history"].sudo()
         now = fields.Datetime.now()
         events = []
@@ -260,12 +241,15 @@ class PosOrder(models.Model):
                                    old["qty"] - old["cancelled"], remainder))
             elif line in new_lines:
                 previous = live_qty.get(line.pos_order_line_uuid)
-                if previous is not None:  # a product that is already on the order: quantity added
+                if previous is not None:
                     events.append((line, "qty_increased", previous, previous + line.quantity))
+                elif snapshot:
+                    events.append((line, "added", 0.0, line.quantity))
         texts = {
-            "qty_decreased": lambda o, n: _("Qty updated: %(old)g → %(new)g", old=o, new=n),
-            "cancelled": lambda o, n: _("Item cancelled"),
-            "qty_increased": lambda o, n: _("Qty updated: %(old)g → %(new)g", old=o, new=n),
+            "qty_decreased": lambda old_qty, new_qty: _("Qty updated: %(old)g → %(new)g", old=old_qty, new=new_qty),
+            "cancelled": lambda old_qty, new_qty: _("Item cancelled"),
+            "qty_increased": lambda old_qty, new_qty: _("Qty updated: %(old)g → %(new)g", old=old_qty, new=new_qty),
+            "added": lambda old_qty, new_qty: _("Item added"),
         }
         for line, event, old_qty, new_qty in events:
             History.create({
@@ -274,10 +258,11 @@ class PosOrder(models.Model):
                 "old_quantity": old_qty, "new_quantity": new_qty,
             })
             text = texts[event](old_qty, new_qty)
-            pending = event in ("qty_decreased", "cancelled") and bool(line.state_ids) \
-                and not all(s._kitchen_is_ready() for s in line.state_ids)
+            pending = bool(line.state_ids) and not all(state._kitchen_is_ready() for state in line.state_ids)
             line.write({"last_change_type": event, "last_change_at": now,
                         "change_text": text, "change_pending": pending})
+            if not notify:
+                continue
             for display in line.state_ids.stage_id.prep_display_id:
                 display._notify("ITEM_CHANGED", {
                     "order": line.prep_order_id.order_name, "product": line.product_id.display_name,
@@ -291,8 +276,3 @@ class PosOrderLine(models.Model):
     kitchen_station_id = fields.Many2one(
         "pos.kitchen.station", string="Kitchen Station", ondelete="set null",
         help="Manual override of the station routing. Set it before sending the order to the kitchen.")
-
-    @api.model
-    def _load_pos_data_fields(self, *args, **kwargs):
-        fields_list = super()._load_pos_data_fields(*args, **kwargs)
-        return fields_list + ["kitchen_station_id"] if fields_list else fields_list

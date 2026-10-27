@@ -1,0 +1,38 @@
+.o_kitchen_active {
+    .o_pdis_order_card {
+        &.o_kitchen_urgent {
+            box-shadow: 0 0 0 3px #dc3545;
+            animation: o_kitchen_pulse 1.6s ease-in-out infinite;
+        }
+    }
+    .o_kitchen_ribbon {
+        padding: 0.2rem 0.75rem;
+        background: #f0ad00;
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    .o_kitchen_ribbon_reprep {
+        background: #dc3545;
+    }
+}
+
+@keyframes o_kitchen_pulse {
+    50% {
+        box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.45);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_kitchen_active {
+        .o_kitchen_ribbon {
+            padding: 0.15rem 0.5rem;
+            font-size: 0.7rem;
+        }
+        .o_kitchen_toolbar .badge {
+            white-space: normal;
+            text-align: left;
+        }
+    }
+}

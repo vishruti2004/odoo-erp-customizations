@@ -1,0 +1,51 @@
+.o_kitchen_priority_cell {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.o_kitchen_priority_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 100px;
+    padding: 5px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    font-size: 12px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.o_kitchen_priority_btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.o_kitchen_priority_btn.o_kitchen_priority_low {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #4b5563;
+}
+
+.o_kitchen_priority_btn.o_kitchen_priority_medium {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.o_kitchen_priority_btn.o_kitchen_priority_high {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #be123c;
+}
+
+@media (max-width: 767.98px) {
+    .o_kitchen_priority_btn {
+        min-width: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}

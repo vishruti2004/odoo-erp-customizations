@@ -19,7 +19,7 @@
               parent="menu_kitchen_root"
               action="kitchen_item_history_action"
               sequence="40" />
-              
+
     <menuitem id="menu_kitchen_assignments"
               name="Assignments"
               parent="menu_kitchen_root"
@@ -30,5 +30,6 @@
               name="Kitchen Performance"
               parent="point_of_sale.menu_point_rep"
               action="kitchen_performance_action"
-              sequence="7" />
+              sequence="7"
+              groups="base.group_system" />
 </odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.Order" t-inherit="pos_enterprise.Order" t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('o_pdis_tracking_number')]" position="after">
+            <div t-if="kitchenShowPriority" class="o_kitchen_priority badge rounded-pill" t-att-class="this.order.priority === 'high' ? 'text-bg-danger' : 'text-bg-secondary'">
+                <i class="fa fa-flag me-1" />
+                <t t-esc="kitchenPriorityLabel" />
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_order_card_header')]" position="after">
+            <div t-if="kitchenReprepare" class="o_kitchen_ribbon o_kitchen_ribbon_reprep">
+                <i class="fa fa-repeat me-1" />RE-PREPARE
+            </div>
+            <div t-if="kitchenOrderChanged" class="o_kitchen_ribbon">
+                <i class="fa fa-exclamation-triangle me-1" />ORDER CHANGED
+            </div>
+            <div t-if="kitchenShowToolbar" class="o_kitchen_toolbar d-flex flex-wrap align-items-center gap-1 px-2 py-1 bg-100 border-top">
+                <span t-if="kitchenIsOverflow" class="badge text-bg-dark">
+                    <i class="fa fa-hourglass-half me-1" />Overflow, waiting
+                </span>
+                <span t-if="kitchenReadiness" class="badge rounded-pill" t-att-class="kitchenReadiness.cls"
+                      t-att-title="kitchenReadiness.stations.map((s) => s.name + ' ' + s.ready + '/' + s.total).join(' · ')">
+                    <i class="fa fa-cutlery me-1" />
+                    <t t-esc="kitchenReadiness.text" />
+                </span>
+            </div>
+        </xpath>
+    </t>
+</templates>

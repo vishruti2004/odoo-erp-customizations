@@ -1,0 +1,68 @@
+.o_kitchen_active {
+    .o_kitchen_chef_chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        max-width: 100%;
+        padding: 0.1rem 0.6rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        background: #fff;
+        font-size: 0.85rem;
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+    .o_kitchen_chef_auto {
+        border-style: dashed;
+        border-color: #714b67;
+        .o_kitchen_auto_icon {
+            color: #714b67;
+            font-size: 0.75rem;
+        }
+    }
+    .o_kitchen_take {
+        padding: 0.1rem 0.8rem;
+        border: 1px solid #198754;
+        border-radius: 6px;
+        background: transparent;
+        color: #198754;
+        font-size: 0.85rem;
+        font-weight: 600;
+        &:hover {
+            background: #198754;
+            color: #fff;
+        }
+    }
+    .o_kitchen_change_reprep {
+        background: #f8d7da;
+        color: #842029;
+        border: 1px solid #f1aeb5;
+    }
+    .o_kitchen_change_pending {
+        background: #fff3cd;
+        color: #7a5200;
+        border: 1px solid #ffda6a;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_kitchen_active {
+        .o_kitchen_line_meta {
+            margin-left: 0.5rem !important;
+            gap: 0.35rem !important;
+        }
+        .o_kitchen_change {
+            margin-left: 0.5rem !important;
+            margin-right: 0.5rem !important;
+            font-size: 0.8rem;
+        }
+        .o_kitchen_chef_chip,
+        .o_kitchen_take {
+            padding: 0.25rem 0.6rem;
+            font-size: 0.8rem;
+        }
+    }
+}

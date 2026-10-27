@@ -96,7 +96,6 @@
             <pivot string="Kitchen Performance" sample="1" disable_linking="0">
                 <field name="station_id" type="row" />
                 <field name="net_qty" type="measure" />
-                <!-- <field name="measured_count" type="measure" /> -->
                 <field name="prep_minutes" type="measure" />
                 <field name="target_minutes" type="measure" />
                 <field name="diff_minutes" type="measure" />
@@ -181,6 +180,7 @@
             <list create="0" edit="0" delete="0">
                 <field name="changed_at" />
                 <field name="order_name" />
+                <field name="company_id" groups="base.group_multi_company" optional="show" />
                 <field name="product_id" />
                 <field name="event_type"
                        widget="badge"
@@ -210,6 +210,7 @@
             <list create="0" edit="0" delete="0">
                 <field name="changed_at" />
                 <field name="order_name" />
+                <field name="company_id" groups="base.group_multi_company" optional="show" />
                 <field name="product_id" />
                 <field name="move_type"
                        widget="badge"

@@ -13,5 +13,5 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         if self.kitchen_prep_target_minutes:
             return self.kitchen_prep_target_minutes
-        categories = self.pos_categ_ids.filtered("kitchen_prep_target_minutes").sorted(lambda c: (c.sequence, c.id))
+        categories = self.pos_categ_ids.filtered("kitchen_prep_target_minutes").sorted(lambda category: (category.sequence, category.id))
         return categories[:1].kitchen_prep_target_minutes

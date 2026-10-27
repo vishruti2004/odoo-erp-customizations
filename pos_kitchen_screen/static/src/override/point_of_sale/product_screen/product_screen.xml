@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.ProductScreen" t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
+        <xpath expr="//OrderSummary" position="before">
+            <div t-if="currentOrder?.kitchenLocked" class="o_kitchen_lock_banner d-flex align-items-center gap-2 mx-2 mt-2 px-3 py-2 rounded">
+                <i class="fa fa-lock" />
+                <span>Order is ready in the kitchen and cannot be changed.</span>
+            </div>
+        </xpath>
+    </t>
+</templates>

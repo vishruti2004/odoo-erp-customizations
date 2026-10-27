@@ -12,15 +12,13 @@ class PosPrepState(models.Model):
         return (not self.todo) or self.stage_id.stage_type in FORWARD_TYPES
 
     def _kitchen_flagged_states(self):
-        return self.filtered(lambda s: s.prep_line_id.prep_order_id.pos_order_id.config_id.kitchen_advanced)
+        return self.filtered(lambda state: state.prep_line_id.prep_order_id.pos_order_id.config_id.kitchen_advanced)
 
     def _kitchen_counts(self):
-        """The item still has something to prepare (not fully cancelled, not a combo header)."""
         self.ensure_one()
         line = self.prep_line_id
         return line.quantity - line.cancelled > 0 and not line.pos_order_line_id.combo_line_ids
 
-    #  stage rules
     def _kitchen_filter_stage_move(self, stages):
         Stage = self.env["pos.prep.stage"]
         warnings, blocked = [], self.browse()
@@ -42,29 +40,26 @@ class PosPrepState(models.Model):
                     completing |= state
             message = False
             if missing_chef:
-                message = _("Assign a chef before marking ready: %s",
+                message = _("Assign a chef before marking these items ready: %s",
                             ", ".join(dict.fromkeys(missing_chef)))
             elif completing:
                 orders = completing.prep_line_id.prep_order_id.pos_order_id
                 others = self.search([
                     ("prep_line_id.prep_order_id.pos_order_id", "in", orders.ids), ("id", "not in", self.ids)])
                 waiting = others.filtered(
-                    lambda s: s._kitchen_counts() and s.stage_id.stage_type not in FORWARD_TYPES)
+                    lambda other: other._kitchen_counts() and other.stage_id.stage_type not in FORWARD_TYPES)
                 if waiting:
                     names = ", ".join(dict.fromkeys(
-                        "%s (%s)" % (s.prep_line_id.product_id.display_name,
-                                     s.prep_line_id.station_id.name or s.stage_id.prep_display_id.name)
-                        for s in waiting))
-                    message = _("Order cannot be completed. Still in preparation: %s", names)
+                        "%s (%s)" % (state.prep_line_id.product_id.display_name,
+                                     state.prep_line_id.station_id.name or state.stage_id.prep_display_id.name)
+                        for state in waiting))
+                    message = _("This order cannot be completed yet. Still in preparation: %s", names)
             if message:
                 warnings.append(message)
                 blocked |= ticket_states
         return self - blocked, list(dict.fromkeys(warnings))
 
     def _kitchen_auto_assign_before_ready(self, states, stages):
-        """Dynamic Automatic mode: an item that still has no chef when it is sent to Ready gets one now
-        (a chef may have come on shift since the order arrived). Without an eligible chef the usual
-        "assign a chef" warning is shown."""
         Stage = self.env["pos.prep.stage"]
         lines = self.env["pos.prep.line"]
         for state in states._kitchen_flagged_states():

@@ -13,7 +13,7 @@ class PosPrepStage(models.Model):
     @api.depends("prep_display_id.stage_ids", "sequence")
     def _compute_stage_type(self):
         for stage in self:
-            stages = stage.prep_display_id.stage_ids.sorted(lambda s: (s.sequence, s.id))
+            stages = stage.prep_display_id.stage_ids.sorted(lambda stage: (stage.sequence, stage.id))
             count = len(stages)
             if not count or stage not in stages:
                 stage.stage_type = "todo"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.KitchenPriorityDropdown">
+        <span class="o_kitchen_priority_dropdown d-inline-flex" t-on-click.stop="() => {}">
+            <Dropdown position="'bottom-end'" menuClass="'o_kitchen_priority_menu'">
+                <button type="button"
+                        t-att-class="(props.buttonClass || 'btn btn-sm') + ' o_kitchen_priority_' + priority"
+                        t-att-title="'Kitchen priority: ' + current.label">
+                    <span class="o_kitchen_prio_dot me-2" />
+                    <span t-esc="label" />
+                    <i class="fa fa-angle-down ms-2" />
+                </button>
+                <t t-set-slot="content">
+                    <DropdownItem t-foreach="options" t-as="opt" t-key="opt.id"
+                                  class="'o_kitchen_priority_item o_kitchen_priority_' + opt.id + (opt.id === priority ? ' active' : '')"
+                                  onSelected="() => this.select(opt.id)">
+                        <span class="o_kitchen_prio_dot me-2" />
+                        <span class="fw-semibold" t-esc="opt.label" />
+                        <i t-if="opt.id === priority" class="fa fa-check ms-2" />
+                    </DropdownItem>
+                </t>
+            </Dropdown>
+        </span>
+    </t>
+</templates>

@@ -6,12 +6,12 @@
         <field name="model">pos.kitchen.chef</field>
         <field name="arch" type="xml">
             <list string="Kitchen Chefs">
-                <field name="employee_id"/>
-                <field name="station_ids" widget="many2many_tags"/>
-                <field name="category_ids" widget="many2many_tags" optional="show"/>
-                <field name="resource_calendar_id" optional="show"/>
-                <field name="on_shift" widget="boolean" optional="show"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="employee_id" />
+                <field name="station_ids" widget="many2many_tags" />
+                <field name="category_ids" widget="many2many_tags" optional="show" />
+                <field name="resource_calendar_id" optional="show" />
+                <field name="on_shift" widget="boolean" optional="show" />
+                <field name="company_id" groups="base.group_multi_company" />
             </list>
         </field>
     </record>
@@ -22,29 +22,28 @@
         <field name="arch" type="xml">
             <form string="Kitchen Chef">
                 <sheet>
-                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active" />
+                    <field name="active" invisible="1" />
                     <div class="oe_title">
-                        <label for="employee_id"/>
+                        <label for="employee_id" />
                         <h1>
-                            <field name="employee_id" required="1" placeholder="Select an employee"
-                                   options="{'no_quick_create': True}"/>
+                            <field name="employee_id" required="1" placeholder="Select an employee" options="{'no_quick_create': True}" />
                         </h1>
                     </div>
                     <group>
                         <group string="Kitchen">
-                            <field name="station_ids" widget="many2many_tags" options="{'no_create': True}"
-                                   placeholder="Select kitchen stations"/>
-                            <field name="available_category_ids" invisible="1"/>
-                            <field name="category_ids" widget="many2many_tags"
-                                   domain="[('id', 'in', available_category_ids)]" options="{'no_create': True}"
-                                   placeholder="Categories of the selected stations"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="station_ids" widget="many2many_tags" options="{'no_create': True}" placeholder="Select kitchen stations" />
+                            <field name="available_category_ids" invisible="1" />
+                            <field name="category_ids"
+                                   widget="many2many_tags"
+                                   domain="[('id', 'in', available_category_ids)]"
+                                   options="{'no_create': True}"
+                                   placeholder="Categories of the selected stations" />
+                            <field name="company_id" groups="base.group_multi_company" />
                         </group>
                         <group string="Shift">
-                            <field name="resource_calendar_id" invisible="not employee_id"
-                                   placeholder="Any time (no working hours)"/>
-                            <field name="on_shift" invisible="not employee_id"/>
+                            <field name="resource_calendar_id" invisible="not employee_id" placeholder="Any time (no working hours)" />
+                            <field name="on_shift" invisible="not employee_id" />
                             <div colspan="2" class="text-muted small">
                                 The chef can take items only during the working hours of the employee
                                 (time off included). Without working hours the chef can work at any time.
@@ -61,9 +60,9 @@
         <field name="model">pos.kitchen.chef</field>
         <field name="arch" type="xml">
             <search string="Kitchen Chefs">
-                <field name="name"/>
-                <field name="station_ids"/>
-                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <field name="name" />
+                <field name="station_ids" />
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]" />
             </search>
         </field>
     </record>

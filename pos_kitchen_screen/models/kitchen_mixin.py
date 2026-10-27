@@ -3,7 +3,7 @@ from odoo.exceptions import AccessError, UserError
 
 
 class KitchenRuleError(UserError):
-    """A kitchen rule refused the action. The kitchen screen shows it as a notification."""
+    pass
 
 
 class KitchenAccessMixin(models.AbstractModel):
@@ -23,21 +23,19 @@ class KitchenAccessMixin(models.AbstractModel):
         return chef
 
     @api.model
-    def _kitchen_is_manager(self):
-        """Point of Sale managers (and administrators) see and control the whole kitchen."""
-        return self.env.su or self.env.user.has_group("point_of_sale.group_pos_manager")
+    def _kitchen_is_admin(self):
+        return self.env.su or self.env.user.has_group("base.group_system")
 
     @api.model
-    def _kitchen_user_chef(self):
-        """Chef linked to the current user (through the employee), if any."""
+    def _kitchen_user_chef(self, company=None):
+        company = company or self.env.company
         return self.env["pos.kitchen.chef"].search([
-            ("user_id", "=", self.env.uid), ("active", "=", True),
-            ("company_id", "in", self.env.companies.ids)], limit=1)
+            ("user_id", "=", self.env.uid), ("active", "=", True), ("company_id", "=", company.id)], limit=1)
 
     @api.model
-    def _kitchen_check_manager(self, message=None):
-        if not self._kitchen_is_manager():
-            raise AccessError(message or _("Only kitchen managers can do this."))
+    def _kitchen_check_admin(self, message=None):
+        if not self._kitchen_is_admin():
+            raise AccessError(message or _("Only administrators can do this."))
 
     @api.model
     def _kitchen_check_flag(self, config):

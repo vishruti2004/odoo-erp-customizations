@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.PrepDisplay" t-inherit="pos_enterprise.PrepDisplay" t-inherit-mode="extension">
+        <xpath expr="//ul[hasclass('sub-menu')]/li[hasclass('recall-button')]" position="before">
+            <t t-if="prepDisplay.kitchenAdvanced">
+                <li class="menu-item o_kitchen_mobile_chef">
+                    <span class="dropdown-item py-2 fw-semibold d-flex align-items-center">
+                        <i class="fa fa-user-circle me-2" aria-hidden="true" />
+                        <span class="text-truncate" t-esc="kitchenChefLabel" />
+                    </span>
+                </li>
+                <t t-if="kitchenIsAdmin">
+                    <li class="menu-item o_kitchen_mobile_chef" t-on-click="() => this.prepDisplay.logoutChef()">
+                        <a class="dropdown-item py-2 d-flex align-items-center">
+                            <span class="o_kitchen_chef_check"><i t-if="!kitchen.chef" class="fa fa-check" /></span>
+                            <span>All chefs</span>
+                        </a>
+                    </li>
+                    <li t-foreach="prepDisplay.chefMenu" t-as="chef" t-key="chef.id"
+                        class="menu-item o_kitchen_mobile_chef" t-on-click="() => this.prepDisplay.loginChef(chef.id)">
+                        <a class="dropdown-item py-2 d-flex align-items-center">
+                            <span class="o_kitchen_chef_check"><i t-if="chef.selected" class="fa fa-check" /></span>
+                            <span class="text-truncate" t-esc="chef.name" />
+                            <small t-if="chef.offShift" class="text-muted ms-2">Off shift</small>
+                        </a>
+                    </li>
+                </t>
+                <li class="o_kitchen_mobile_chef_divider"><hr class="dropdown-divider my-1" /></li>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_main_screen')]" position="attributes">
+            <attribute name="t-att-class">this.kitchenRootClass</attribute>
+        </xpath>
+
+        <xpath expr="//Stages" position="after">
+            <div t-if="prepDisplay.kitchenAdvanced" class="o_kitchen_chef_bar d-none d-lg-flex align-items-center ms-auto border-bottom">
+
+                <div t-if="prepDisplay.kitchenAdvanced and !kitchenIsAdmin"
+                     class="o_kitchen_chef_fixed d-flex align-items-center h-100 px-4 border-start fs-4"
+                     title="Logged-in chef">
+                    <i class="fa fa-user-circle pe-0 pe-sm-2" aria-hidden="true" />
+                    <span class="o_kitchen_chef_name d-none d-sm-inline-block" t-esc="kitchenChefLabel" />
+                </div>
+                <Dropdown t-if="prepDisplay.kitchenAdvanced and kitchenIsAdmin" position="'bottom-end'" menuClass="'o_kitchen_chef_menu'">
+                    <button class="o_kitchen_chef_toggle btn btn-lg h-100 px-4 rounded-0 border-start">
+                        <i class="fa fa-user-circle pe-0 pe-sm-2" aria-hidden="true" />
+                        <span class="o_kitchen_chef_name d-none d-sm-inline-block" t-esc="kitchenChefLabel" />
+                        <i class="fa fa-angle-down ms-2" aria-hidden="true" />
+                    </button>
+                    <t t-set-slot="content">
+                        <DropdownItem class="'o_kitchen_chef_item fw-semibold' + (kitchen.chef ? '' : ' o_kitchen_chef_selected')"
+                                      onSelected="() => this.prepDisplay.logoutChef()">
+                            <span class="o_kitchen_chef_check"><i t-if="!kitchen.chef" class="fa fa-check" /></span>
+                            <span>All chefs</span>
+                        </DropdownItem>
+                        <DropdownItem t-foreach="prepDisplay.chefMenu" t-as="chef" t-key="chef.id"
+                                      class="'o_kitchen_chef_item' + (chef.selected ? ' o_kitchen_chef_selected' : '')"
+                                      onSelected="() => this.prepDisplay.loginChef(chef.id)">
+                            <span class="o_kitchen_chef_check"><i t-if="chef.selected" class="fa fa-check" /></span>
+                            <span t-esc="chef.name" />
+                            <small t-if="chef.offShift" class="text-muted ms-2">Off shift</small>
+                        </DropdownItem>
+                    </t>
+                </Dropdown>
+                <button t-if="prepDisplay.kitchenAdvanced and kitchenIsAdmin and kitchen.chef"
+                        class="btn btn-light btn-lg h-100 px-3 rounded-0" title="Show all chefs"
+                        t-on-click="() => this.prepDisplay.logoutChef()">
+                    <i class="fa fa-times" aria-hidden="true" />
+                </button>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_time')]" position="after">
+            <div t-if="prepDisplay.kitchenAdvanced" class="o_kitchen_filter_priority">
+                <section class="o_pdis_name_quantity d-flex justify-content-between mt-3 pt-2 pb-1 fs-4 fw-bold">
+                    <span class="name category-name">Priority</span>
+                </section>
+                <hr class="mt-1 mb-2 me-n2" />
+                <t t-foreach="[['all', 'All'], ['high', 'High'], ['medium', 'Medium'], ['low', 'Low']]" t-as="option" t-key="option[0]">
+                    <div class="d-flex justify-content-between m-0 py-2 border-bottom border-light cursor-pointer"
+                         t-att-class="{ 'product-selected bg-info bg-opacity-25 px-2 me-n2': kitchen.priorityFilter === option[0] }"
+                         t-on-click="() => this.setPriorityFilter(option[0])">
+                        <span class="pe-2" t-esc="option[1]" />
+                    </div>
+                </t>
+            </div>
+            <div t-if="prepDisplay.kitchenAdvanced and kitchenIsAdmin" class="o_kitchen_filter_chef">
+                <section class="o_pdis_name_quantity d-flex justify-content-between mt-3 pt-2 pb-1 fs-4 fw-bold">
+                    <span class="name category-name">Chef</span>
+                </section>
+                <hr class="mt-1 mb-2 me-n2" />
+                <t t-foreach="[['all', 'All'], ['unassigned', 'Unassigned']]" t-as="option" t-key="option[0]">
+                    <div class="d-flex justify-content-between m-0 py-2 border-bottom border-light cursor-pointer"
+                         t-att-class="{ 'product-selected bg-info bg-opacity-25 px-2 me-n2': kitchen.chefFilter === option[0] }"
+                         t-on-click="() => this.setChefFilter(option[0])">
+                        <span class="pe-2" t-esc="option[1]" />
+                    </div>
+                </t>
+            </div>
+            <div t-if="showStationFilter" class="o_kitchen_filter_station">
+                <section class="o_pdis_name_quantity d-flex justify-content-between mt-3 pt-2 pb-1 fs-4 fw-bold">
+                    <span class="name category-name">Station</span>
+                </section>
+                <hr class="mt-1 mb-2 me-n2" />
+                <t t-foreach="prepDisplay.visibleStations" t-as="station" t-key="station.id">
+                    <div class="d-flex justify-content-between m-0 py-2 border-bottom border-light cursor-pointer"
+                         t-att-class="{ 'product-selected bg-info bg-opacity-25 px-2 me-n2': kitchen.stationFilter.includes(station.id) }"
+                         t-on-click="() => this.toggleStationFilter(station.id)">
+                        <span class="pe-2" t-esc="station.name" />
+                    </div>
+                </t>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_pdis_orders')]" position="before">
+            <div t-if="prepDisplay.posHasProducts and prepDisplay.kitchenAdvanced and prepDisplay.workloadView.length" class="o_kitchen_workload d-flex gap-3 px-3 py-2 overflow-auto bg-100 border-bottom">
+                <div t-foreach="prepDisplay.workloadView"
+                     t-as="load"
+                     t-key="load.id"
+                     class="o_kitchen_workload_item flex-shrink-0"
+                     t-att-class="{ 'opacity-75': !load.isOwn }">
+                    <div class="d-flex justify-content-between fw-bold small gap-3">
+                        <span>
+                            <i t-if="load.overloaded" class="fa fa-exclamation-triangle text-danger me-1" />
+                            <t t-esc="load.name" />
+                        </span>
+                        <span t-att-class="load.overloaded ? 'text-danger' : 'text-muted'" t-esc="(load.limit ? load.value + ' / ' + load.limit : load.value) + ' ' + load.unit" />
+                    </div>
+                    <div class="progress o_kitchen_workload_bar">
+                        <div class="progress-bar" role="progressbar"
+                             t-att-class="load.overloaded ? 'bg-danger' : (load.percent >= 80 ? 'bg-warning' : 'bg-success')"
+                             t-attf-style="width: {{ load.limit ? load.percent : 0 }}%"/>
+                    </div>
+                    <button t-if="load.isOwn and load.overloaded and kitchenIsAdmin" type="button" class="btn btn-sm btn-danger mt-1 w-100"
+                            t-on-click="() => this.prepDisplay.openOverflowMenu(load)">
+                        <i class="fa fa-share me-1" />
+                        <t t-if="load.metric === 'time'">+<t t-esc="load.excess" /> min · Move items</t>
+                        <t t-else="">+<t t-esc="load.excess" /> items · Move items</t>
+                    </button>
+                </div>
+                <div t-if="prepDisplay.chefWorkloadView.length" class="o_kitchen_chef_load d-flex flex-shrink-0 align-items-center gap-2 ps-3 border-start">
+                    <i class="fa fa-users text-muted" title="Pending work per chef (minutes · quantity)" />
+                    <span t-foreach="prepDisplay.chefWorkloadView" t-as="chefLoad" t-key="chefLoad.id"
+                          class="badge rounded-pill bg-white text-dark border"
+                          t-att-class="{ 'border-primary': chefLoad.isMe }"
+                          t-att-title="chefLoad.title">
+                        <t t-esc="chefLoad.name" />
+                        <span class="text-muted ms-1" t-esc="chefLoad.label" />
+                    </span>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

@@ -9,7 +9,6 @@ from . import pos_prep_order
 from . import pos_prep_line
 from . import pos_prep_state
 from . import pos_order
-from . import pos_session
 from . import pos_category
 from . import product_template
 from . import pos_config

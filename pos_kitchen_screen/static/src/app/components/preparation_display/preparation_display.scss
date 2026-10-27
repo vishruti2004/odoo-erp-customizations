@@ -1,0 +1,132 @@
+.o_kitchen_active {
+    .o_pdis_main_area {
+        display: flex;
+        flex-direction: column;
+        .o_pdis_orders {
+            flex: 1 1 0;
+            min-height: 0;
+            height: auto !important;
+        }
+    }
+    .o_kitchen_workload_item {
+        min-width: 150px;
+    }
+    .o_kitchen_workload_bar {
+        height: 8px;
+    }
+}
+
+.o_kitchen_chef_menu {
+    min-width: 230px;
+    max-height: calc(5 * 2.5rem + 1rem);
+    overflow-y: auto;
+    .o_kitchen_chef_item {
+        display: flex;
+        align-items: center;
+        min-height: 2.5rem;
+        padding-left: 0.75rem;
+        &::before {
+            display: none !important;
+        }
+        &.o_kitchen_chef_selected {
+            background-color: #f3f4f6;
+        }
+    }
+    .o_kitchen_chef_check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 1.25rem;
+        margin-right: 0.5rem;
+        color: #714b67;
+    }
+}
+
+.o_kitchen_chef_toggle,
+.o_kitchen_chef_fixed {
+    background-color: #fff;
+    color: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.o_kitchen_chef_toggle {
+    &:hover,
+    &:focus,
+    &.show,
+    &.active,
+    &[aria-expanded="true"] {
+        background-color: #f8f9fa;
+        border-color: transparent;
+    }
+}
+.o_kitchen_chef_fixed {
+    cursor: default;
+}
+
+.o_kitchen_chef_bar {
+    min-width: 0;
+    .o_kitchen_chef_name {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_kitchen_chef_toggle,
+    .o_kitchen_chef_fixed {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        font-size: 1rem !important;
+    }
+    .o_kitchen_chef_bar .o_kitchen_chef_name {
+        max-width: 140px;
+    }
+    .o_kitchen_active {
+        .o_kitchen_workload {
+            gap: 0.75rem !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+        .o_kitchen_workload_item {
+            min-width: 125px;
+        }
+        .o_kitchen_chef_load {
+            padding-left: 0.75rem !important;
+        }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_kitchen_chef_menu {
+        min-width: 0;
+        width: calc(100vw - 1.5rem);
+        max-width: 320px;
+    }
+    .o_kitchen_active {
+        .o_kitchen_workload {
+            font-size: 0.8rem;
+        }
+        .o_kitchen_workload_item {
+            min-width: 110px;
+        }
+        .o_kitchen_chef_load .badge {
+            font-size: 0.75rem;
+        }
+    }
+}
+
+.o_kitchen_active .o_kitchen_mobile_chef {
+    .o_kitchen_chef_check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 1.25rem;
+        margin-right: 0.5rem;
+        color: #714b67;
+    }
+    .dropdown-item {
+        white-space: nowrap;
+    }
+}

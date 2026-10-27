@@ -1,5 +1,4 @@
 from datetime import timedelta, timezone
-
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
@@ -81,13 +80,12 @@ class PosKitchenChef(models.Model):
             if chef.station_ids.company_id - chef.company_id:
                 raise ValidationError(_("A chef can only work on stations belonging to the same company."))
 
-    #  shifts
     def _kitchen_on_shift(self, moment=None):
         start = (moment or fields.Datetime.now()).replace(tzinfo=timezone.utc)
         end = start + timedelta(minutes=1)
         working = set()
         chefs = self.sudo().filtered("employee_id")
-        for calendar, group in chefs.grouped(lambda c: c.employee_id.resource_calendar_id).items():
+        for calendar, group in chefs.grouped(lambda chef: chef.employee_id.resource_calendar_id).items():
             if not calendar or calendar.flexible_hours:
                 working.update(group.ids)
                 continue
@@ -99,7 +97,7 @@ class PosKitchenChef(models.Model):
         return working
 
     def _kitchen_check_on_shift(self):
-        off = self.filtered(lambda c: c.id not in self._kitchen_on_shift())
+        off = self.filtered(lambda chef: chef.id not in self._kitchen_on_shift())
         if off:
             raise KitchenRuleError(_(
                 "%s is not on shift.",
@@ -109,24 +107,20 @@ class PosKitchenChef(models.Model):
     def get_chefs_on_shift(self, chef_ids=None):
         domain = [("active", "=", True)]
         if chef_ids:
-            domain.append(("id", "in", [int(i) for i in chef_ids]))
+            domain.append(("id", "in", [int(chef_id) for chef_id in chef_ids]))
         return sorted(self.search(domain)._kitchen_on_shift())
 
     @api.model
     def get_kitchen_access(self, display_id=False):
-        """RPC: what the logged-in user may see on the kitchen screen.
-        Managers: everything. Other users: only their own chef, their stations and their items."""
-        manager = self._kitchen_is_manager()
-        chef = self._kitchen_user_chef()
+        admin = self._kitchen_is_admin()
+        display = self.env["pos.prep.display"].browse(int(display_id)) if display_id else None
+        chef = self._kitchen_user_chef(display.company_id if display else None)
         return {
-            "manager": manager,
+            "admin": admin,
             "chef": {"id": chef.id, "name": chef.name, "station_ids": chef.station_ids.ids} if chef else False,
         }
 
-    #  workload
     def _kitchen_pending_load(self):
-        """{chef id: {"minutes", "items"}}: what the chefs still have to prepare on open sessions
-        (preparation minutes of the pending assigned items, every station). Computed on demand."""
         Station = self.env["pos.kitchen.station"]
         load = {chef.id: {"minutes": 0.0, "items": 0.0} for chef in self}
         if not self:
@@ -145,18 +139,26 @@ class PosKitchenChef(models.Model):
 
     @api.model
     def get_chef_workload(self, display_id=False):
-        """RPC: pending minutes / items of the chefs of the stations of a display, and who is on shift."""
-        stations = self.env["pos.kitchen.station"].search([("active", "=", True)])
+        domain = [("active", "=", True)]
         if display_id:
-            stations = stations.filtered(lambda s: s.prep_display_id.id == int(display_id))
+            display = self.env["pos.prep.display"].browse(int(display_id))
+            domain += [("prep_display_id", "=", display.id), ("company_id", "=", display.company_id.id)]
+        stations = self.env["pos.kitchen.station"].search(domain)
         chefs = stations.chef_ids.filtered("active")
         load = chefs._kitchen_pending_load()
         on_shift = chefs._kitchen_on_shift()
-        return [{
-            "id": chef.id, "name": chef.name, "on_shift": chef.id in on_shift,
-            "minutes": round(load[chef.id]["minutes"], 1), "items": load[chef.id]["items"],
-            "station_ids": (chef.station_ids & stations).ids,
-        } for chef in chefs.sorted(lambda c: (c.id not in on_shift, -load[c.id]["minutes"], c.name or ""))]
+        result = []
+        for chef in chefs:
+            chef_stations = chef.station_ids & stations
+            metric = "time" if any(station.workload_metric == "time" for station in chef_stations) else "items"
+            result.append({
+                "id": chef.id, "name": chef.name, "on_shift": chef.id in on_shift, "metric": metric,
+                "minutes": round(load[chef.id]["minutes"], 1), "items": load[chef.id]["items"],
+                "station_ids": chef_stations.ids,
+            })
+        return sorted(result, key=lambda entry: (
+            not entry["on_shift"], -(entry["minutes"] if entry["metric"] == "time" else entry["items"]),
+            entry["name"] or ""))
 
     @api.model
     def _load_pos_preparation_data_domain(self, data):

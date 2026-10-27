@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.Orderline" t-inherit="pos_enterprise.Orderline" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_pdis_orderline_infos')]" position="inside">
+            <button t-if="kitchenCanMove"
+                    class="btn btn-sm btn-outline-secondary ms-2 align-self-start"
+                    type="button"
+                    title="Move this item to another station"
+                    t-on-click.stop="kitchenMove">
+                <i class="fa fa-exchange" />
+            </button>
+        </xpath>
+        <xpath expr="//div[hasclass('o_pdis_orderline_infos')]" position="after">
+            <div t-if="kitchenChangeText" class="o_kitchen_change d-flex align-items-center gap-2 ms-4 me-2 mb-1 px-2 py-1 rounded" t-att-class="kitchenChangeText.cls">
+                <i class="fa fa-exclamation-circle" />
+                <span class="fw-bold" t-esc="kitchenChangeText.text" />
+            </div>
+            <div t-if="kitchenMetaVisible" class="o_kitchen_line_meta d-flex flex-wrap align-items-center gap-1 ms-4 mb-1">
+                <span t-if="kitchenMovedFrom" class="badge text-bg-dark">
+                    <i class="fa fa-share me-1" />from
+                    <t t-esc="kitchenMovedFrom" />
+                </span>
+                <span t-if="kitchenStationName" class="badge text-bg-secondary" t-esc="kitchenStationName" />
+                <button t-if="kitchenCanReprepare"
+                        class="o_kitchen_reprepare btn btn-sm btn-danger py-0"
+                        type="button"
+                        title="Send this item back to the kitchen"
+                        t-on-click.stop="kitchenReprepareClick">
+                    <i class="fa fa-repeat me-1" />Re-prepare
+                </button>
+                <t t-if="kitchenCanAssign">
+                    <span t-if="kitchenChef and !kitchenIsAdmin"
+                          class="o_kitchen_chef_chip"
+                          t-att-class="{ 'o_kitchen_chef_auto': kitchenChefAuto }"
+                          t-att-title="kitchenChefAuto ? 'Assigned automatically' : 'Assigned'">
+                        <i class="fa fa-user-circle" />
+                        <span t-esc="kitchenChef.name" />
+                        <i t-if="kitchenChefAuto" class="fa fa-magic o_kitchen_auto_icon" />
+                    </span>
+                    <button t-elif="kitchenChef"
+                            class="o_kitchen_chef_chip"
+                            t-att-class="{ 'o_kitchen_chef_auto': kitchenChefAuto }"
+                            type="button"
+                            t-att-title="kitchenChefAuto ? 'Assigned automatically · Tap to change' : 'Change chef'"
+                            t-on-click.stop="kitchenAssign">
+                        <i class="fa fa-user-circle" />
+                        <span t-esc="kitchenChef.name" />
+                        <i t-if="kitchenChefAuto" class="fa fa-magic o_kitchen_auto_icon" />
+                    </button>
+                    <t t-else="">
+                        <button t-if="kitchenShowTake" class="o_kitchen_take" type="button" t-on-click.stop="kitchenTake">Take</button>
+                        <button t-if="kitchenIsAdmin" class="o_kitchen_chef_chip" type="button" title="Assign chef" t-on-click.stop="kitchenAssign">
+                            <i class="fa fa-user-plus" />
+                        </button>
+                    </t>
+                </t>
+            </div>
+        </xpath>
+    </t>
+</templates>

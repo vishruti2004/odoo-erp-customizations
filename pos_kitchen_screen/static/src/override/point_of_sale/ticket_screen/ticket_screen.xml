@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="pos_kitchen_screen.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//tr[hasclass('order-row')]/td[last()]" position="before">
+            <td class="align-middle text-center o_kitchen_priority_cell">
+                <KitchenPriorityDropdown t-if="kitchenPriorityAvailable"
+                                         order="order"
+                                         buttonClass="'btn btn-sm o_kitchen_priority_btn'"
+                                         onSelect="(priority) => this.onKitchenPriority(order, priority)" />
+            </td>
+        </xpath>
+    </t>
+</templates>

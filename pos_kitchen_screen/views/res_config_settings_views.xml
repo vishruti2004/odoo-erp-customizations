@@ -3,19 +3,16 @@
     <record id="res_config_settings_view_form_kitchen" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.inherit.pos_kitchen_screen</field>
         <field name="model">res.config.settings</field>
-        <field name="priority" eval="20"/>
-        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="priority" eval="20" />
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form" />
         <field name="arch" type="xml">
-            <xpath expr="//block[@id='pos_bills_and_receipts_section']" position="after">
+            <xpath expr="//block[@id='pos_payment_section']" position="before">
                 <block title="Advanced Kitchen" id="pos_kitchen_advanced_section">
-                    <setting id="pos_kitchen_advanced_setting" string="Advanced Kitchen Screen"
-                             help="Station routing, order priority, chef assignment, table readiness, delay analytics and workload balancing on the preparation displays.">
-                        <field name="pos_kitchen_advanced"/>
+                    <setting id="pos_kitchen_advanced_setting" string="Advanced Kitchen Screen" help="Enable advanced kitchen features for order routing, priority, chef assignment, and workload management.">
+                        <field name="pos_kitchen_advanced" />
                     </setting>
-                    <setting id="pos_kitchen_auto_assign_setting" string="Chef and station assignment"
-                             invisible="not pos_kitchen_advanced"
-                             help="Dynamic Automatic: every new item goes to the least loaded station of its category (Item Wise or Time Wise, as set on each station) and to an eligible chef on shift. Manual choices are never overwritten.">
-                        <field name="pos_kitchen_auto_assign" widget="radio"/>
+                    <setting id="pos_kitchen_auto_assign_setting" string="Chef and station Manage" invisible="not pos_kitchen_advanced" help="Choose Manual Assignment or  Automatic Assignment to distribute items across eligible stations and available chefs while preserving manual changes.">
+                        <field name="pos_kitchen_auto_assign" widget="radio" />
                     </setting>
                 </block>
             </xpath>

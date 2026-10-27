@@ -17,6 +17,8 @@ class PosKitchenAssignmentHistory(models.Model):
 
     prep_line_id = fields.Many2one("pos.prep.line", ondelete="set null", index=True)
     pos_order_id = fields.Many2one("pos.order", string="PoS Order", ondelete="set null")
+    company_id = fields.Many2one(
+        "res.company", string="Company", related="pos_order_id.company_id", store=True, index=True)
     order_name = fields.Char("Order")
     product_id = fields.Many2one("product.product", string="Product", ondelete="set null")
     previous_chef_id = fields.Many2one("pos.kitchen.chef", string="Previous chef", ondelete="set null")
@@ -39,11 +41,13 @@ class PosKitchenItemHistory(models.Model):
 
     prep_line_id = fields.Many2one("pos.prep.line", ondelete="set null", index=True)
     pos_order_id = fields.Many2one("pos.order", string="PoS Order", ondelete="set null")
+    company_id = fields.Many2one(
+        "res.company", string="Company", related="pos_order_id.company_id", store=True, index=True)
     order_name = fields.Char("Order")
     product_id = fields.Many2one("product.product", string="Product", ondelete="set null")
     event_type = fields.Selection(string="Change", selection=[
         ("qty_increased", "Quantity increased"), ("qty_decreased", "Quantity decreased"),
-        ("cancelled", "Cancelled"), ("reprep", "Re-prepare"),
+        ("cancelled", "Cancelled"), ("reprep", "Re-prepare"), ("added", "Item added"),
     ], required=True)
     old_quantity = fields.Float("Quantity before")
     new_quantity = fields.Float("Quantity after")

@@ -22,11 +22,14 @@ class PosPrepDisplay(models.Model):
 
     @api.model
     def web_search_read(self, domain, specification, **kwargs):
-        """Backend views: a chef sees only the preparation displays of his stations."""
         Station = self.env["pos.kitchen.station"]
-        if not Station._kitchen_is_manager():
+        if not Station._kitchen_is_admin():
             domain = list(domain or []) + [("id", "in", Station._kitchen_user_chef().station_ids.prep_display_id.ids)]
         return super().web_search_read(domain, specification, **kwargs)
+
+    def _get_open_orderlines_in_display(self):
+        states = super()._get_open_orderlines_in_display()
+        return states.filtered(lambda state: state.prep_line_id.prep_order_id.pos_order_id.state != "cancel")
 
     def _load_preparation_data_models(self):
         return super()._load_preparation_data_models() + ["pos.kitchen.station", "pos.kitchen.chef"]

@@ -3,7 +3,6 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
 
-/** Kitchen priority of a PoS order as a dropdown (no popup). */
 export class KitchenPriorityDropdown extends Component {
     static template = "pos_kitchen_screen.KitchenPriorityDropdown";
     static components = { Dropdown, DropdownItem };
@@ -11,7 +10,7 @@ export class KitchenPriorityDropdown extends Component {
         order: { type: Object, optional: true },
         onSelect: Function,
         buttonClass: { type: String, optional: true },
-        // order screen button: "Priority" for the default (medium), "Priority: High" / "Priority: Low" otherwise
+
         withPrefix: { type: Boolean, optional: true },
     };
 
@@ -26,7 +25,7 @@ export class KitchenPriorityDropdown extends Component {
         ];
     }
     get current() {
-        return this.options.find((o) => o.id === this.priority);
+        return this.options.find((option) => option.id === this.priority);
     }
     get label() {
         if (!this.props.withPrefix) {

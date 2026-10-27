@@ -1,13 +1,9 @@
 from datetime import timedelta
-
 import pytz
-
 from odoo import api, fields, models
 from odoo.tools import SQL
 
 HOURS = [(f"{hour:02d}", f"{hour:02d}:00 - {hour:02d}:59") for hour in range(24)]
-
-
 class PosKitchenPerformance(models.Model):
   
     _name = "pos.kitchen.performance"
@@ -86,7 +82,6 @@ class PosKitchenPerformance(models.Model):
 
     _station_sent_idx = models.Index("(station_id, sent_at)")
 
-    #  computation
     @api.depends("sent_at", "company_id.partner_id.tz", "create_uid.tz")
     def _compute_hour_of_day(self):
         for rec in self:
@@ -129,7 +124,6 @@ class PosKitchenPerformance(models.Model):
             else:
                 rec.status = "waiting"
 
-    #  averages on the right lines
     def _read_group_select(self, aggregate_spec, query):
         fname, _sep, func = aggregate_spec.partition(":")
         if func == "avg" and fname in self._AVG_POPULATION:
@@ -151,7 +145,6 @@ class PosKitchenPerformance(models.Model):
         "serve_minutes": lambda col: SQL("%s IS NOT NULL AND %s IS NOT NULL", col("served_at"), col("ready_at")),
     }
 
-    #  creation / retention
     @api.model
     def _target_seconds_for(self, prep_line, station):
         template = prep_line.product_id.product_tmpl_id
@@ -189,12 +182,3 @@ class PosKitchenPerformance(models.Model):
                 "target_seconds": self._target_seconds_for(line, station),
             })
         return self.sudo().create(vals_list) if vals_list else self.browse()
-
-    @api.model
-    def _cron_retention(self):
-        days = int(self.env["ir.config_parameter"].sudo().get_param("pos_kitchen_screen.retention_days", 365))
-        limit = fields.Datetime.now() - timedelta(days=days)
-        self.sudo().search([("sent_at", "<", limit)]).unlink()
-        self.env["pos.kitchen.assignment.history"].sudo().search([("changed_at", "<", limit)]).unlink()
-        self.env["pos.kitchen.item.history"].sudo().search([("changed_at", "<", limit)]).unlink()
-        return True

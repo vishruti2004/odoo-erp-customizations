@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Preparation time on the product (Point of Sale tab) and on the PoS category -->
     <record id="product_template_form_kitchen" model="ir.ui.view">
         <field name="name">product.template.form.kitchen</field>
         <field name="model">product.template</field>
-        <field name="inherit_id" ref="point_of_sale.product_template_form_view"/>
+        <field name="inherit_id" ref="point_of_sale.product_template_form_view" />
         <field name="arch" type="xml">
             <xpath expr="//group[@name='pos']" position="inside">
-                <field name="kitchen_prep_target_minutes" string="Preparation time (min)"
-                       help="Time in minutes to prepare one unit. Empty: the PoS category time, then the measured average."/>
+                <field name="kitchen_prep_target_minutes" string="Preparation time (min)" help="Time in minutes to prepare one unit. Empty: the PoS category time, then the measured average." />
             </xpath>
         </field>
     </record>
@@ -16,11 +14,10 @@
     <record id="pos_category_form_kitchen" model="ir.ui.view">
         <field name="name">pos.category.form.kitchen</field>
         <field name="model">pos.category</field>
-        <field name="inherit_id" ref="point_of_sale.product_pos_category_form_view"/>
+        <field name="inherit_id" ref="point_of_sale.product_pos_category_form_view" />
         <field name="arch" type="xml">
             <xpath expr="//group[@name='sequence']" position="inside">
-                <field name="kitchen_prep_target_minutes" string="Preparation time (min)"
-                       help="Used for the products of this category that have no time of their own."/>
+                <field name="kitchen_prep_target_minutes" string="Preparation time (min)" help="Used for the products of this category that have no time of their own." />
             </xpath>
         </field>
     </record>

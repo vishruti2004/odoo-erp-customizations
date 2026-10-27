@@ -1,0 +1,28 @@
+.o_kitchen_lock_banner {
+    background: #fff3cd;
+    color: #7a5200;
+    border: 1px solid #ffda6a;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.product-screen:has(.o_kitchen_lock_banner) {
+    .rightpane,
+    .numpad,
+    .control-buttons,
+    .actionpad > div:has(.mobile-more-button),
+    .submit-order,
+    .fire-btn {
+        pointer-events: none;
+        opacity: 0.45;
+        user-select: none;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_kitchen_lock_banner {
+        font-size: 0.8rem;
+        margin-left: 0.25rem !important;
+        margin-right: 0.25rem !important;
+    }
+}
