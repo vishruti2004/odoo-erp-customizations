@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//t[t[@t-call='mail.ActivityList']]" position="attributes">
+            <attribute name="t-if">props.has_activities and isAdvancedActivityListVisible</attribute>
+        </xpath>
+        <xpath expr="//SearchMessageResult" position="before">
+            <p t-if="isAdvancedEmptyResult" class="text-center fst-italic text-500 fs-6 p-4">
+                No activities match the selected filters.
+            </p>
+        </xpath>
+        <xpath expr="//SearchMessageResult" position="attributes">
+            <attribute name="t-if">(messageSearch.searching or messageSearch.searched) and !isAdvancedActivityMode</attribute>
+        </xpath>
+        <xpath expr="//Thread" position="attributes">
+            <attribute name="t-else" />
+            <attribute name="t-elif">!isAdvancedActivityMode</attribute>
+        </xpath>
+    </t>
+</templates>

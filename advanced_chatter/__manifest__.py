@@ -21,46 +21,23 @@
     "author": "iPredict IT Solutions Pvt. Ltd.",
     "website": "https://ipredictitsolutions.com",
     "license": "LGPL-3",
-
     "depends": [
-        "base",
         "mail",
-        "web",
-        "purchase",
-
     ],
-
     "data": [
         "security/security.xml",
     ],
-
-   "assets": {
-    "web.assets_backend": [
-        "advanced_chatter/static/src/chatter/web_portal/chatter.js",
-        "advanced_chatter/static/src/chatter/web_portal/chatter.scss",
-
-        "advanced_chatter/static/src/core/common/thread.js",
-        "advanced_chatter/static/src/core/common/search_message_input.js",
-        "advanced_chatter/static/src/core/common/search_message_input.scss",
-        "advanced_chatter/static/src/core/common/search_message_input.xml",
-
-        "advanced_chatter/static/src/core/common/search_message_result.js",
-        "advanced_chatter/static/src/core/common/search_message_result.xml",
-
-
-        "advanced_chatter/static/src/views/form/form_compiler.js",
-
-        "advanced_chatter/static/src/core/common/thread.xml",
-
-    ],
-
-},
-
+    "assets": {
+        "web.assets_backend": [
+            "advanced_chatter/static/src/core/common/**/*",
+            "advanced_chatter/static/src/chatter/web/**/*",
+            "advanced_chatter/static/src/chatter/web_portal/**/*",
+            "advanced_chatter/static/src/scss/**/*",
+        ],
+    },
     "images": [
-        "static/description/icon.png",
+        "static/description/logo.png",
     ],
-
-    "demo": [],
     "installable": True,
     "application": False,
     "auto_install": False,

@@ -1,0 +1,38 @@
+.o-advanced-chatter-search-dropdown {
+    top: 100%;
+    left: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.o-advanced-chatter-search-suggestion {
+    cursor: pointer;
+    white-space: normal;
+}
+
+.dropdown-menu:has(.o-advanced-chatter-filter-panel) {
+    min-width: 36rem;
+    max-width: 90vw;
+    display: flex;
+    flex-wrap: wrap;
+
+    > .dropdown-item {
+        flex: 0 0 33.3333%;
+    }
+}
+
+.o-advanced-chatter-filter-panel {
+    flex: 0 0 100%;
+}
+
+.o-advanced-chatter-filter-active {
+    position: relative;
+}
+
+.o-advanced-chatter-filter-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(40%, -40%);
+    pointer-events: none;
+}

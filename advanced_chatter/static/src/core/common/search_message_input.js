@@ -1,123 +1,110 @@
-/** @odoo-module **/
-
 import { SearchMessageInput } from "@mail/core/common/search_message_input";
+import { onWillDestroy, useEffect, useState } from "@odoo/owl";
 import { DateTimeInput } from "@web/core/datetime/datetime_input";
-import { onWillDestroy, useState } from "@odoo/owl";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
 import { patch } from "@web/core/utils/patch";
 
-const BLUR_CLOSE_DELAY = 200;
-
-patch(SearchMessageInput, {
-    components: {
-        ...SearchMessageInput.components,
-        DateTimeInput,
-    },
-});
+Object.assign(SearchMessageInput.components, { DateTimeInput });
 
 patch(SearchMessageInput.prototype, {
+    setup() {
+        super.setup(...arguments);
+        this.advancedDropdownState = useState({ expandedGroup: null });
+        this.filterDropdownState = useDropdownState();
+        const chatter = this.advancedChatter;
+        if (!chatter) {
+            return;
+        }
+        let typedTerm = this.state.searchTerm;
+        useEffect(
+            (term) => {
+                if (term === typedTerm) {
+                    return;
+                }
+                typedTerm = term;
+                this.advancedDropdownState.expandedGroup = null;
+                chatter.onKeywordTyped(term || "");
+            },
+            () => [this.state.searchTerm]
+        );
+        onWillDestroy(() => chatter.resetAdvancedSearch());
+    },
+
     get advancedChatter() {
         return this.env.advancedChatterSearch;
     },
 
-    setup() {
-        super.setup(...arguments);
-
-        this.advancedDropdownState = useState({ expandedGroup: null });
-        this.filterDropdownState = useDropdownState();
-
-        const chatter = this.advancedChatter;
-        if (!chatter) {
-            return;
+    onKeydownSearch(ev) {
+        super.onKeydownSearch(ev);
+        if (ev.key === "Enter" && this.advancedChatter) {
+            this.advancedChatter.advancedSearchState.showSuggestions = false;
         }
-
-        chatter.searchMessageInput = this;
-        chatter.onSearchFilterChanged(this.props.messageSearch.is_notification);
-
-        const unsubscribe = chatter.onFiltersChanged((shouldClose = true) => {
-            this.render();
-            if (shouldClose) {
-                this.filterDropdownState.close();
-            }
-        });
-
-        onWillDestroy(() => {
-            unsubscribe();
-            chatter.onSearchFilterChanged(undefined);
-            if (chatter.searchMessageInput === this) {
-                chatter.searchMessageInput = null;
-            }
-        });
     },
 
     onChangeSearchFilter(searchFilter) {
-        const chatter = this.advancedChatter;
-        const { messageSearch } = this.props;
-        const isClientOnly =
-            chatter &&
-            !messageSearch.searched &&
-            !messageSearch.searching &&
-            !this.state.searchTerm.trim();
-        if (isClientOnly) {
-            messageSearch.is_notification = searchFilter.is_notification;
-        } else {
-            super.onChangeSearchFilter(searchFilter);
-        }
-        chatter?.onSearchFilterChanged(searchFilter.is_notification);
+        super.onChangeSearchFilter(searchFilter);
+        this.advancedChatter?.onSearchFilterChanged();
     },
 
     clear() {
-        super.clear();
         this.advancedChatter?.clearAdvancedFilters();
+        super.clear();
+    },
+
+    onAdvancedFilterChange(kind, group, value) {
+        this.advancedChatter.setFilterValue(kind, group, value);
+        this.filterDropdownState.close();
+    },
+
+    onAdvancedDateApply(key, value) {
+        const chatter = this.advancedChatter;
+        chatter.setDateFilter(key, value);
+        if (chatter.advancedSearchState.dateFrom && chatter.advancedSearchState.dateTo) {
+            this.filterDropdownState.close();
+        }
+    },
+
+    onAdvancedClearFilters() {
+        this.advancedChatter.clearAdvancedFilters();
+        this.filterDropdownState.close();
     },
 
     toggleAdvancedGroup(key) {
-        const state = this.advancedDropdownState;
-        state.expandedGroup = state.expandedGroup === key ? null : key;
+        this.advancedDropdownState.expandedGroup =
+            this.advancedDropdownState.expandedGroup === key ? null : key;
     },
 
-    onKeywordSync() {
+    selectAdvancedKeyword() {
+        this.advancedChatter.selectKeywordSuggestion(this.state.searchTerm);
+        this.advancedDropdownState.expandedGroup = null;
+        this.search();
+    },
+
+    selectAdvancedSuggestion(group, item) {
+        this.advancedChatter.selectSuggestion(group, item);
+        this.advancedDropdownState.expandedGroup = null;
+    },
+
+    _isAdvancedSearchInput(ev) {
+        return ev.target?.tagName === "INPUT" && ev.target.type === "text";
+    },
+
+    onAdvancedFocusIn(ev) {
         const chatter = this.advancedChatter;
-        if (!chatter) {
+        if (!chatter || !this._isAdvancedSearchInput(ev)) {
             return;
         }
-        setTimeout(() => {
-            const typed = this.state.searchTerm || "";
-            chatter._resetFilters("keyword", "field");
-            chatter.advancedFilterState.filters.keyword = typed;
-            chatter.advancedFilterState.showSuggestions = Boolean(typed.trim());
-            this.advancedDropdownState.expandedGroup = null;
-            if (typed.trim()) {
-                // Extraction પછી listeners ને notify કરો
-                chatter
-                    ._ensureExtracted()
-                    .then(() => chatter.notifyFiltersChanged(false));
-            } else {
-                // FIX: empty keyword પર પણ notify કરો, નહીં તો stale filter રહી જાય
-                chatter.notifyFiltersChanged(false);
-            }
-        }, 0);
-    },
-
-    onKeywordFocusSync() {
-        const chatter = this.advancedChatter;
-        if (chatter && this.state.searchTerm.trim()) {
-            chatter.advancedFilterState.showSuggestions = true;
+        if (this.state.searchTerm.trim() && chatter.showAdvancedSearch) {
+            chatter.advancedSearchState.showSuggestions = true;
         }
     },
 
-    onKeywordBlurSync() {
+    onAdvancedFocusOut(ev) {
         const chatter = this.advancedChatter;
-        if (!chatter) {
+        if (!chatter || !this._isAdvancedSearchInput(ev)) {
             return;
         }
-        setTimeout(() => {
-            chatter.advancedFilterState.showSuggestions = false;
-            this.advancedDropdownState.expandedGroup = null;
-        }, BLUR_CLOSE_DELAY);
-    },
-
-    selectSuggestionAndSync(group, item = null) {
-        this.advancedChatter?.selectSearchSuggestion(group, item);
+        chatter.advancedSearchState.showSuggestions = false;
+        this.advancedDropdownState.expandedGroup = null;
     },
 });
