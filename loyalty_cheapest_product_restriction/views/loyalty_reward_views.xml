@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="loyalty_reward_view_form_cheapest_restriction" model="ir.ui.view">
+        <field name="name">loyalty.reward.view.form.cheapest.restriction</field>
+        <field name="model">loyalty.reward</field>
+        <field name="inherit_id" ref="loyalty.loyalty_reward_view_form"/>
+        <field name="arch" type="xml">
+            <field name="discount_product_tag_id" position="after">
+                <field name="cheapest_exclude_product_ids" widget="many2many_tags"
+                       invisible="reward_type != 'discount' or discount_applicability != 'cheapest'"/>
+                <field name="cheapest_exclude_categ_ids" widget="many2many_tags"
+                       invisible="reward_type != 'discount' or discount_applicability != 'cheapest'"/>
+                <field name="is_exclude_child_categ"
+                       invisible="reward_type != 'discount' or discount_applicability != 'cheapest' or not cheapest_exclude_categ_ids"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>
