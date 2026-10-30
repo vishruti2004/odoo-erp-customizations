@@ -22,8 +22,7 @@ patch(ListController.prototype, {
             !isSplitEnabled("list") ||
             !hasFormView(this.env) ||
             this.env.inSplitView ||
-            this.env.inDialog ||
-            this.env.isSmall
+            this.env.inDialog
         ) {
             return super.createRecord(...arguments);
         }

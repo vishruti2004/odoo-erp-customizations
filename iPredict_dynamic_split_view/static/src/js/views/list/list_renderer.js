@@ -42,8 +42,7 @@ patch(ListRenderer.prototype, {
             !this.isX2Many &&
             this.env.config?.viewType === "list" &&
             !this.env.inSplitView &&
-            !this.env.inDialog &&
-            !this.uiService.isSmall
+            !this.env.inDialog
         );
     },
 

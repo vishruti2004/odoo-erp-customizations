@@ -31,8 +31,7 @@ patch(ControlPanel.prototype, {
             isSplitEnabled(this.env.config?.viewType) &&
             hasFormView(this.env) &&
             !this.env.inSplitView &&
-            !this.env.inDialog &&
-            !this.env.isSmall
+            !this.env.inDialog
         );
     },
 
@@ -47,7 +46,8 @@ patch(ControlPanel.prototype, {
         return (
             this.showSplitView() &&
             splitViewState.active &&
-            !!session.split_direction
+            !!session.split_direction &&
+            !this.env.isSmall
         );
     },
 

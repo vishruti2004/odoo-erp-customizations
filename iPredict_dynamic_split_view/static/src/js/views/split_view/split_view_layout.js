@@ -31,8 +31,7 @@ patch(Layout.prototype, {
             isSplitEnabled(this.env.config?.viewType) &&
             hasFormView(this.env) &&
             !this.env.inSplitView &&
-            !this.env.inDialog &&
-            !this.env.isSmall
+            !this.env.inDialog
         );
     },
 

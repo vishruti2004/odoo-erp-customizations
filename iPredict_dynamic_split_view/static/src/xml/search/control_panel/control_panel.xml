@@ -3,7 +3,7 @@
     <t t-inherit="web.ControlPanel" t-inherit-mode="extension">
         <xpath expr="//t[@t-slot='layout-actions']" position="after">
             <!-- Split View Button -->
-            <button t-if="showSplitView()"
+            <button t-if="showSplitView() and !env.isSmall"
                     type="button"
                     class="btn btn-secondary o_ipredict_split_view_button ms-4"
                     t-att-class="{ active: splitViewState.active }"
@@ -23,6 +23,17 @@
                    class="fa fa-arrows-h"/>
                 <i t-else=""
                    class="fa fa-arrows-v"/>
+            </button>
+        </xpath>
+        <!-- Mobile: Split View Button next to the settings (cog) icon -->
+        <xpath expr="//t[@t-elif='env.isSmall']/section[hasclass('o_control_panel_breadcrumbs_actions')]" position="inside">
+            <button t-if="showSplitView() and env.isSmall"
+                    type="button"
+                    class="btn btn-secondary o_ipredict_split_view_button"
+                    t-att-class="{ active: splitViewState.active }"
+                    aria-label="Split View"
+                    t-on-click="onSplitViewClicked">
+                <i class="oi-fw oi oi-panel-right"/>
             </button>
         </xpath>
     </t>

@@ -4,6 +4,7 @@ import {
     Component,
     onMounted,
     onWillUnmount,
+    useEffect,
     useRef,
     useState,
     useSubEnv,
@@ -21,7 +22,14 @@ const DEFAULT_PCT = 50;
 const MIN_PCT = 20;
 const MAX_PCT = 80;
 
-const WIDE_THRESHOLD_PX = 1100;
+// Same breakpoints as Odoo (MEDIAS_BREAKPOINTS), applied to the split panel width
+const PANEL_BREAKPOINTS = [
+    [576, SIZES.XS],
+    [768, SIZES.SM],
+    [992, SIZES.MD],
+    [1200, SIZES.LG],
+    [1400, SIZES.XL],
+];
 
 export class SplitViewContainer extends Component {
     static template =
@@ -44,6 +52,8 @@ export class SplitViewContainer extends Component {
         const ui = this.env.services.ui;
 
         this._realUi = ui;
+        // Reactive read of ui.isSmall: the direction follows mobile/desktop changes
+        this.uiState = useState(ui);
 
         this.sizeState = useState({
             value: Math.min(ui.size, SIZES.XL),
@@ -81,43 +91,36 @@ export class SplitViewContainer extends Component {
         this.panelRef = useRef("panel");
 
         this.currentPct = null;
-        this._resizeTimeout = null;
 
-        this._onWindowResize = () => {
-            clearTimeout(this._resizeTimeout);
+        // The form follows the width of the split panel, not the window
+        this._resizeObserver = new ResizeObserver(() => this.recomputeSize());
 
-            this._resizeTimeout = setTimeout(
-                () => this.recomputeSize(),
-                200
-            );
-        };
+        // Apply the saved size on mount and whenever the direction changes
+        useEffect(
+            () => {
+                const saved = parseFloat(
+                    browser.localStorage.getItem(SIZE_KEY)
+                );
+
+                this.applySize(
+                    saved >= MIN_PCT && saved <= MAX_PCT
+                        ? saved
+                        : DEFAULT_PCT
+                );
+            },
+            () => [this.direction]
+        );
 
         onMounted(() => {
-            const saved = parseFloat(
-                browser.localStorage.getItem(SIZE_KEY)
-            );
-
-            this.applySize(
-                saved >= MIN_PCT && saved <= MAX_PCT
-                    ? saved
-                    : DEFAULT_PCT
-            );
-
             this.recomputeSize();
 
-            browser.addEventListener(
-                "resize",
-                this._onWindowResize
-            );
+            if (this.panelRef.el) {
+                this._resizeObserver.observe(this.panelRef.el);
+            }
         });
 
         onWillUnmount(() => {
-            clearTimeout(this._resizeTimeout);
-
-            browser.removeEventListener(
-                "resize",
-                this._onWindowResize
-            );
+            this._resizeObserver.disconnect();
 
             this.parentEl?.style.removeProperty(
                 "--ipredict-split-left"
@@ -133,20 +136,36 @@ export class SplitViewContainer extends Component {
         });
     }
 
+    /**
+     * Mobile: always vertical. Desktop: the direction chosen by the user.
+     */
+    get direction() {
+        return this.uiState.isSmall ? "vertical" : this.splitViewState.direction;
+    }
+
+    computePanelSize(width) {
+        if (!width) {
+            return Math.min(this._realUi.size, SIZES.XL);
+        }
+        const match = PANEL_BREAKPOINTS.find(([maxWidth]) => width < maxWidth);
+        return match ? match[1] : SIZES.XXL;
+    }
+
     recomputeSize() {
         const panelWidth =
             this.panelRef.el?.getBoundingClientRect().width ?? 0;
 
-        const next =
-            panelWidth >= WIDE_THRESHOLD_PX
-                ? this._realUi.size
-                : Math.min(
-                      this._realUi.size,
-                      SIZES.XL
-                  );
+        const next = Math.min(
+            this._realUi.size,
+            this.computePanelSize(panelWidth)
+        );
 
         if (next !== this.sizeState.value) {
             this.sizeState.value = next;
+            // Same signals as Odoo's ui service: FormController listens to the
+            // ui bus, FormRenderer (web + mail) listens to the window resize.
+            this._realUi.bus.trigger("resize");
+            browser.dispatchEvent(new Event("resize"));
         }
     }
 
@@ -155,7 +174,7 @@ export class SplitViewContainer extends Component {
     }
 
     applySize(pct) {
-        if (splitViewState.direction === "horizontal") {
+        if (this.direction === "horizontal") {
             this.parentEl?.style.setProperty(
                 "--ipredict-split-left",
                 `${pct}%`
@@ -196,7 +215,7 @@ export class SplitViewContainer extends Component {
             const rect = parent.getBoundingClientRect();
 
             const pct =
-                splitViewState.direction === "horizontal"
+                this.direction === "horizontal"
                     ? ((e.clientX - rect.left) /
                           rect.width) *
                       100
@@ -241,8 +260,6 @@ export class SplitViewContainer extends Component {
                     )
                 );
             }
-
-            this.recomputeSize();
         };
 
         divider.addEventListener(
@@ -265,7 +282,5 @@ export class SplitViewContainer extends Component {
             SIZE_KEY,
             String(DEFAULT_PCT)
         );
-
-        this.recomputeSize();
     }
 }

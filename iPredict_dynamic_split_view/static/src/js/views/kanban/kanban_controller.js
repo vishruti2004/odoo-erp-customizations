@@ -42,8 +42,7 @@ patch(KanbanController.prototype, {
             hasFormView(this.env) &&
             this.env.config?.viewType === "kanban" &&
             !this.env.inSplitView &&
-            !this.env.inDialog &&
-            !this.env.isSmall
+            !this.env.inDialog
         );
     },
 

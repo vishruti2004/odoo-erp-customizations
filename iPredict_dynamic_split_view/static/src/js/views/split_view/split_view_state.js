@@ -8,9 +8,6 @@ const ACTIVE_KEY = "ipredict_split_view_active";
 const GATE_KEY = "ipredict_split_view_gate";
 const DIRECTION_KEY = "ipredict_split_view_direction";
 
-const storedGate =
-    browser.localStorage.getItem(GATE_KEY) === "1";
-
 const defaultSplitView = !!session.default_split_view;
 
 const configuredDirection =
@@ -25,14 +22,11 @@ const defaultDirection =
         : configuredDirection;
 
 export const splitViewState = reactive({
-    gate: storedGate,
+    gate: true,
 
     active:
-        storedGate &&
-        (
-            defaultSplitView ||
-            browser.localStorage.getItem(ACTIVE_KEY) === "1"
-        ),
+        defaultSplitView ||
+        browser.localStorage.getItem(ACTIVE_KEY) === "1",
 
     direction: defaultDirection,
 
@@ -49,7 +43,7 @@ export const splitViewState = reactive({
 });
 
 export function isSplitEnabled(viewType) {
-    if (!session.enable_split_view) {
+    if (!session.enable_split_view || !session.enable_split_view_type) {
         return false;
     }
 
@@ -96,11 +90,6 @@ export function setSplitActive(value) {
 
     if (session.default_split_view) {
         splitViewState.active = true;
-
-        browser.localStorage.setItem(
-            ACTIVE_KEY,
-            "1"
-        );
 
         if (!value) {
             closeSplit();

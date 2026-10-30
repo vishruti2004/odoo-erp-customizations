@@ -44,7 +44,6 @@ body.o_ipredict_resizing {
     cursor: col-resize;
 }
 
-/* Vertical split resize cursor */
 body.o_ipredict_resizing:has(
     .o_ipredict_split_panel.o_ipredict_split_vertical
 ) {
@@ -72,8 +71,6 @@ body.o_ipredict_resizing:has(
         padding-bottom: 1rem;
     }
 }
-
-// ---------- Right panel (form) ----------
 .o_ipredict_split_panel {
     flex: 1 1 0%;
     min-width: 0;
@@ -87,6 +84,8 @@ body.o_ipredict_resizing:has(
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        container-type: inline-size;
+        container-name: ipredict-split;
 
         > .o_view_controller {
             flex: 1 1 auto;
@@ -97,7 +96,6 @@ body.o_ipredict_resizing:has(
         }
     }
 
-    // ---------- Control panel inside the split ----------
     .o_control_panel,
     .o_control_panel_main,
     .o_control_panel_breadcrumbs,
@@ -170,6 +168,60 @@ body.o_ipredict_resizing:has(
             width: 100%;
         }
     }
+    .o_ipredict_split_form > .o_form_view {
+        &:has(> .o_form_view_container > .o_content > .o_form_renderer.flex-nowrap) {
+            flex-flow: row nowrap !important;
+
+            > .o_form_view_container {
+                width: 1px;
+            }
+
+            .o_content > .o_form_renderer > .o_form_sheet_bg {
+                display: flex;
+                flex-direction: column;
+                flex: 2 1 990px;
+                min-width: 0;
+                overflow: auto;
+            }
+        }
+
+        &:not(:has(> .o_form_view_container > .o_content > .o_form_renderer.flex-nowrap)) {
+            flex-flow: column nowrap !important;
+
+            > .o_form_view_container {
+                width: auto;
+            }
+
+            .o_content > .o_form_renderer > .o_form_sheet_bg {
+                flex: 0 0 auto;
+                overflow: visible;
+            }
+        }
+    }
+}
+
+@container ipredict-split (max-width: 991.98px) {
+    .o_form_view .o_group > [class*="col-lg-"] {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+.o_action:has(.o_content > .o_ipredict_split_panel) {
+    overflow: hidden !important;
+
+    .o_content:has(> .o_ipredict_split_panel) {
+        overflow: hidden !important;
+        min-height: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    // Larger touch area for the divider
+    .o_ipredict_split_divider {
+        flex-basis: 12px !important;
+    }
 }
 
 .o_data_row.o_ipredict_split_selected {
@@ -200,8 +252,6 @@ body.o_ipredict_resizing:has(
     flex: 0 0 auto;
     border-radius: 0.375rem;
 }
-
-// ---------- Vertical Split ----------
 
 .o_content:has(> .o_ipredict_split_panel.o_ipredict_split_vertical) {
     flex-direction: column;
@@ -245,9 +295,6 @@ body.o_ipredict_resizing:has(
 .o_ipredict_split_view_button + .o_ipredict_split_direction_button {
     margin-left: 8px !important;
 }
-
-// ---------- Split Direction Radio ----------
-// ---------- Split Direction Radio ----------
 
 .o_ipredict_split_direction {
     width: 100% !important;

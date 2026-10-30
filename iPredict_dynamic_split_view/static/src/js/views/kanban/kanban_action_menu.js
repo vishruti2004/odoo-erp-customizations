@@ -13,8 +13,7 @@ function isRelevantHost(controller) {
         splitViewState.show &&
         splitViewState.resModel === controller.model.root.resModel &&
         !controller.env.inSplitView &&
-        !controller.env.inDialog &&
-        !controller.env.isSmall
+        !controller.env.inDialog
     );
 }
 
