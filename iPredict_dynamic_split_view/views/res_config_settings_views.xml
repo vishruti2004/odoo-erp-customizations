@@ -7,14 +7,12 @@
         <field name="arch" type="xml">
             <xpath expr="//block[@name='users_setting_container']" position="after">
                 <block title="Dynamic Split View" name="dynamic_split_view_setting_container">
-                    <!-- 1. Enable Split View -->
                     <setting string="Enable Split View" help="Choose the preferred Split View orientation — Horizontal, Vertical, or Both.">
                         <field name="enable_split_view" />
                         <div class="o_ipredict_split_direction" invisible="not enable_split_view">
                             <field name="split_direction" widget="radio" options="{'horizontal': true}" />
                         </div>
                     </setting>
-                    <!-- 2. Split View Type -->
                     <setting string="Split View Type" help="Enable Split View functionality across supported List and Kanban views." invisible="not enable_split_view">
                         <field name="enable_split_view_type" />
                         <div class="d-flex align-items-center gap-4" invisible="not enable_split_view_type">
@@ -28,11 +26,9 @@
                             </div>
                         </div>
                     </setting>
-                    <!-- 3. Default Value -->
                     <setting string="Allow Split View by Default" help="Open supported List and Kanban views in Split View by default." invisible="not enable_split_view">
                         <field name="split_view_default" />
                     </setting>
-                    <!-- 4. New Button Flow -->
                     <setting string="Allow New Records in Split View Screen" help="Open newly created records directly in the Split View panel instead of a full-page form." invisible="not enable_split_view">
                         <field name="enable_new_split_view" />
                     </setting>

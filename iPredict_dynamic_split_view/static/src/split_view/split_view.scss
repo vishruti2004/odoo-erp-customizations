@@ -36,20 +36,25 @@ body.o_ipredict_resizing:has(
     cursor: row-resize;
 }
 
+// ---------- Horizontal split ----------
+// Grid: search panel | list side | divider | form.
+// The form takes a fixed share; the list side takes the rest. Any other
+// element of the view (dashboard, banner, ...) is stacked above the list /
+// kanban (first rows, in DOM order), so nothing can push the form out.
 .o_content:has(> .o_ipredict_split_panel) {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto calc(100% - var(--ipredict-split-left, 50%));
+    grid-template-rows: repeat(5, auto) minmax(0, 1fr);
     overflow: hidden;
 
-    > :not(.o_ipredict_split_panel):not(.o_ipredict_split_divider):not(.o_renderer) {
-        flex: 0 0 auto;
-        min-height: 0;
+    > * {
+        grid-column: 2;
+        min-width: 0;
     }
 
     > .o_renderer {
-        flex: 1 1 0%;
+        grid-row: 6;
         box-sizing: border-box;
-        min-width: 0;
         min-height: 0;
         overflow: auto;
     }
@@ -58,8 +63,23 @@ body.o_ipredict_resizing:has(
         padding-bottom: 1rem;
     }
 
+    > .o_search_panel,
+    > .o_search_panel_sidebar {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        min-height: 0;
+    }
+
+    > .o_ipredict_split_divider {
+        grid-column: 3;
+        grid-row: 1 / -1;
+        width: 6px;
+    }
+
     > .o_ipredict_split_panel {
-        flex: 0 0 calc(100% - var(--ipredict-split-left, 50%));
+        grid-column: 4;
+        grid-row: 1 / -1;
+        min-height: 0;
     }
 }
 .o_ipredict_split_panel {
@@ -127,7 +147,7 @@ body.o_ipredict_resizing:has(
 
     .o_control_panel_navigation,
     .o_cp_pager {
-        display: none;                
+        display: none;
     }
 
     .o_breadcrumb {
@@ -218,19 +238,29 @@ body.o_ipredict_resizing:has(
     background-color: #d1ecf1 !important;
 }
 
+// ---------- Vertical split ----------
+// Grid: the search panel stays on the left; other elements of the view
+// (dashboard, ...) then the list/kanban on top; the form below with a fixed share.
 .o_content:has(> .o_ipredict_split_panel.o_ipredict_split_vertical) {
-    display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, var(--ipredict-split-top, 50%)) auto minmax(0, 1fr);
+    grid-template-rows:
+        repeat(5, minmax(0, auto)) minmax(var(--ipredict-split-list-min, 0px), 1fr) auto
+        calc(100% - var(--ipredict-split-top, 50%));
 
     > * {
         grid-column: 2;
-        grid-row: 1;
+    }
+
+    // Elements above the list (dashboard, ...) give their room first when the
+    // divider goes up, with their own scroll; the list keeps its minimum size
+    > :not(.o_renderer, .o_search_panel, .o_search_panel_sidebar, .o_ipredict_split_divider, .o_ipredict_split_panel) {
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     > .o_renderer {
-        grid-row: 2;
-        overflow: auto;
+        grid-row: 6;
     }
 
     > .o_search_panel,
@@ -241,7 +271,7 @@ body.o_ipredict_resizing:has(
 
     > .o_ipredict_split_divider {
         grid-column: 2;
-        grid-row: 3;
+        grid-row: 7;
         width: 100%;
         height: 6px;
         cursor: row-resize;
@@ -254,11 +284,12 @@ body.o_ipredict_resizing:has(
 
     > .o_ipredict_split_panel {
         grid-column: 2;
-        grid-row: 4;
+        grid-row: 8;
         min-height: 0;
         min-width: 0;
     }
 
+    // Mobile: the search panel is a bar on top of the list
     @media (max-width: 767.98px) {
         > *,
         > .o_ipredict_split_divider,
@@ -269,6 +300,13 @@ body.o_ipredict_resizing:has(
         > .o_search_panel {
             grid-column: 1 / -1;
             grid-row: 1;
+        }
+
+        // The search panel bar keeps its size
+        &:has(> .o_search_panel) {
+            grid-template-rows:
+                auto repeat(4, minmax(0, auto)) minmax(var(--ipredict-split-list-min, 0px), 1fr) auto
+                calc(100% - var(--ipredict-split-top, 50%));
         }
 
         > .o_ipredict_split_divider {

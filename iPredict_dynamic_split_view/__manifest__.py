@@ -11,7 +11,6 @@
     "license": "LGPL-3",
     "depends": [
         "web",
-        "base_setup",
     ],
     "data": [
         "views/res_config_settings_views.xml",

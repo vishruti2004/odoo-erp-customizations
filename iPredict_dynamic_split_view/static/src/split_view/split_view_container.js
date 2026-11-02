@@ -123,6 +123,7 @@ export class SplitViewContainer extends Component {
             this._parentObserver.disconnect();
             this.parentEl?.style.removeProperty("--ipredict-split-left");
             this.parentEl?.style.removeProperty("--ipredict-split-top");
+            this.parentEl?.style.removeProperty("--ipredict-split-list-min");
             document.body.classList.remove("o_ipredict_resizing");
         });
     }
@@ -171,16 +172,30 @@ export class SplitViewContainer extends Component {
             };
         }
         const height = (el) => el?.getBoundingClientRect().height || 0;
+        // Elements above the list (dashboard, ...) shrink first: not counted.
+        // Mobile: the search panel bar stays above the list.
+        const searchPanel = this.parentEl.querySelector(":scope > .o_search_panel");
         const listTop = renderer?.getBoundingClientRect().top ?? parentRect.top;
+        const searchPanelAbove =
+            searchPanel && searchPanel.getBoundingClientRect().bottom <= listTop + 1;
         return {
-            list:
-                Math.max(listTop - parentRect.top, 0) +
-                height(renderer?.querySelector("thead")) +
-                height(renderer?.querySelector(".o_data_row, .o_kanban_record")),
+            list: (searchPanelAbove ? height(searchPanel) : 0) + this.getListMinHeight(),
             form:
                 height(panel?.querySelector(".o_control_panel")) +
                 height(panel?.querySelector(".o_form_statusbar")),
         };
+    }
+
+    /**
+     * Vertical: height the list / kanban itself keeps (header + one record).
+     */
+    getListMinHeight() {
+        const renderer = this.parentEl?.querySelector(":scope > .o_renderer");
+        const height = (el) => el?.getBoundingClientRect().height || 0;
+        return (
+            height(renderer?.querySelector("thead")) +
+            height(renderer?.querySelector(".o_data_row, .o_kanban_record"))
+        );
     }
 
     getPctRange() {
@@ -193,7 +208,8 @@ export class SplitViewContainer extends Component {
         const dividerSize = (this.isHorizontal ? divider?.width : divider?.height) || 0;
         const { list, form } = this.getMinSizes();
         const equal = ((total + dividerSize) / (2 * total)) * 100;
-        const min = (list / total) * 100;
+        // Vertical: the divider is taken from the list side
+        const min = ((list + (this.isHorizontal ? 0 : dividerSize)) / total) * 100;
         const max = ((total - form - dividerSize) / total) * 100;
         if (min >= max) {
             const share = (list / (list + form)) * 100;
@@ -242,8 +258,13 @@ export class SplitViewContainer extends Component {
         if (this.isHorizontal) {
             this.parentEl?.style.setProperty("--ipredict-split-left", `${value}%`);
             this.parentEl?.style.removeProperty("--ipredict-split-top");
+            this.parentEl?.style.removeProperty("--ipredict-split-list-min");
         } else {
             this.parentEl?.style.setProperty("--ipredict-split-top", `${value}%`);
+            this.parentEl?.style.setProperty(
+                "--ipredict-split-list-min",
+                `${this.getListMinHeight()}px`
+            );
             this.parentEl?.style.removeProperty("--ipredict-split-left");
         }
     }
