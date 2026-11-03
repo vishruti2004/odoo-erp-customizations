@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="filter_contact_ip" model="ir.ui.view">
+            <field name="name">filtered.contact</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter" />
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <filter string="Approved" name="approved_contact" domain="[('state' ,'=','approved')]" />
+                    <filter string="Cancelled" name="cancelled_contact" domain="[('state' ,'=','cancel')]" />
+                </xpath>
+                <xpath expr="//group[@name='group_by']" position="inside">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}" />
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_partner_tree_inherit_ip" model="ir.ui.view">
+            <field name="name">partner.list.inherit.ip</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='country_id']" position="after">
+                    <field name="state"
+                           widget="badge"
+                           optional="show"
+                           decoration-info="state == 'draft'"
+                           decoration-success="state == 'approved'"
+                           decoration-danger="state == 'cancel'" />
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_partner_form_inherit_ip" model="ir.ui.view">
+            <field name="name">partner.form.inherit.ip</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//form/sheet" position="before">
+                    <header>
+                        <button string="Approve"
+                                type="object"
+                                name="partner_approve"
+                                invisible="state == 'approved'"
+                                class="oe_highlight"
+                                groups="customer_approval_workflow.group_contact_manager" />
+                        <button string="Set to Draft"
+                                type="object"
+                                name="partner_set_draft"
+                                invisible="state == 'draft'"
+                                class="oe_highlight"
+                                groups="customer_approval_workflow.group_contact_manager" />
+                        <button string="Cancel"
+                                type="object"
+                                name="partner_cancel"
+                                invisible="state == 'cancel'"
+                                groups="customer_approval_workflow.group_contact_manager" />
+                        <field name="state" widget="statusbar" />
+                    </header>
+                </xpath>
+                <xpath expr="//field[@name='child_ids']/kanban" position="inside">
+                    <field name="state" invisible="1" />
+                </xpath>
+                <xpath expr="//field[@name='child_ids']/form" position="inside">
+                    <field name="state" invisible="1" />
+                </xpath>
+                <xpath expr="//field[@name='category_id']" position="after">
+                    <field name="approved_by" readonly="state in ('approved', 'cancel')" invisible="state in ('draft', 'cancel')" />
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

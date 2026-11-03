@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="customer_approval_email_template_ip" model="mail.template">
+            <field name="name">Contact Approval Request</field>
+            <field name="model_id" ref="base.model_res_partner" />
+            <field name="email_from">{{ user.email or (object.company_id or object.env.company).email }}</field>
+            <field name="subject">New Contact Approval Request</field>
+            <field name="lang">{{ user.lang or 'en_US' }}</field>
+            <field name="auto_delete" eval="False" />
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                        Hello,
+                        <br /><br />
+                        New Contact <strong t-out="object.name" /> created by <strong t-out="user.name" /> in company <strong t-out="(object.company_id or object.env.company).name" />.
+                        <br /><br />
+                        To Approve, Refuse or view the Contact, click on the following link:
+                        <div style="margin: 16px 0px 16px 0px;">
+                            <a t-attf-href="#{object.get_base_url()}/web#id=#{object.id}&amp;view_type=form&amp;model=res.partner" class="btn btn-primary">
+                                Approve, Refuse or View Contact
+                            </a>
+                        </div>
+                        <br />
+                        Best regards,
+                        <br />
+                        <strong t-out="(object.company_id or object.env.company).name" />
+                    </p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>
