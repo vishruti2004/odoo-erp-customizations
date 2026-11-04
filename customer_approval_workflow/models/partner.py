@@ -1,4 +1,5 @@
-from odoo import models, api, fields
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 from odoo.fields import Domain
 
 
@@ -9,7 +10,7 @@ class PartnerView(models.Model):
     state = fields.Selection([
         ('draft', 'Draft'),
         ('approved', 'Approved'),
-        ('cancel', 'Cancelled'),
+        ('cancel', 'Rejected'),
     ], required=True, default='draft', tracking=True, string='Status', readonly=True)
 
     approved_by = fields.Many2one(
@@ -20,18 +21,35 @@ class PartnerView(models.Model):
         domain = Domain(domain or Domain.TRUE) & Domain('state', '=', 'approved')
         return super().name_search(name, domain, operator, limit)
 
+    def _check_contact_manager(self):
+        if not self.env.user.has_group('customer_approval_workflow.group_contact_manager'):
+            raise AccessError(_("Only Contact Managers can change the contact status."))
+
     def partner_approve(self):
+        self._check_contact_manager()
         for record in self:
-            record.write({
+            record.sudo().write({
                 'state': 'approved',
                 'approved_by': self.env.user.id
             })
 
+    def action_open_approval_wizard(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _("Approve/Reject Contacts"),
+            'res_model': 'contact.approval.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_partner_ids': self.ids},
+        }
+
     def partner_set_draft(self):
-        self.write({'state': 'draft'})
+        self._check_contact_manager()
+        self.sudo().write({'state': 'draft'})
 
     def partner_cancel(self):
-        self.write({'state': 'cancel'})
+        self._check_contact_manager()
+        self.sudo().write({'state': 'cancel'})
 
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
@@ -47,8 +65,7 @@ class PartnerView(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        if not self.env.user.has_group('customer_approval_workflow.group_contact_manager'):
-            records._send_approval_request()
+        records._send_approval_request()
         return records
 
     def _send_approval_request(self):
@@ -63,6 +80,7 @@ class PartnerView(models.Model):
             managers = self.env['res.users'].sudo().search([
                 ('group_ids', 'in', manager_group.id),
                 ('company_ids', 'in', company.id),
+                ('id', '!=', self.env.user.id),
             ])
             partner_ids = managers.mapped('partner_id').ids
             if not partner_ids:

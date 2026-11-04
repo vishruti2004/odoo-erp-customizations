@@ -7,8 +7,9 @@
             <field name="inherit_id" ref="base.view_res_partner_filter" />
             <field name="arch" type="xml">
                 <xpath expr="//search" position="inside">
+                    <filter string="Draft" name="draft_contact" domain="[('state' ,'=','draft')]" />
                     <filter string="Approved" name="approved_contact" domain="[('state' ,'=','approved')]" />
-                    <filter string="Cancelled" name="cancelled_contact" domain="[('state' ,'=','cancel')]" />
+                    <filter string="Rejected" name="cancelled_contact" domain="[('state' ,'=','cancel')]" />
                 </xpath>
                 <xpath expr="//group[@name='group_by']" position="inside">
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}" />
@@ -51,7 +52,7 @@
                                 invisible="state == 'draft'"
                                 class="oe_highlight"
                                 groups="customer_approval_workflow.group_contact_manager" />
-                        <button string="Cancel"
+                        <button string="Reject"
                                 type="object"
                                 name="partner_cancel"
                                 invisible="state == 'cancel'"

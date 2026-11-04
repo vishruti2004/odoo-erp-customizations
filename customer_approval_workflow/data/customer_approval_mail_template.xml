@@ -13,12 +13,17 @@
                     <p style="margin: 0px; padding: 0px; font-size: 13px;">
                         Hello,
                         <br /><br />
-                        New Contact <strong t-out="object.name" /> created by <strong t-out="user.name" /> in company <strong t-out="(object.company_id or object.env.company).name" />.
+                        <t t-if="user.has_group('customer_approval_workflow.group_contact_manager')">
+                            New Contact <strong t-out="object.name" /> created by Contact Manager <strong t-out="user.name" /> in company <strong t-out="(object.company_id or object.env.company).name" />.
+                        </t>
+                        <t t-else="">
+                            New Contact <strong t-out="object.name" /> created by <strong t-out="user.name" /> in company <strong t-out="(object.company_id or object.env.company).name" />.
+                        </t>
                         <br /><br />
-                        To Approve, Refuse or view the Contact, click on the following link:
+                        To Approve, Reject or view the Contact, click on the following link:
                         <div style="margin: 16px 0px 16px 0px;">
                             <a t-attf-href="#{object.get_base_url()}/web#id=#{object.id}&amp;view_type=form&amp;model=res.partner" class="btn btn-primary">
-                                Approve, Refuse or View Contact
+                                Approve, Reject or View Contact
                             </a>
                         </div>
                         <br />

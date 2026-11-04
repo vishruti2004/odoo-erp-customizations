@@ -1,7 +1,7 @@
 {
     "name": "Contact Approval Workflow",
     'summary': 'Contact Approval workflow',
-    "description": "This module will allows you to approve or refuse Contact (Customer/Supplier) only by Contact Manager.",
+    "description": "This module will allows you to approve or Reject Contact (Customer/Supplier) only by Contact Manager.",
 
     'author': 'iPredict IT Solutions Pvt. Ltd.',
     'website': 'http://ipredictitsolutions.com',
@@ -13,8 +13,11 @@
 
     "data": [
         'security/res_partner_security.xml',
+        'security/ir.model.access.csv',
         'data/customer_approval_mail_template.xml',
+        'data/partner_server_action.xml',
         'views/partner_view.xml',
+        'wizard/contact_approval_wizard_views.xml',
     ],
 
     "assets": {
@@ -24,8 +27,6 @@
     },
 
     'license': "OPL-1",
-
-
     "installable": True,
 
 }

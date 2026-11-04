@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="contact_approval_wizard_view_form" model="ir.ui.view">
+        <field name="name">contact.approval.wizard.view.form</field>
+        <field name="model">contact.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Approve/Reject Contacts">
+                <field name="partner_ids" invisible="1" />
+                <group>
+                    <field name="decision" widget="radio" options="{'horizontal': true}" />
+                </group>
+                <footer>
+                    <button string="Set to Draft"
+                            name="action_confirm"
+                            type="object"
+                            class="btn-info"
+                            invisible="decision != 'draft'"
+                            confirm="Are you sure you want to set the selected contacts to Draft?"
+                            confirm-title="Set to Draft"
+                            confirm-label="Yes, Set to Draft"
+                            cancel-label="No" />
+                    <button string="Approve"
+                            name="action_confirm"
+                            type="object"
+                            class="btn-success"
+                            invisible="decision != 'approve'"
+                            confirm="Are you sure you want to approve the selected contacts?"
+                            confirm-title="Approve Contacts"
+                            confirm-label="Yes, Approve"
+                            cancel-label="No" />
+                    <button string="Reject"
+                            name="action_confirm"
+                            type="object"
+                            class="btn-danger"
+                            invisible="decision != 'reject'"
+                            confirm="Are you sure you want to reject the selected contacts?"
+                            confirm-title="Reject Contacts"
+                            confirm-label="Yes, Reject"
+                            cancel-label="No" />
+                    <button string="Discard" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
