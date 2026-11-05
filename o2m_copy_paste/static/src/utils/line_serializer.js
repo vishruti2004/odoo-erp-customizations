@@ -1,14 +1,16 @@
 /** @odoo-module **/
-export const ALWAYS_COPIED_FIELDS = ["display_type", "collapse_composition", "collapse_prices"];
 export const UNSUPPORTED_TYPES = ["one2many", "properties", "reference", "many2one_reference"];
 
-function isSkipped(record, name, info, copyFalseEnabled) {
+function isSkipped(record, name, info, copyFalseEnabled, forceCopyFields, noCopyFields) {
+    if (noCopyFields.includes(name)) {
+        return true;
+    }
     const computed = info?.compute === true;
     const copyFalse = info?.copy === false;
     if (copyFalse && !computed && !copyFalseEnabled) {
         return true;
     }
-    if (computed || copyFalse || ALWAYS_COPIED_FIELDS.includes(name)) {
+    if (computed || copyFalse || forceCopyFields.includes(name)) {
         return false;
     }
     return (record._isReadonly(name) || record._isInvisible(name)) && !record._isRequired(name);
@@ -26,14 +28,20 @@ function serializeValue(record, field, value) {
     }
 }
 
-export function serializeRecord(record, copyFields = {}, copyFalseEnabled = false) {
+export function serializeRecord(
+    record,
+    copyFields = {},
+    copyFalseEnabled = false,
+    forceCopyFields = [],
+    noCopyFields = []
+) {
     const data = {};
     for (const [name, value] of Object.entries(record.data)) {
         const field = record.fields[name];
         if (
             !field ||
             UNSUPPORTED_TYPES.includes(field.type) ||
-            isSkipped(record, name, copyFields[name], copyFalseEnabled)
+            isSkipped(record, name, copyFields[name], copyFalseEnabled, forceCopyFields, noCopyFields)
         ) {
             continue;
         }

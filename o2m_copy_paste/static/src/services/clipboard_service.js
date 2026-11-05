@@ -4,13 +4,11 @@ import { browser } from "@web/core/browser/browser";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { parseServerValue } from "@web/model/relational_model/utils";
-import { getListDescriptor, isCompatible } from "../utils/compatibility";
-import { serializeRecord } from "../utils/line_serializer";
+import { isCompatible } from "../utils/compatibility";
+import { serializeRecord, UNSUPPORTED_TYPES } from "../utils/line_serializer";
 
 const STORAGE_KEY = "o2m_copy_paste.clipboard";
 const SETTINGS_MODEL = "o2m.copy.paste";
-const PRIORITY_FIELDS = ["product_template_id", "product_id"];
-const UNSUPPORTED_TYPES = ["one2many", "properties", "reference", "many2one_reference"];
 
 function toClientValue(field, value) {
     switch (field.type) {
@@ -63,8 +61,24 @@ function buildChanges(list, values, copyFields, copyFalseEnabled) {
     return changes;
 }
 
-async function applyChanges(record, list, changes) {
-    const rank = (name) => (PRIORITY_FIELDS.includes(name) ? 0 : 1);
+function toDefaultValue(value) {
+    return Array.isArray(value) && value.length === 2 && typeof value[1] === "string"
+        ? value[0]
+        : value;
+}
+
+function getDefaultContext(values, forceCopyFields) {
+    const context = {};
+    for (const name of forceCopyFields) {
+        if (values[name]) {
+            context[`default_${name}`] = toDefaultValue(values[name]);
+        }
+    }
+    return context;
+}
+
+async function applyChanges(record, list, changes, copyFields) {
+    const rank = (name) => (copyFields[name]?.depends || []).filter((dep) => dep in changes).length;
     const names = Object.keys(changes).sort((a, b) => rank(a) - rank(b));
     for (let pass = 0; pass < 3; pass++) {
         let updated = false;
@@ -160,16 +174,20 @@ export const o2mCopyPasteService = {
 
         async function copy(renderer) {
             const records = renderer.getO2MSelectedRecords();
-            if (!enabled || !records.length) {
+            if (!records.length) {
                 return false;
             }
             const copyFields = await getCopyFields(renderer.props.list.resModel);
             writeClipboard({
-                version: 1,
-                ...getListDescriptor(renderer.props.list),
-                copiedAt: Date.now(),
+                resModel: renderer.props.list.resModel,
                 lines: records.map((record) =>
-                    serializeRecord(record, copyFields, copyFalseEnabled)
+                    serializeRecord(
+                        record,
+                        copyFields,
+                        copyFalseEnabled,
+                        renderer.copyFields || [],
+                        renderer.noCopyFields || []
+                    )
                 ),
             });
             const count = records.length;
@@ -178,9 +196,6 @@ export const o2mCopyPasteService = {
         }
 
         async function paste(renderer, clipboard) {
-            if (!enabled) {
-                return false;
-            }
             if (!renderer.canO2MPaste()) {
                 notify(_t("You cannot add lines here."), "warning");
                 return false;
@@ -190,19 +205,23 @@ export const o2mCopyPasteService = {
                 return false;
             }
             const copyFields = await getCopyFields(list.resModel);
+            const forceCopyFields = renderer.copyFields || [];
             let count = 0;
             try {
                 for (const values of clipboard.lines) {
+                    const context = getDefaultContext(values, forceCopyFields);
                     const record = await list.addNewRecord({
                         position: "bottom",
                         mode: "readonly",
-                        ...(values.display_type && {
-                            context: { default_display_type: values.display_type },
-                        }),
+                        ...(Object.keys(context).length && { context }),
                     });
                     const changes = buildChanges(list, values, copyFields, copyFalseEnabled);
-                    delete changes.display_type;
-                    await applyChanges(record, list, changes);
+                    for (const name of forceCopyFields) {
+                        if (`default_${name}` in context) {
+                            delete changes[name];
+                        }
+                    }
+                    await applyChanges(record, list, changes, copyFields);
                     count++;
                 }
             } finally {
@@ -220,9 +239,7 @@ export const o2mCopyPasteService = {
         return {
             isEnabled: () => enabled,
             register(renderer) {
-                if (enabled) {
-                    renderers.add(renderer);
-                }
+                renderers.add(renderer);
             },
             unregister(renderer) {
                 renderers.delete(renderer);
@@ -237,13 +254,6 @@ export const o2mCopyPasteService = {
             paste,
             readClipboard,
             hasRenderers: () => liveRenderers().length > 0,
-            clear() {
-                memory = null;
-                try {
-                    browser.localStorage.removeItem(STORAGE_KEY);
-                } catch {
-                }
-            },
             notifyNoTarget(reason) {
                 if (reason === "ambiguous") {
                     notify(
