@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_non_moving_stock_search" model="ir.ui.view">
+        <field name="name">non.moving.stock.report.search</field>
+        <field name="model">non.moving.stock.report</field>
+        <field name="arch" type="xml">
+            <search string="Non-Moving Stock">
+                <field name="product_id" />
+                <field name="categ_id" />
+                <filter name="filter_non_moving" string="Non-Moving" domain="[('last_move_date', '&lt;', context.get('non_moving_cutoff'))]" invisible="not context.get('non_moving_cutoff')" />
+                <filter name="filter_never_delivered" string="Never Delivered" domain="[('last_sale_date', '=', False)]" />
+                <group>
+                    <filter name="group_product" string="Product" context="{'group_by': 'product_id'}" />
+                    <filter name="group_category" string="Product Category" context="{'group_by': 'categ_id'}" />
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_non_moving_stock_list" model="ir.ui.view">
+        <field name="name">non.moving.stock.report.list</field>
+        <field name="model">non.moving.stock.report</field>
+        <field name="arch" type="xml">
+            <list string="Non-Moving Stock" create="0" edit="0" delete="0">
+                <field name="company_id" groups="base.group_multi_company" optional="hide" />
+                <field name="purchase_date" />
+                <field name="product_id" />
+                <field name="lot_id" groups="stock.group_production_lot" />
+                <field name="categ_id" />
+                <field name="quantity_on_hand" sum="Total On Hand" />
+                <field name="reserved_quantity" sum="Total Reserved" />
+                <field name="available_quantity" sum="Total Available" optional="hide" />
+                <field name="currency_id" column_invisible="True" />
+                <field name="value" sum="Total Value" groups="stock.group_stock_manager" />
+                <field name="last_sale_date" optional="hide" />
+                <field name="days_since_sale" optional="hide" />
+            </list>
+        </field>
+    </record>
+
+    <record id="action_non_moving_stock" model="ir.actions.act_window">
+        <field name="name">Non-Moving Stock</field>
+        <field name="res_model">non.moving.stock.report</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_non_moving_stock_search" />
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No non-moving stock found.
+            </p>
+            <p>Products with available stock and no completed customer
+               delivery for the selected number of days appear here.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_non_moving_stock_report"
+              name="Non-Moving Stock"
+              parent="stock.menu_warehouse_report"
+              action="action_non_moving_stock_wizard"
+              sequence="240"
+              groups="stock.group_stock_user" />
+</odoo>

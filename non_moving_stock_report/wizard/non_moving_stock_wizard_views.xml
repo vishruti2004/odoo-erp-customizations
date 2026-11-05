@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_non_moving_stock_wizard_form" model="ir.ui.view">
+        <field name="name">non.moving.stock.wizard.form</field>
+        <field name="model">non.moving.stock.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Non-Moving Stock">
+                <group>
+                    <field name="days" />
+                </group>
+                <footer>
+                    <button string="Show Report" name="action_open_report" type="object" class="btn-primary" />
+                    <button string="Discard" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_non_moving_stock_wizard" model="ir.actions.act_window">
+        <field name="name">Non-Moving Stock</field>
+        <field name="res_model">non.moving.stock.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
